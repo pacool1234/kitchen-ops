@@ -1,0 +1,23 @@
+# Local Postgres for development. Start with `docker compose up -d`; see README "Database".
+# Same major version as CI and Render (18; product IDs use its built-in uuidv7()).
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      # Local-only credentials, not secrets. Real ones live in Render's environment.
+      POSTGRES_USER: kitchen_ops
+      POSTGRES_PASSWORD: kitchen_ops
+      POSTGRES_DB: kitchen_ops
+    ports:
+      - "127.0.0.1:5432:5432" # reachable from this machine only
+    volumes:
+      # Postgres 18 images keep data under /var/lib/postgresql/<major>/, so mount the parent.
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kitchen_ops -d kitchen_ops"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  db-data:
