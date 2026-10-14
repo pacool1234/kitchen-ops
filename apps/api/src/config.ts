@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+// postgres:// or postgresql://. The error never repeats the value: it contains a password.
+const DatabaseUrl = z.url({
+  protocol: /^postgres(ql)?$/,
+  error: (issue) =>
+    issue.input === undefined ? "is required" : "must be a postgres:// URL",
+});
+
 // Every variable the API reads. Keep apps/api/.env.example in sync with this schema.
 const ConfigSchema = z.object({
   NODE_ENV: z
@@ -15,6 +22,7 @@ const ConfigSchema = z.object({
   APP_VERSION: z
     .string({ error: "is required" })
     .min(1, { error: "must not be empty" }),
+  DATABASE_URL: DatabaseUrl,
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -23,9 +31,11 @@ export class ConfigError extends Error {
   override name = "ConfigError";
 }
 
-/** Validates the environment once at startup. Throws a ConfigError listing every problem. */
-export function loadConfig(env: Record<string, string | undefined>): Config {
-  const result = ConfigSchema.safeParse(env);
+function parseEnv<T extends z.ZodType>(
+  schema: T,
+  env: Record<string, string | undefined>,
+): z.infer<T> {
+  const result = schema.safeParse(env);
   if (!result.success) {
     const problems = result.error.issues.map(
       (issue) => `  - ${issue.path.join(".")}: ${issue.message}`,
@@ -39,4 +49,16 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     );
   }
   return result.data;
+}
+
+/** Validates the environment once at startup. Throws a ConfigError listing every problem. */
+export function loadConfig(env: Record<string, string | undefined>): Config {
+  return parseEnv(ConfigSchema, env);
+}
+
+/** For the db scripts (migrate, seed), which need only the database. */
+export function loadDatabaseUrl(
+  env: Record<string, string | undefined>,
+): string {
+  return parseEnv(z.object({ DATABASE_URL: DatabaseUrl }), env).DATABASE_URL;
 }
