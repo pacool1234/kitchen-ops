@@ -4,11 +4,12 @@
   "private": true,
   "description": "",
   "scripts": {
-    "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
+    "format:check": "prettier --check .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build"
   },
   "keywords": [],
   "author": "",
