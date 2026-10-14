@@ -1,0 +1,57 @@
+[
+  {
+    "milestone": "M0",
+    "file": "01-finish-workspace-skeleton.md",
+    "title": "Finish the workspace skeleton"
+  },
+  {
+    "milestone": "M0",
+    "file": "02-lint-and-boundaries.md",
+    "title": "Lint with enforced dependency rules"
+  },
+  {
+    "milestone": "M0",
+    "file": "03-vitest-baseline.md",
+    "title": "Vitest and fast-check baseline"
+  },
+  {
+    "milestone": "M0",
+    "file": "04-ci-workflow.md",
+    "title": "CI workflow on every pull request"
+  },
+  {
+    "milestone": "M1",
+    "file": "05-api-skeleton.md",
+    "title": "Fastify API skeleton"
+  },
+  {
+    "milestone": "M1",
+    "file": "06-postgres-drizzle.md",
+    "title": "Local Postgres and Drizzle migrations"
+  },
+  {
+    "milestone": "M1",
+    "file": "07-auth-roles.md",
+    "title": "Better Auth with roles and 2FA"
+  },
+  {
+    "milestone": "M1",
+    "file": "08-web-products-list.md",
+    "title": "Web: login and products list end to end"
+  },
+  {
+    "milestone": "M1",
+    "file": "09-render-deploy.md",
+    "title": "Deploy to Render: staging and production"
+  },
+  {
+    "milestone": "M1",
+    "file": "10-sentry.md",
+    "title": "Sentry error tracking and uptime"
+  },
+  {
+    "milestone": "M1",
+    "file": "11-backups-restore.md",
+    "title": "Off-site backups and a restore drill"
+  }
+]
