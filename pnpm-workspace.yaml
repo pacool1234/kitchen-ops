@@ -1,8 +1,8 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - apps/*
+  - packages/*
 
-# One TypeScript version for the whole workspace. Packages reference it as "catalog:".
-# Pinned to 6.0.x: TypeScript 7 does not ship the JS API that vue-tsc needs.
 catalog:
+  "@vitest/coverage-v8": 5.0.4
   typescript: ~6.0.3
+  vitest: 5.0.4
