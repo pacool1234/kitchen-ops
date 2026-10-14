@@ -7,10 +7,20 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "vitest run --passWithNoTests",
+    "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
+    "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {
-    "typescript": "catalog:"
+    "@types/node": "^24.13.3",
+    "tsx": "^4.23.15",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@kitchen-ops/shared": "workspace:*",
+    "fastify": "^5.12.7",
+    "fastify-type-provider-zod": "^7.0.0",
+    "zod": "catalog:"
   }
 }
