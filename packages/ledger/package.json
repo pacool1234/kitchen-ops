@@ -1,13 +1,13 @@
 {
   "name": "@kitchen-ops/ledger",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.28.2"
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
 }
