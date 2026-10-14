@@ -40,7 +40,8 @@ process.stdin.on("end", () => {
     );
   }
 
-  const command = typeof toolInput.command === "string" ? toolInput.command : "";
+  const command =
+    typeof toolInput.command === "string" ? toolInput.command : "";
   if (/\bgit\b[^\n]*\bcommit\b/.test(command)) {
     try {
       const staged = execSync("git diff --cached --name-only", {

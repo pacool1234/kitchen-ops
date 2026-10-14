@@ -32,7 +32,8 @@ for (const title of Object.values(MILESTONES)) {
     continue;
   }
   console.log(`${apply ? "creating" : "would create"} milestone: ${title}`);
-  if (apply) gh(["api", "repos/{owner}/{repo}/milestones", "-f", `title=${title}`]);
+  if (apply)
+    gh(["api", "repos/{owner}/{repo}/milestones", "-f", `title=${title}`]);
 }
 
 const existingIssues = JSON.parse(
@@ -48,12 +49,26 @@ for (const { milestone, file, title } of manifest) {
     continue;
   }
   // Drop the "# Title" line; GitHub shows the title separately.
-  const body = readFileSync(join(here, file), "utf8").replace(/^# .*\r?\n\r?\n?/, "");
+  const body = readFileSync(join(here, file), "utf8").replace(
+    /^# .*\r?\n\r?\n?/,
+    "",
+  );
   const bodyFile = join(tmp, file);
   writeFileSync(bodyFile, body);
-  console.log(`${apply ? "creating" : "would create"} issue [${milestone}]: ${title}`);
+  console.log(
+    `${apply ? "creating" : "would create"} issue [${milestone}]: ${title}`,
+  );
   if (apply) {
-    gh(["issue", "create", "--title", title, "--body-file", bodyFile, "--milestone", MILESTONES[milestone]]);
+    gh([
+      "issue",
+      "create",
+      "--title",
+      title,
+      "--body-file",
+      bodyFile,
+      "--milestone",
+      MILESTONES[milestone],
+    ]);
   }
 }
 
