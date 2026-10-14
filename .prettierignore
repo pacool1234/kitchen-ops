@@ -1,0 +1,4 @@
+# Prettier also skips everything in .gitignore.
+pnpm-lock.yaml
+# Hand-written docs, spec and decision records keep their own formatting.
+*.md
