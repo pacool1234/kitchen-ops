@@ -22,7 +22,29 @@ pnpm lint && pnpm typecheck && pnpm test
 pnpm --filter @kitchen-ops/web dev
 ```
 
-CI runs the same checks, plus a secret scan and a build, on every pull request.
+CI runs the same checks, plus a secret scan, the database migrations and a build, on every pull request.
+
+## Database
+
+Local Postgres 18 runs in Docker ([Docker Desktop](https://www.docker.com/products/docker-desktop/) on Windows and macOS).
+
+```sh
+docker compose up -d                  # start Postgres on 127.0.0.1:5432 (data kept in a Docker volume)
+cp apps/api/.env.example apps/api/.env  # first time only; DATABASE_URL points at the container
+pnpm --filter @kitchen-ops/api db:migrate
+pnpm --filter @kitchen-ops/api db:seed  # synthetic products; skipped if products already exist
+```
+
+Changing the schema (`apps/api/src/db/schema.ts`):
+
+```sh
+pnpm --filter @kitchen-ops/api db:generate --name=<what_changed>   # writes SQL to apps/api/drizzle/
+pnpm --filter @kitchen-ops/api db:migrate
+```
+
+Read the generated SQL before committing it, and paste it into the PR. Never edit a migration that has already been applied; write a new one. CI fails if the schema and the migrations are out of sync.
+
+`docker compose down` stops the database; `docker compose down -v` also deletes its data.
 
 ## Docs
 
