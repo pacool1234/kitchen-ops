@@ -4,3 +4,5 @@ dist/
 !.env.example
 eval/private/
 coverage/
+# gitleaks report written during CI
+*.sarif
