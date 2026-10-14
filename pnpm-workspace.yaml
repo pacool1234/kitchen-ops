@@ -2,7 +2,14 @@ packages:
   - apps/*
   - packages/*
 
+# One version per tool for the whole workspace. Packages reference these as "catalog:".
+# Edit this file by hand: `pnpm add` rewrites it and drops these comments.
 catalog:
+  # Vitest and its coverage plugin must always be the exact same version.
   "@vitest/coverage-v8": 5.0.4
+  # Pinned to 6.0.x: TypeScript 7 does not ship the JS API that vue-tsc needs,
+  # and typescript-eslint supports <6.1.
   typescript: ~6.0.3
   vitest: 5.0.4
+  # Shared by packages/shared (schemas) and apps/api (config, type provider).
+  zod: ^4.6.7
