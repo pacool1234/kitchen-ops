@@ -48,6 +48,7 @@ export default defineConfigWithVueTs(
       "boundaries/elements": elements,
       "boundaries/files": [
         { category: "test", pattern: "**/*.{test,spec}.ts" },
+        { category: "config", pattern: "**/*.config.ts" },
       ],
       // Resolves "@kitchen-ops/<name>" through each package's `exports` to its real folder,
       // so imports by package name and by relative path are both checked.
@@ -84,11 +85,11 @@ export default defineConfigWithVueTs(
               allow: { to: { module: { origin: ["external", "core"] } } },
             },
             // Ledger is pure: no runtime dependencies (a decimal library will be allowed here once chosen).
-            // Its tests may use test tooling.
+            // Its tests and tool config files (e.g. vitest.config.ts) may use dev tooling.
             {
               from: {
                 element: { type: "ledger" },
-                file: { categories: "test" },
+                file: { categories: ["test", "config"] },
               },
               allow: { to: { module: { origin: "external" } } },
             },
