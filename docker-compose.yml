@@ -19,5 +19,22 @@ services:
       timeout: 5s
       retries: 15
 
+  # The backup image (ops/backup), for restore drills: docs/runbooks/restore.md. In the "tools"
+  # profile, so `docker compose up` doesn't start it; `docker compose run --rm restore ...` does.
+  restore:
+    profiles: [tools]
+    build: ops/backup
+    entrypoint: ["restore.sh"]
+    environment:
+      PGHOST: db
+      PGUSER: kitchen_ops
+      PGPASSWORD: kitchen_ops
+    volumes:
+      # The downloaded dump and the key file. Git-ignored; empty it after the drill.
+      - ./.restore-drill:/drill:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   db-data:
