@@ -155,6 +155,45 @@ projects:
               - key: SENTRY_ENVIRONMENT
                 value: production
 
+          # Weekly encrypted dump of the production database to a Scaleway bucket: the copy outside
+          # Render (ops/backup, docs/runbooks/restore.md). Updated by the release workflow, like
+          # the services above.
+          - name: kitchen-ops-db-backup
+            type: cron
+            runtime: docker
+            plan: 0.5c-512mb
+            region: frankfurt
+            schedule: "0 3 * * 1" # Mondays 03:00 UTC; also in ops/backup/backup.sh (Sentry)
+            autoDeployTrigger: "off"
+            dockerfilePath: ./ops/backup/Dockerfile
+            dockerContext: ./ops/backup
+            envVars:
+              - key: DATABASE_URL
+                fromDatabase:
+                  name: kitchen-ops-db
+                  property: connectionString
+              # The backup key's public half: it can encrypt, not decrypt. The private half is
+              # only in the repo owner's password manager.
+              - key: BACKUP_AGE_RECIPIENT
+                value: age1e39cfpjxr0rx3am5g5adkkqw472dvrhqc2ar0nl4e78pn0m9g9jq0xh0fk
+              # Scaleway Object Storage, Paris. The bucket has versioning on and a retention rule.
+              - key: BACKUP_S3_BUCKET
+                value: kitchen-ops-db-backups
+              - key: AWS_ENDPOINT_URL
+                value: https://s3.fr-par.scw.cloud
+              - key: AWS_DEFAULT_REGION
+                value: fr-par
+              # A Scaleway key that can only upload (no read, no delete), entered in the dashboard.
+              - key: AWS_ACCESS_KEY_ID
+                sync: false
+              - key: AWS_SECRET_ACCESS_KEY
+                sync: false
+              # Sentry Crons check-ins, with the API project's DSN, entered in the dashboard.
+              - key: SENTRY_DSN
+                sync: false
+              - key: SENTRY_ENVIRONMENT
+                value: production
+
         databases:
           - name: kitchen-ops-db
             databaseName: kitchen_ops
