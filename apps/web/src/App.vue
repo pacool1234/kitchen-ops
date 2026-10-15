@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import HelloWorld from "./components/HelloWorld.vue";
+import { RouterView } from "vue-router";
 </script>
 
 <template>
-  <HelloWorld />
+  <header class="app-header">kitchen-ops</header>
+  <main class="app-main">
+    <RouterView />
+  </main>
 </template>

@@ -1,7 +1,53 @@
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 
-// https://vite.dev/config/
+// The browser only ever talks to this origin; /api is forwarded to the API, so session cookies
+// are plain first-party cookies and no CORS is needed. On Render, the static site forwards /api
+// the same way (#9). BETTER_AUTH_URL in apps/api/.env must be this origin: http://localhost:5173.
+const api = {
+  "/api": { target: "http://127.0.0.1:3000" },
+};
+
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: [
+        "favicon.ico",
+        "apple-touch-icon-180x180.png",
+        "icon.svg",
+      ],
+      manifest: {
+        name: "kitchen-ops",
+        short_name: "kitchen-ops",
+        description: "Purchasing and stock control",
+        lang: "en",
+        start_url: "/",
+        display: "standalone",
+        background_color: "#f4f1e8",
+        theme_color: "#1f5135",
+        icons: [
+          { src: "pwa-64x64.png", sizes: "64x64", type: "image/png" },
+          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          {
+            src: "maskable-icon-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+      },
+      workbox: {
+        // Cache only the app itself. API responses are never cached: they depend on who is
+        // signed in, and a shared phone must not show the previous user's data.
+        navigateFallbackDenylist: [/^\/api\//],
+      },
+    }),
+  ],
+  server: { port: 5173, strictPort: true, proxy: api },
+  // `vite preview` (the built app, with the service worker) uses the same origin and proxy.
+  preview: { port: 5173, strictPort: true, proxy: api },
 });
