@@ -107,6 +107,8 @@ The "Deploy production" workflow checks that the commit is on `main` and that st
 ### One-time setup (repo owner, by hand)
 
 1. In Render, create a workspace with a payment method, then **New → Blueprint**, pick this repo and apply `render.yaml`. Render shows everything it will create first.
+   - Pick the repo from your connected GitHub account. If it isn't listed, give Render's GitHub app access to it first (https://github.com/apps/render/installations/new → **Configure** → **Repository access**). Never paste the repo's public URL instead: services and Blueprints linked by URL are never told about new commits, so they don't deploy or sync on their own.
+   - If that already happened: in each service, **Settings → Build → Source → Edit** switches it to the connected repo. A Blueprint can't be switched; click **Manual Sync** on its page after changing `render.yaml`.
 2. Render generates each environment's `BETTER_AUTH_SECRET`. Copy both into your password manager: losing one signs everyone out and makes the owners' 2FA unusable.
 3. In GitHub, **Settings → Environments → New environment** `production`. Allow only tags matching `v*` to deploy to it, and add two secrets: `RENDER_DEPLOY_HOOK_API` and `RENDER_DEPLOY_HOOK_WEB`, the deploy hook URLs from each production service's **Settings** in Render. Treat them like passwords.
 4. Set up a billing alert. Every provider needs one (spec section 7).
