@@ -6,3 +6,5 @@ eval/private/
 coverage/
 # gitleaks report written during CI
 *.sarif
+# Screenshots and page snapshots from the Playwright browser tool
+.playwright-mcp/

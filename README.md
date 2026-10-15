@@ -65,6 +65,21 @@ Read the generated SQL before committing it, and paste it into the PR. Never edi
 
 `docker compose down` stops the database; `docker compose down -v` also deletes its data.
 
+## Web app
+
+The web app and the API share one address: the browser only talks to the web app's origin, which forwards `/api/*` to the API. Session cookies stay first-party and no CORS is needed. On Render the static site forwards `/api/*` the same way.
+
+```sh
+pnpm --filter @kitchen-ops/api dev   # API on 127.0.0.1:3000
+pnpm --filter @kitchen-ops/web dev   # open http://localhost:5173
+```
+
+`BETTER_AUTH_URL` in `apps/api/.env` must be the address in the browser, `http://localhost:5173`. Better Auth rejects sign-ins from any other origin, so open `localhost`, not `127.0.0.1`.
+
+To try the installable version (service worker included): `pnpm --filter @kitchen-ops/web build`, then `pnpm --filter @kitchen-ops/web preview` (same address). The service worker caches only the app itself, never `/api` responses.
+
+The icons in `apps/web/public/` are generated from `icon.svg`, a placeholder until there is a real design: `pnpm --filter @kitchen-ops/web generate-pwa-assets`.
+
 ## Docs
 
 - `docs/spec.md`: the spec
