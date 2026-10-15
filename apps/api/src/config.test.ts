@@ -1,8 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { ConfigError, loadConfig, loadDatabaseUrl } from "./config";
+import {
+  ConfigError,
+  loadConfig,
+  loadDatabaseUrl,
+  loadSeedConfig,
+} from "./config";
 
 const DATABASE_URL = "postgres://user:pass@localhost:5432/db";
-const required = { APP_VERSION: "abc123", DATABASE_URL };
+// Built at runtime so it never looks like a real secret: 32 "x" characters.
+const BETTER_AUTH_SECRET = "x".repeat(32);
+const BETTER_AUTH_URL = "http://127.0.0.1:3000";
+const required = {
+  APP_VERSION: "abc123",
+  DATABASE_URL,
+  BETTER_AUTH_SECRET,
+  BETTER_AUTH_URL,
+};
 
 describe("loadConfig", () => {
   it("applies defaults for everything except the required variables", () => {
@@ -13,6 +26,8 @@ describe("loadConfig", () => {
       LOG_LEVEL: "info",
       APP_VERSION: "abc123",
       DATABASE_URL,
+      BETTER_AUTH_SECRET,
+      BETTER_AUTH_URL,
     });
   });
 
@@ -32,6 +47,24 @@ describe("loadConfig", () => {
     expect(() => loadConfig({})).toThrow(ConfigError);
     expect(() => loadConfig({})).toThrow(/APP_VERSION: is required/);
     expect(() => loadConfig({})).toThrow(/DATABASE_URL: is required/);
+    expect(() => loadConfig({})).toThrow(/BETTER_AUTH_SECRET: is required/);
+    expect(() => loadConfig({})).toThrow(/BETTER_AUTH_URL: is required/);
+  });
+
+  it("rejects a BETTER_AUTH_SECRET shorter than 32 characters, without printing it", () => {
+    const short = "y".repeat(31);
+    expect(() =>
+      loadConfig({ ...required, BETTER_AUTH_SECRET: short }),
+    ).toThrow(/BETTER_AUTH_SECRET: must be at least 32 characters/);
+    expect(() =>
+      loadConfig({ ...required, BETTER_AUTH_SECRET: short }),
+    ).not.toThrow(new RegExp(short));
+  });
+
+  it("rejects a BETTER_AUTH_URL that is not an http(s) URL", () => {
+    expect(() =>
+      loadConfig({ ...required, BETTER_AUTH_URL: "127.0.0.1:3000" }),
+    ).toThrow(/BETTER_AUTH_URL: must be an http\(s\) URL/);
   });
 
   it("rejects an empty APP_VERSION", () => {
@@ -85,5 +118,19 @@ describe("loadDatabaseUrl", () => {
 
   it("fails fast when DATABASE_URL is missing", () => {
     expect(() => loadDatabaseUrl({})).toThrow(/DATABASE_URL: is required/);
+  });
+});
+
+describe("loadSeedConfig", () => {
+  it("needs the database and auth variables, not APP_VERSION", () => {
+    expect(
+      loadSeedConfig({ DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL }),
+    ).toEqual({ DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL });
+  });
+
+  it("fails fast when one of them is missing", () => {
+    expect(() => loadSeedConfig({ DATABASE_URL })).toThrow(
+      /BETTER_AUTH_SECRET: is required/,
+    );
   });
 });
