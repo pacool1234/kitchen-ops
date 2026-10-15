@@ -7,10 +7,11 @@ import {
 } from "fastify-type-provider-zod";
 import { createAuth } from "./auth/auth";
 import { registerAuth } from "./auth/fastify";
+import { meRoutes } from "./auth/routes";
 import type { Config } from "./config";
 import { createDb } from "./db/client";
-import { healthRoutes } from "./routes/health";
-import { meRoutes } from "./routes/me";
+import { healthRoutes } from "./health/routes";
+import { productRoutes } from "./products/routes";
 
 export interface BuildAppOptions {
   /** Where pino writes log lines. Defaults to stdout; tests pass a stream to read them. */
@@ -46,6 +47,7 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   registerAuth(app, createAuth(db, config));
   app.register(healthRoutes, { version: config.APP_VERSION });
   app.register(meRoutes);
+  app.register(productRoutes, { db });
 
   return app;
 }
