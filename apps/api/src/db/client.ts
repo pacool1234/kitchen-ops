@@ -8,3 +8,5 @@ export function createDb(databaseUrl: string) {
   const db = drizzle(pool, { schema });
   return { db, close: () => pool.end() };
 }
+
+export type Db = ReturnType<typeof createDb>["db"];
