@@ -57,6 +57,17 @@ jobs:
           echo "::error::Staging does not run $SHA. Tag the commit staging runs, or wait for its deploy to finish."
           exit 1
 
+      # Re-releasing the commit production already runs (or the first release, right after Render
+      # created the services) redeploys it, but the last step cannot tell the old instance from
+      # the new one. Say so, rather than report a deploy it did not see.
+      - name: Production before the deploy
+        run: |
+          before=$(curl -fsS --max-time 30 "$PRODUCTION_HEALTH_URL" | jq -r .version) || before=""
+          echo "Production runs '${before:-no answer}'."
+          if [ "$before" = "$SHA" ]; then
+            echo "::notice::Production already runs $SHA. The last step will pass at once; check in the Render dashboard that the new deploys finished."
+          fi
+
       # Each hook URL already has a ?key=... query; &ref= picks the commit to deploy.
       - name: Deploy the API and the web app
         env:
