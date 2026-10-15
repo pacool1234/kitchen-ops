@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
-    "start": "node --import tsx src/server.ts",
+    "start": "node --import tsx --import ./src/instrument.ts src/server.ts",
+    "sentry:test": "tsx --env-file-if-exists=.env src/sentry-test.ts",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json",
     "db:generate": "drizzle-kit generate",
@@ -24,6 +25,7 @@
   },
   "dependencies": {
     "@kitchen-ops/shared": "workspace:*",
+    "@sentry/node": "^11.8.0",
     "better-auth": "catalog:",
     "drizzle-orm": "^0.45.4",
     "fastify": "^5.12.7",

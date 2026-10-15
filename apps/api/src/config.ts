@@ -7,6 +7,9 @@ const DatabaseUrl = z.url({
     issue.input === undefined ? "is required" : "must be a postgres:// URL",
 });
 
+// An empty value (`SENTRY_DSN=` in .env) counts as unset.
+const emptyAsUnset = (value: unknown) => (value === "" ? undefined : value);
+
 // Every variable the API reads. Keep apps/api/.env.example in sync with this schema.
 const ConfigSchema = z.object({
   NODE_ENV: z
@@ -34,6 +37,13 @@ const ConfigSchema = z.object({
     error: (issue) =>
       issue.input === undefined ? "is required" : "must be an http(s) URL",
   }),
+  // The Sentry project's DSN. Unset locally and in tests, which keeps Sentry off.
+  SENTRY_DSN: z.preprocess(
+    emptyAsUnset,
+    z.url({ protocol: /^https$/, error: "must be an https URL" }).optional(),
+  ),
+  // "staging" or "production" on Render. Unset: NODE_ENV.
+  SENTRY_ENVIRONMENT: z.preprocess(emptyAsUnset, z.string().optional()),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -73,6 +83,21 @@ export function loadDatabaseUrl(
 ): string {
   return parseEnv(ConfigSchema.pick({ DATABASE_URL: true }), env).DATABASE_URL;
 }
+
+/** For src/instrument.ts, which starts Sentry before the app (and the full check) loads. */
+export function loadSentryConfig(env: Record<string, string | undefined>) {
+  return parseEnv(
+    ConfigSchema.pick({
+      NODE_ENV: true,
+      APP_VERSION: true,
+      SENTRY_DSN: true,
+      SENTRY_ENVIRONMENT: true,
+    }),
+    env,
+  );
+}
+
+export type SentryConfig = ReturnType<typeof loadSentryConfig>;
 
 /** For the seed, which needs the database and auth (to create users) but not the server settings. */
 export function loadSeedConfig(env: Record<string, string | undefined>) {

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import { buildApp } from "./app";
 import { ConfigError, loadConfig, type Config } from "./config";
 
@@ -15,6 +16,12 @@ function configOrExit(): Config {
 
 const config = configOrExit();
 const app = buildApp(config);
+// Started by src/instrument.ts, if SENTRY_DSN is set. Logged so Render's logs show which it is.
+const sentry = Sentry.getClient()?.getOptions();
+app.log.info(
+  { sentry: sentry ? { environment: sentry.environment } : "off" },
+  "error tracking",
+);
 
 // Render sends SIGTERM before stopping or replacing the service; finish open requests first.
 for (const signal of ["SIGINT", "SIGTERM"] as const) {

@@ -115,6 +115,29 @@ The "Deploy production" workflow checks that the commit is on `main` and that st
 
 If Render adds a suffix to a service name because it was taken, update the addresses in `render.yaml`, in `.github/workflows/deploy-production.yml` and in the table above.
 
+## Monitoring
+
+Sentry (EU region), one project per app: `kitchen-ops-api` and `kitchen-ops-web`. Staging and production share them; each error is tagged with its `environment` and with the commit as its `release`.
+
+- **What is sent:** errors and their stack traces only. No performance tracing, no session replay, and nothing personal or request-specific: no IP addresses, cookies, headers, bodies or query values. API errors carry the user's ID (a UUID) and the `request_id`, which is the `reqId` in Render's logs, so the details are found there.
+- **API:** 5xx errors from routes and hooks, and crashes. 4xx answers are not errors. Sentry starts from `src/instrument.ts`, loaded before the app (see the `start` script), and only when `SENTRY_DSN` is set. The first log line says whether it is on.
+- **Web:** uncaught errors in the built app, and only when the build had `VITE_SENTRY_DSN`. Never in `dev`. The browser also sends Sentry's "session" counts (pages opened with or without an error), for crash-free rates per release.
+- **Locally and in tests** none of these variables are set, so Sentry stays off.
+
+| Render service    | Variables                                                                 |
+| ----------------- | ------------------------------------------------------------------------- |
+| both APIs         | `SENTRY_DSN` (API project, entered in the dashboard), `SENTRY_ENVIRONMENT` |
+| both static sites | `VITE_SENTRY_DSN` (web project, entered in the dashboard), `VITE_SENTRY_ENVIRONMENT` |
+
+`VITE_` variables are built into the browser code at build time, so changing one needs a redeploy of the static site. A DSN only allows sending events, not reading them; the web one is visible to anyone using the app.
+
+**Test errors:**
+
+- Web: open any page with `#sentry-test` at the end of the address, e.g. `https://kitchen-ops-web-staging.onrender.com/login#sentry-test`.
+- API: in the production API's **Shell** tab in Render, run `cd apps/api && node --import tsx src/sentry-test.ts`. Locally: `SENTRY_DSN=<dsn> pnpm --filter @kitchen-ops/api sentry:test`.
+
+**Uptime:** a Sentry uptime monitor calls `https://kitchen-ops-api.onrender.com/health` and alerts by email. Staging is not monitored: its free API sleeps when idle.
+
 ## Docs
 
 - `docs/spec.md`: the spec

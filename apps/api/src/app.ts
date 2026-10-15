@@ -12,6 +12,7 @@ import type { Config } from "./config";
 import { createDb } from "./db/client";
 import { healthRoutes } from "./health/routes";
 import { productRoutes } from "./products/routes";
+import { tagRequest } from "./sentry";
 
 export interface BuildAppOptions {
   /** Where pino writes log lines. Defaults to stdout; tests pass a stream to read them. */
@@ -35,9 +36,10 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
-  // Return the ID so a problem a user reports can be found in the logs.
+  // Return the ID so a problem a user reports can be found in the logs; errors in Sentry carry it too.
   app.addHook("onRequest", async (request, reply) => {
     reply.header("x-request-id", request.id);
+    tagRequest(request.id);
   });
 
   // The pool connects lazily, on the first query; closed with the app.
