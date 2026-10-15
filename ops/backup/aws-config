@@ -1,0 +1,10 @@
+# aws-cli settings for S3-compatible storage other than AWS (Scaleway, and the test's stand-in).
+# Endpoint, region and keys come from environment variables (render.yaml).
+[default]
+# Address buckets as <endpoint>/<bucket>, which every S3-compatible server accepts.
+s3 =
+  addressing_style = path
+# Recent aws-cli versions add checksums that only AWS itself understands; send them only when
+# an operation requires one.
+request_checksum_calculation = when_required
+response_checksum_validation = when_required
