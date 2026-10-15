@@ -93,6 +93,10 @@ Render, Frankfurt region, defined in `render.yaml` (a Render Blueprint):
 
 Each deploy applies the database migrations before the new version takes traffic. If a migration fails, the deploy fails and the previous version keeps running. The seed never runs on Render.
 
+**Changing `render.yaml`:** the Blueprint applies changes only when you click **Manual Sync** on its page in Render. A sync that changes a service also redeploys it from the latest commit on `main`, **production included**, without a release tag. Sync only when `main` is ready for production, ideally right after releasing it.
+
+Successful `/health` calls are not logged: Render's own health check calls it every few seconds. Failures are.
+
 ### Releasing to production
 
 Tag the commit staging runs (the `version` on staging's `/health`), then push the tag:
