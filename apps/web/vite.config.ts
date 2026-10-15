@@ -4,7 +4,7 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // The browser only ever talks to this origin; /api is forwarded to the API, so session cookies
 // are plain first-party cookies and no CORS is needed. On Render, the static site forwards /api
-// the same way (#9). BETTER_AUTH_URL in apps/api/.env must be this origin: http://localhost:5173.
+// the same way (render.yaml). BETTER_AUTH_URL in apps/api/.env must be this origin: http://localhost:5173.
 const api = {
   "/api": { target: "http://127.0.0.1:3000" },
 };
