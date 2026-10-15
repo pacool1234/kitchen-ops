@@ -19,6 +19,21 @@ jobs:
     name: ci
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Throwaway database for the migration check, deleted with the runner. Same major version as Render.
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: kitchen_ops
+          POSTGRES_PASSWORD: kitchen_ops
+          POSTGRES_DB: kitchen_ops
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kitchen_ops -d kitchen_ops"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
     steps:
       # Actions are pinned to a full commit SHA (a tag can be moved, a SHA cannot); the version is in the comment.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -56,5 +71,24 @@ jobs:
         run: pnpm typecheck
       - name: Test
         run: pnpm test
+
+      # Fails if the schema was changed without running db:generate and committing the migration.
+      - name: Migrations match the schema
+        run: |
+          pnpm --filter @kitchen-ops/api db:generate
+          if [ -n "$(git status --porcelain --untracked-files=all apps/api/drizzle)" ]; then
+            echo "::error::src/db/schema.ts changed without a migration. Run 'pnpm --filter @kitchen-ops/api db:generate' and commit apps/api/drizzle."
+            git status --short apps/api/drizzle
+            exit 1
+          fi
+      - name: Apply migrations to a throwaway database
+        run: pnpm --filter @kitchen-ops/api db:migrate
+        env:
+          DATABASE_URL: postgres://kitchen_ops:kitchen_ops@localhost:5432/kitchen_ops
+      - name: Seed
+        run: pnpm --filter @kitchen-ops/api db:seed
+        env:
+          DATABASE_URL: postgres://kitchen_ops:kitchen_ops@localhost:5432/kitchen_ops
+
       - name: Build
         run: pnpm build

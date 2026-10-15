@@ -3,6 +3,12 @@ import { describe, expect, it } from "vitest";
 import { buildApp } from "./app";
 import { loadConfig } from "./config";
 
+// The API does not connect to the database yet; a syntactically valid URL is enough.
+const noDatabase = {
+  APP_VERSION: "test-version",
+  DATABASE_URL: "postgres://unused@localhost/unused",
+};
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 // Collects the JSON log lines pino writes, instead of printing them.
@@ -19,7 +25,7 @@ function captureLogs() {
   return { lines, stream };
 }
 
-const quiet = loadConfig({ APP_VERSION: "test-version", LOG_LEVEL: "silent" });
+const quiet = loadConfig({ ...noDatabase, LOG_LEVEL: "silent" });
 
 describe("GET /health", () => {
   it("returns status ok and the running version", async () => {
@@ -35,10 +41,9 @@ describe("GET /health", () => {
 describe("request IDs", () => {
   it("tags the response and every log line of the request with the same ID", async () => {
     const { lines, stream } = captureLogs();
-    const app = buildApp(
-      loadConfig({ APP_VERSION: "test-version", LOG_LEVEL: "info" }),
-      { logStream: stream },
-    );
+    const app = buildApp(loadConfig({ ...noDatabase, LOG_LEVEL: "info" }), {
+      logStream: stream,
+    });
     const response = await app.inject({ method: "GET", url: "/health" });
     await app.close();
 
