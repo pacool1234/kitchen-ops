@@ -1,0 +1,87 @@
+name: Deploy production
+
+# A release is a tag on a commit that staging already runs: `git tag -a v0.1.0 <sha>` and push it
+# (README, "Releasing"). Production's automatic deploys are off in render.yaml; this is the only
+# way it deploys.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+# One production deploy at a time; a second tag waits instead of cancelling the first.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  STAGING_HEALTH_URL: https://kitchen-ops-api-staging.onrender.com/health
+  PRODUCTION_HEALTH_URL: https://kitchen-ops-api.onrender.com/health
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The deploy hook URLs are secrets of this GitHub environment, added by the repo owner.
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # all of main's history, for the check below
+
+      - name: The tagged commit is on main
+        run: |
+          sha=$(git rev-parse "${GITHUB_REF}^{commit}")
+          echo "SHA=$sha" >> "$GITHUB_ENV"
+          if ! git merge-base --is-ancestor "$sha" origin/main; then
+            echo "::error::$GITHUB_REF_NAME points to $sha, which is not on main. Tag a commit from main."
+            exit 1
+          fi
+
+      # Staging deploys every commit on main after CI passes. If it answers /health with this exact
+      # commit, CI passed on it and it starts and runs on Render. The free staging API sleeps when
+      # idle; the first request wakes it, which takes about a minute.
+      - name: Staging runs this commit
+        run: |
+          for attempt in $(seq 1 30); do
+            version=$(curl -fsS --max-time 60 "$STAGING_HEALTH_URL" | jq -r .version) || version=""
+            if [ "$version" = "$SHA" ]; then
+              echo "Staging is healthy and runs $SHA."
+              exit 0
+            fi
+            echo "Attempt $attempt: staging runs '${version:-no answer}', waiting for $SHA."
+            sleep 10
+          done
+          echo "::error::Staging does not run $SHA. Tag the commit staging runs, or wait for its deploy to finish."
+          exit 1
+
+      # Each hook URL already has a ?key=... query; &ref= picks the commit to deploy.
+      - name: Deploy the API and the web app
+        env:
+          API_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_API }}
+          WEB_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_WEB }}
+        run: |
+          for name in API_HOOK WEB_HOOK; do
+            hook="${!name}"
+            if [ -z "$hook" ]; then
+              echo "::error::The $name secret is missing from the production environment."
+              exit 1
+            fi
+            echo "$name: $(curl -fsS -X POST "$hook&ref=$SHA")"
+          done
+
+      - name: Production runs this commit
+        run: |
+          for attempt in $(seq 1 60); do
+            version=$(curl -fsS --max-time 30 "$PRODUCTION_HEALTH_URL" | jq -r .version) || version=""
+            if [ "$version" = "$SHA" ]; then
+              echo "Production is healthy and runs $SHA."
+              exit 0
+            fi
+            echo "Attempt $attempt: production runs '${version:-no answer}', waiting for $SHA."
+            sleep 15
+          done
+          echo "::error::Production did not start running $SHA within 15 minutes. Check the deploy in the Render dashboard."
+          exit 1

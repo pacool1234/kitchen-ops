@@ -80,6 +80,39 @@ To try the installable version (service worker included): `pnpm --filter @kitche
 
 The icons in `apps/web/public/` are generated from `icon.svg`, a placeholder until there is a real design: `pnpm --filter @kitchen-ops/web generate-pwa-assets`.
 
+## Deploying
+
+Render, Frankfurt region, defined in `render.yaml` (a Render Blueprint):
+
+| Environment | Web app                                        | API health                                            | Deploys                                           |
+| ----------- | ---------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------- |
+| Staging     | https://kitchen-ops-web-staging.onrender.com   | https://kitchen-ops-api-staging.onrender.com/health   | every commit on `main`, once CI passes            |
+| Production  | https://kitchen-ops-web.onrender.com           | https://kitchen-ops-api.onrender.com/health           | a release tag (below)                             |
+
+`/health` answers `{"status":"ok","version":"<git commit>"}`, so you can see which commit is running. The staging API is on Render's free plan and sleeps after 15 minutes without traffic; the first request then takes about a minute.
+
+Each deploy applies the database migrations before the new version takes traffic. If a migration fails, the deploy fails and the previous version keeps running. The seed never runs on Render.
+
+### Releasing to production
+
+Tag the commit staging runs (the `version` on staging's `/health`), then push the tag:
+
+```sh
+git tag -a v0.1.0 <commit> -m "v0.1.0"
+git push origin v0.1.0
+```
+
+The "Deploy production" workflow checks that the commit is on `main` and that staging runs it. It then deploys the API and the web app to production and waits until production's `/health` reports that commit.
+
+### One-time setup (repo owner, by hand)
+
+1. In Render, create a workspace with a payment method, then **New → Blueprint**, pick this repo and apply `render.yaml`. Render shows everything it will create first.
+2. Render generates each environment's `BETTER_AUTH_SECRET`. Copy both into your password manager: losing one signs everyone out and makes the owners' 2FA unusable.
+3. In GitHub, **Settings → Environments → New environment** `production`. Allow only tags matching `v*` to deploy to it, and add two secrets: `RENDER_DEPLOY_HOOK_API` and `RENDER_DEPLOY_HOOK_WEB`, the deploy hook URLs from each production service's **Settings** in Render. Treat them like passwords.
+4. Set up a billing alert. Every provider needs one (spec section 7).
+
+If Render adds a suffix to a service name because it was taken, update the addresses in `render.yaml`, in `.github/workflows/deploy-production.yml` and in the table above.
+
 ## Docs
 
 - `docs/spec.md`: the spec
