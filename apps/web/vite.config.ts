@@ -10,6 +10,10 @@ const api = {
 };
 
 export default defineConfig({
+  // The commit being built, tagged on errors sent to Sentry. Render sets RENDER_GIT_COMMIT.
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.RENDER_GIT_COMMIT ?? "dev"),
+  },
   plugins: [
     vue(),
     VitePWA({
