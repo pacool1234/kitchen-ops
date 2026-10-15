@@ -30,6 +30,18 @@ describe("GET /health", () => {
     expect(response.json()).toEqual({ status: "ok", version: "test-version" });
     await app.close();
   });
+
+  it("writes no log lines when it succeeds: Render calls it every few seconds", async () => {
+    const { lines, stream } = captureLogs();
+    const app = buildApp(testConfig({ LOG_LEVEL: "info" }), {
+      logStream: stream,
+    });
+    const response = await app.inject({ method: "GET", url: "/health" });
+    await app.close();
+
+    expect(response.statusCode).toBe(200);
+    expect(lines.filter((line) => "req" in line || "res" in line)).toEqual([]);
+  });
 });
 
 describe("request IDs", () => {
@@ -38,7 +50,8 @@ describe("request IDs", () => {
     const app = buildApp(testConfig({ LOG_LEVEL: "info" }), {
       logStream: stream,
     });
-    const response = await app.inject({ method: "GET", url: "/health" });
+    // Any logged route; /api/me answers 401 without a session.
+    const response = await app.inject({ method: "GET", url: "/api/me" });
     await app.close();
 
     const requestId = response.headers["x-request-id"];
