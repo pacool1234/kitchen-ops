@@ -95,5 +95,25 @@ jobs:
           DATABASE_URL: postgres://kitchen_ops:kitchen_ops@localhost:5432/kitchen_ops
           BETTER_AUTH_URL: http://localhost:3000
 
+      # Starts the API the way Render does (`start`: Node with tsx, NODE_ENV=production) and waits for
+      # /health to answer with this commit.
+      - name: API starts in production mode
+        run: |
+          BETTER_AUTH_SECRET="$(openssl rand -base64 32)" pnpm --filter @kitchen-ops/api start &
+          for attempt in $(seq 1 30); do
+            if curl -fs http://127.0.0.1:3000/health | grep -q "$GITHUB_SHA"; then
+              echo "The API started and reports version $GITHUB_SHA."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::The API did not answer /health with this commit within 30 seconds."
+          exit 1
+        env:
+          NODE_ENV: production
+          APP_VERSION: ${{ github.sha }}
+          DATABASE_URL: postgres://kitchen_ops:kitchen_ops@localhost:5432/kitchen_ops
+          BETTER_AUTH_URL: http://localhost:5173
+
       - name: Build
         run: pnpm build
