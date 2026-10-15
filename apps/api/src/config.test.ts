@@ -4,12 +4,15 @@ import {
   loadConfig,
   loadDatabaseUrl,
   loadSeedConfig,
+  loadSentryConfig,
 } from "./config";
 
 const DATABASE_URL = "postgres://user:pass@localhost:5432/db";
 // Built at runtime so it never looks like a real secret: 32 "x" characters.
 const BETTER_AUTH_SECRET = "x".repeat(32);
 const BETTER_AUTH_URL = "http://127.0.0.1:3000";
+// Synthetic: the shape of a Sentry DSN on a reserved .test domain.
+const SENTRY_DSN = "https://examplekey@sentry.example.test/1";
 const required = {
   APP_VERSION: "abc123",
   DATABASE_URL,
@@ -104,6 +107,28 @@ describe("loadConfig", () => {
     expect(message).toMatch(/\.env\.example/);
   });
 
+  it("leaves Sentry off unless SENTRY_DSN is set; empty counts as unset", () => {
+    expect(loadConfig(required).SENTRY_DSN).toBeUndefined();
+    expect(
+      loadConfig({ ...required, SENTRY_DSN: "" }).SENTRY_DSN,
+    ).toBeUndefined();
+    expect(
+      loadConfig({ ...required, SENTRY_ENVIRONMENT: "" }).SENTRY_ENVIRONMENT,
+    ).toBeUndefined();
+    expect(loadConfig({ ...required, SENTRY_DSN }).SENTRY_DSN).toBe(SENTRY_DSN);
+  });
+
+  it("rejects a SENTRY_DSN that is not an https URL, without printing it", () => {
+    for (const dsn of ["examplekey@sentry.example.test/1", "http://k@h/1"]) {
+      expect(() => loadConfig({ ...required, SENTRY_DSN: dsn })).toThrow(
+        /SENTRY_DSN: must be an https URL/,
+      );
+      expect(() => loadConfig({ ...required, SENTRY_DSN: dsn })).not.toThrow(
+        /examplekey/,
+      );
+    }
+  });
+
   it("never prints the value of DATABASE_URL, which contains a password", () => {
     expect(() =>
       loadConfig({ ...required, DATABASE_URL: "mysql://u:hunter2@h/db" }),
@@ -132,5 +157,22 @@ describe("loadSeedConfig", () => {
     expect(() => loadSeedConfig({ DATABASE_URL })).toThrow(
       /BETTER_AUTH_SECRET: is required/,
     );
+  });
+});
+
+describe("loadSentryConfig", () => {
+  it("needs only what Sentry uses, so it can start before the rest is checked", () => {
+    expect(
+      loadSentryConfig({
+        APP_VERSION: "abc123",
+        SENTRY_DSN,
+        SENTRY_ENVIRONMENT: "staging",
+      }),
+    ).toEqual({
+      NODE_ENV: "development",
+      APP_VERSION: "abc123",
+      SENTRY_DSN,
+      SENTRY_ENVIRONMENT: "staging",
+    });
   });
 });

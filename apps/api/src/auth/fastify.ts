@@ -1,6 +1,7 @@
 import type { Role } from "@kitchen-ops/shared";
 import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyInstance } from "fastify";
+import { tagUser } from "../sentry";
 import { AUTH_BASE_PATH, type Auth } from "./auth";
 
 export interface CurrentUser {
@@ -51,6 +52,7 @@ export function registerAuth(app: FastifyInstance, auth: Auth) {
       return reply.code(403).send({ error: "forbidden" });
     }
     request.user = { id, email, name, role };
+    tagUser(id);
   });
 
   // Official Fastify integration: turn the request into a Fetch Request for Better Auth.
