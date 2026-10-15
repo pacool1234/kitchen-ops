@@ -34,12 +34,12 @@ projects:
               - type: rewrite
                 source: /*
                 destination: /index.html
-            # Never cache the page or the service worker, so a new deploy reaches phones.
+            # Browsers and Render's CDN must check for a newer version before reusing anything,
+            # so a deploy reaches phones at once. Without this rule, pages such as / and /products
+            # are kept by the CDN for 5 minutes. Unchanged files are still answered with a short
+            # 304, and the service worker keeps the app's files on the phone anyway.
             headers:
-              - path: /index.html
-                name: Cache-Control
-                value: no-cache
-              - path: /sw.js
+              - path: /*
                 name: Cache-Control
                 value: no-cache
 
@@ -99,10 +99,7 @@ projects:
                 source: /*
                 destination: /index.html
             headers:
-              - path: /index.html
-                name: Cache-Control
-                value: no-cache
-              - path: /sw.js
+              - path: /*
                 name: Cache-Control
                 value: no-cache
 
