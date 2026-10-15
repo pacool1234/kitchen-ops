@@ -18,6 +18,7 @@ Node 24 (see `.node-version`) and pnpm 10 (`corepack enable` picks the pinned ve
 
 ```sh
 pnpm install
+docker compose up -d   # API tests need Postgres (see Database)
 pnpm lint && pnpm typecheck && pnpm test
 pnpm --filter @kitchen-ops/web dev
 ```
@@ -30,10 +31,28 @@ Local Postgres 18 runs in Docker ([Docker Desktop](https://www.docker.com/produc
 
 ```sh
 docker compose up -d                  # start Postgres on 127.0.0.1:5432 (data kept in a Docker volume)
-cp apps/api/.env.example apps/api/.env  # first time only; DATABASE_URL points at the container
+cp apps/api/.env.example apps/api/.env  # first time only, then set BETTER_AUTH_SECRET (below)
 pnpm --filter @kitchen-ops/api db:migrate
-pnpm --filter @kitchen-ops/api db:seed  # synthetic products; skipped if products already exist
+pnpm --filter @kitchen-ops/api db:seed  # synthetic products and users; each skipped if any exist
 ```
+
+`BETTER_AUTH_SECRET` signs session cookies and encrypts 2FA secrets. Generate your own for `apps/api/.env`:
+
+```sh
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+The seed creates one **local-only** login per role. The passwords are deliberately fake; never use them anywhere real.
+
+| Email                  | Password             | Role    |
+| ---------------------- | -------------------- | ------- |
+| `counter@example.test` | `local-only-counter` | counter |
+| `office@example.test`  | `local-only-office`  | office  |
+| `owner@example.test`   | `local-only-owner`   | owner   |
+
+Owners must use 2FA: until the owner sets up an authenticator app (`POST /api/auth/two-factor/enable`, then `/two-factor/verify-totp`), every protected route answers `403 two_factor_required`.
+
+API tests use a separate `kitchen_ops_test` database on the same server, created and migrated automatically, so they never touch your development data.
 
 Changing the schema (`apps/api/src/db/schema.ts`):
 

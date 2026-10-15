@@ -7,7 +7,10 @@ export const healthRoutes: FastifyPluginAsyncZod<{ version: string }> = async (
 ) => {
   app.get(
     "/health",
-    { schema: { response: { 200: HealthResponse } } },
+    {
+      config: { public: true }, // uptime monitors call this without signing in
+      schema: { response: { 200: HealthResponse } },
+    },
     async () => ({ status: "ok" as const, version }),
   );
 };

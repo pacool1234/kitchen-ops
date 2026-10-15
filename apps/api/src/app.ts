@@ -5,8 +5,12 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
+import { createAuth } from "./auth/auth";
+import { registerAuth } from "./auth/fastify";
 import type { Config } from "./config";
+import { createDb } from "./db/client";
 import { healthRoutes } from "./routes/health";
+import { meRoutes } from "./routes/me";
 
 export interface BuildAppOptions {
   /** Where pino writes log lines. Defaults to stdout; tests pass a stream to read them. */
@@ -35,7 +39,13 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
     reply.header("x-request-id", request.id);
   });
 
+  // The pool connects lazily, on the first query; closed with the app.
+  const { db, close } = createDb(config.DATABASE_URL);
+  app.addHook("onClose", close);
+
+  registerAuth(app, createAuth(db, config));
   app.register(healthRoutes, { version: config.APP_VERSION });
+  app.register(meRoutes);
 
   return app;
 }

@@ -23,6 +23,17 @@ const ConfigSchema = z.object({
     .string({ error: "is required" })
     .min(1, { error: "must not be empty" }),
   DATABASE_URL: DatabaseUrl,
+  // Signs session cookies and encrypts TOTP secrets. Generate with:
+  //   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+  BETTER_AUTH_SECRET: z
+    .string({ error: "is required" })
+    .min(32, { error: "must be at least 32 characters" }),
+  // The API's public base URL, e.g. http://127.0.0.1:3000 locally.
+  BETTER_AUTH_URL: z.url({
+    protocol: /^https?$/,
+    error: (issue) =>
+      issue.input === undefined ? "is required" : "must be an http(s) URL",
+  }),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -56,9 +67,21 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   return parseEnv(ConfigSchema, env);
 }
 
-/** For the db scripts (migrate, seed), which need only the database. */
+/** For the migrate script, which needs only the database. */
 export function loadDatabaseUrl(
   env: Record<string, string | undefined>,
 ): string {
-  return parseEnv(z.object({ DATABASE_URL: DatabaseUrl }), env).DATABASE_URL;
+  return parseEnv(ConfigSchema.pick({ DATABASE_URL: true }), env).DATABASE_URL;
+}
+
+/** For the seed, which needs the database and auth (to create users) but not the server settings. */
+export function loadSeedConfig(env: Record<string, string | undefined>) {
+  return parseEnv(
+    ConfigSchema.pick({
+      DATABASE_URL: true,
+      BETTER_AUTH_SECRET: true,
+      BETTER_AUTH_URL: true,
+    }),
+    env,
+  );
 }
