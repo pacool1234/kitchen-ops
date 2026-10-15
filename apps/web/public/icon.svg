@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Plain placeholder icon (a stocked shelf) until there is a real design. -->
+  <rect width="512" height="512" rx="96" fill="#1f5135"/>
+  <rect x="96" y="150" width="320" height="24" rx="8" fill="#f4f1e8"/>
+  <rect x="96" y="290" width="320" height="24" rx="8" fill="#f4f1e8"/>
+  <rect x="96" y="380" width="320" height="24" rx="8" fill="#f4f1e8"/>
+  <rect x="122" y="196" width="64" height="94" rx="10" fill="#e9b949"/>
+  <rect x="204" y="226" width="56" height="64" rx="10" fill="#f4f1e8"/>
+  <rect x="278" y="206" width="48" height="84" rx="10" fill="#e9b949"/>
+  <rect x="344" y="236" width="46" height="54" rx="10" fill="#f4f1e8"/>
+  <rect x="140" y="318" width="96" height="62" rx="10" fill="#f4f1e8"/>
+  <rect x="256" y="330" width="70" height="50" rx="10" fill="#e9b949"/>
+</svg>

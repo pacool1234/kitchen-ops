@@ -4,13 +4,13 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../app";
 import { createDb } from "../db/client";
 import { users } from "../db/schema";
+import { cookieHeader, TEST_PASSWORD as PASSWORD } from "../test/auth";
 import { testConfig, totpCode } from "../test/helpers";
 import { createAuth } from "./auth";
 import { createUser } from "./users";
 
 const config = testConfig();
 const ORIGIN = config.BETTER_AUTH_URL;
-const PASSWORD = "test-only-password";
 const UUID_V7 =
   /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -39,14 +39,6 @@ async function userWithRole(role: Role) {
     role,
     password: PASSWORD,
   });
-}
-
-function cookieHeader(response: {
-  cookies: { name: string; value: string }[];
-}) {
-  return response.cookies
-    .map((cookie) => `${cookie.name}=${cookie.value}`)
-    .join("; ");
 }
 
 async function signIn(email: string, password = PASSWORD) {

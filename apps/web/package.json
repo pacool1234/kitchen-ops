@@ -8,17 +8,26 @@
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
-    "typecheck": "vue-tsc -b"
+    "typecheck": "vue-tsc -b",
+    "generate-pwa-assets": "pwa-assets-generator"
   },
   "dependencies": {
-    "vue": "^3.5.42"
+    "@kitchen-ops/shared": "workspace:*",
+    "better-auth": "catalog:",
+    "qrcode": "^1.5.4",
+    "vue": "^3.5.42",
+    "vue-router": "^5.4.0",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
+    "@types/qrcode": "^1.5.6",
+    "@vite-pwa/assets-generator": "^2.0.0",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/tsconfig": "^0.9.1",
     "typescript": "catalog:",
     "vite": "^8.3.0",
+    "vite-plugin-pwa": "^2.0.0",
     "vue-tsc": "^3.3.11"
   }
 }
