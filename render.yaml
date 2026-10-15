@@ -25,6 +25,13 @@ projects:
             autoDeployTrigger: checksPass
             buildCommand: corepack enable pnpm && pnpm install --frozen-lockfile --filter "@kitchen-ops/web..." && pnpm --filter @kitchen-ops/web build
             staticPublishPath: apps/web/dist
+            # Read at build time and built into the app. Sentry (web project); the DSN is entered
+            # in Render's dashboard.
+            envVars:
+              - key: VITE_SENTRY_DSN
+                sync: false
+              - key: VITE_SENTRY_ENVIRONMENT
+                value: staging
             # The browser only talks to this site; /api/* is forwarded to the API, as Vite does
             # locally. Rules apply only where no file exists, so the built files are served as is.
             routes:
@@ -53,7 +60,7 @@ projects:
             buildCommand: corepack enable pnpm && pnpm install --frozen-lockfile --prod --filter "@kitchen-ops/api..."
             # Free plan: no pre-deploy command, so migrate first. `exec` hands the shell's process
             # to Node, so Render's SIGTERM reaches the graceful shutdown in server.ts.
-            startCommand: pnpm --filter @kitchen-ops/api db:migrate && cd apps/api && APP_VERSION="$RENDER_GIT_COMMIT" exec node --import tsx src/server.ts
+            startCommand: pnpm --filter @kitchen-ops/api db:migrate && cd apps/api && APP_VERSION="$RENDER_GIT_COMMIT" exec node --import tsx --import ./src/instrument.ts src/server.ts
             healthCheckPath: /health
             envVars:
               - key: NODE_ENV
@@ -70,6 +77,11 @@ projects:
                 fromDatabase:
                   name: kitchen-ops-db-staging
                   property: connectionString
+              # Sentry (API project). The DSN is entered in Render's dashboard.
+              - key: SENTRY_DSN
+                sync: false
+              - key: SENTRY_ENVIRONMENT
+                value: staging
 
         databases:
           - name: kitchen-ops-db-staging
@@ -91,6 +103,13 @@ projects:
             autoDeployTrigger: "off"
             buildCommand: corepack enable pnpm && pnpm install --frozen-lockfile --filter "@kitchen-ops/web..." && pnpm --filter @kitchen-ops/web build
             staticPublishPath: apps/web/dist
+            # Read at build time and built into the app. Sentry (web project); the DSN is entered
+            # in Render's dashboard.
+            envVars:
+              - key: VITE_SENTRY_DSN
+                sync: false
+              - key: VITE_SENTRY_ENVIRONMENT
+                value: production
             routes:
               - type: rewrite
                 source: /api/*
@@ -113,7 +132,7 @@ projects:
             # Runs once per deploy, before the new version starts. If it fails, the deploy stops
             # and the previous version keeps running.
             preDeployCommand: pnpm --filter @kitchen-ops/api db:migrate
-            startCommand: cd apps/api && APP_VERSION="$RENDER_GIT_COMMIT" exec node --import tsx src/server.ts
+            startCommand: cd apps/api && APP_VERSION="$RENDER_GIT_COMMIT" exec node --import tsx --import ./src/instrument.ts src/server.ts
             healthCheckPath: /health
             envVars:
               - key: NODE_ENV
@@ -130,6 +149,11 @@ projects:
                 fromDatabase:
                   name: kitchen-ops-db
                   property: connectionString
+              # Sentry (API project). The DSN is entered in Render's dashboard.
+              - key: SENTRY_DSN
+                sync: false
+              - key: SENTRY_ENVIRONMENT
+                value: production
 
         databases:
           - name: kitchen-ops-db
