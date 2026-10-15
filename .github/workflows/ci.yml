@@ -117,3 +117,8 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      # Builds the backup image (ops/backup) and runs a full backup and restore against its own
+      # throwaway database and a local stand-in for Scaleway (ops/backup/compose.test.yaml).
+      - name: Backup and restore round trip
+        run: bash ops/backup/test.sh
