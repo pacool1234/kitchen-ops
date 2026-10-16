@@ -94,3 +94,4 @@ The spec asks for a restore into a scratch database every quarter. Add a row eac
 
 | Date | Dump | Procedure | Result | By |
 | --- | --- | --- | --- | --- |
+| 2026-10-16 | `kitchen-ops-db/2026-10-16T111935Z.dump.age`, the first backup (run by hand) | B: downloaded from Scaleway, restored into `restore_drill` on local Docker | **Success.** Decrypted with the backup key and restored without errors: 7 tables, `drizzle.__drizzle_migrations` 2 rows (both migrations), all others 0 rows, as on production (no users or products yet). Dump from Postgres 18.6 on Render. | repo owner |
