@@ -720,34 +720,35 @@ const documentArb = fc
     }
   });
 
-/** Stock already posted: receipts of any product into any storeroom, 0 to 50 kg. */
+const everyLocation = PRODUCTS.flatMap((p) =>
+  STOREROOMS.map((s) => [p, s] as const),
+);
+
+/**
+ * Stock already posted: one receipt of each product in each storeroom, 0 to 300 kg (or litres,
+ * or eggs), at any cost. Most generated waste and transfers fit; some don't.
+ */
 const stockArb = fc
   .array(
     fc.record({
-      productId: fc.constantFrom(...PRODUCTS),
-      storeroomId: fc.constantFrom(...STOREROOMS),
-      quantity: fc.integer({ min: 0, max: 50_000 }),
+      quantity: fc.integer({ min: 0, max: 300_000 }),
       cost: fc.bigInt({ min: 0n, max: 10n ** 7n }),
     }),
-    { maxLength: 10 },
+    { minLength: everyLocation.length, maxLength: everyLocation.length },
   )
   .map((rs) =>
     deepFrozen(
-      rs.map((r, i): Movement => ({
+      everyLocation.map(([productId, storeroomId], i): Movement => ({
         id: `s${i}`,
-        productId: r.productId,
-        storeroomId: r.storeroomId,
-        quantity: r.quantity,
-        unitCost: unitCostFromMillionths(r.cost),
+        productId,
+        storeroomId,
+        quantity: rs[i]?.quantity ?? 0,
+        unitCost: unitCostFromMillionths(rs[i]?.cost ?? 0n),
         documentLineId: `earlier/s${i}`,
         kind: "receipt",
       })),
     ),
   );
-
-const everyLocation = PRODUCTS.flatMap((p) =>
-  STOREROOMS.map((s) => [p, s] as const),
-);
 
 function context(movements: readonly Movement[]) {
   return { movements, conversions, newId: counter("m") };
