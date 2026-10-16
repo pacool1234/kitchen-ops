@@ -22,8 +22,8 @@ They are *branded* types: TypeScript treats them as different types, so a unit c
 | Point | Rounded to | Issue |
 | --- | --- | --- |
 | Line total: quantity × unit price − discount | cents | #29 |
-| Received unit cost: line total ÷ quantity in base units | 6 decimals | #33 |
-| Weighted-average cost, at each recalculation | 6 decimals | #33 |
+| Received unit cost: line total ÷ quantity in base units (`receivedUnitCost`) | 6 decimals | #33 |
+| Weighted-average cost, at each recalculation (`averageCost`) | 6 decimals | #33 |
 | Gross quantity from a yield: net ÷ yield | whole base units | #34 |
 | Variance value: unexplained variance × average cost | cents | #34 |
 
