@@ -126,14 +126,42 @@ describe("validate: each check, failing", () => {
     ).toContain("vat totals.vat.0.base");
   });
 
-  it("vat: an amount that matches neither convention (12.21 for 10% of 122.03)", () => {
+  it("vat: 10% of 122.03 is 12.20 on the base, or 7.32 + 3.20 + 1.69 = 12.21 line by line; 12.22 is neither", () => {
+    const withAmount = (amount: string) => {
+      const vat = [
+        { ...invoice.totals!.vat[0]!, amount },
+        invoice.totals!.vat[1]!,
+      ];
+      // Keep the total consistent, so only the VAT check can fail.
+      const total = formatMoney(
+        moneyFromCents(
+          parseMoney("157.37") + parseMoney(amount) + parseMoney("7.42"),
+        ),
+      );
+      return failures({
+        ...invoice,
+        totals: { ...invoice.totals!, vat, total },
+      });
+    };
+    expect(withAmount("12.20")).toEqual([]);
+    expect(withAmount("12.21")).toEqual([]);
+    expect(withAmount("12.22")).toEqual(["vat totals.vat.0.amount"]);
+  });
+
+  it("vat: the message shows both ways of working it out", () => {
     const vat = [
-      { ...invoice.totals!.vat[0]!, amount: "12.21" },
+      { ...invoice.totals!.vat[0]!, amount: "12.22" },
       invoice.totals!.vat[1]!,
     ];
     expect(
-      failures({ ...invoice, totals: { ...invoice.totals!, vat } }),
-    ).toContain("vat totals.vat.0.amount");
+      validate({ ...invoice, totals: { ...invoice.totals!, vat } }, context)
+        .failures,
+    ).toContainEqual({
+      check: "vat",
+      path: "totals.vat.0.amount",
+      message:
+        "10% of 122.03 is 12.20 (12.21 line by line), but the amount says 12.22",
+    });
   });
 
   it("vat: both Spanish conventions are accepted. Two lines of 0.05 at 10%: 0.01 on the base, or 0.01 + 0.01 = 0.02 line by line; 0.03 is neither", () => {

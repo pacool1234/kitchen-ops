@@ -43,7 +43,7 @@ describe("checkSpanishTaxId: NIF, NIE and CIF control characters", () => {
     }
   });
 
-  it("a CIF's control must be a digit for A, B, E, H, and a letter for P, Q, S, K, N, W; either for the others", () => {
+  it("a CIF's control must be a digit for A, B, E, H, and a letter for P, Q, S, N, W; either for the others", () => {
     expect(checkSpanishTaxId("B0012345E")).toMatchObject({ valid: false });
     expect(checkSpanishTaxId("P00123455")).toMatchObject({ valid: false });
     expect(checkSpanishTaxId("G00123455")).toEqual({
