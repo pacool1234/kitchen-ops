@@ -106,7 +106,7 @@ git tag -a v0.1.0 <commit> -m "v0.1.0"
 git push origin v0.1.0
 ```
 
-The "Deploy production" workflow checks that the commit is on `main` and that staging runs it. It then deploys the API, the web app and the backup job to production and waits until production's `/health` reports that commit.
+The "Deploy production" workflow checks that the commit is on `main` and that staging runs it. It then deploys the API and the web app to production and waits until production's `/health` reports that commit.
 
 ### One-time setup (repo owner, by hand)
 

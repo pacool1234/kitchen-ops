@@ -67,7 +67,7 @@ To bring a dump back into production instead, create a new Render database, allo
 - **Logs:** the job's page in Render. A run ends with `Uploaded s3://kitchen-ops-db-backups/kitchen-ops-db/… (N tables, N bytes, sha256 …)`.
 - **Alerts:** each run checks in with Sentry Crons (monitor `kitchen-ops-db-backup`, API project). Sentry emails when a run fails, or when no run has started by Monday 04:00 UTC.
 - **Run it now:** the job's page → **Trigger Run**.
-- **Updates:** the release workflow deploys the job from the release tag, like the API (`RENDER_DEPLOY_HOOK_BACKUP`).
+- **Updates:** by hand. Render gives cron jobs no deploy hook, so the release workflow can't update the job. When a release changes `ops/backup`, open the job → **Manual Deploy** → **Deploy a specific commit** → the release's commit. A Blueprint **Manual Sync** also deploys it, from the latest commit on `main`.
 - **Tested** on every pull request: `bash ops/backup/test.sh` backs up a throwaway database to a local stand-in for Scaleway, then restores it and compares.
 
 ## Retention and access
@@ -78,16 +78,15 @@ To bring a dump back into production instead, create a new Render database, allo
   - non-current versions are deleted **30 days** later. A dump that expired, or was overwritten, can still be recovered from the bucket's versions during that time.
 - **The job's key** (Scaleway IAM application `kitchen-ops-backup-job`) has one permission set, `ObjectStorageObjectsWrite`, in the `kitchen-ops-backups` project only. It can upload, but not list, download or delete. If Render were compromised, the stored dumps could not be read or deleted with it, and an overwrite would leave the previous version for 30 days.
 - **Downloads** for restores go through the Scaleway console, with the repo owner's own login.
-- **Changing the backup key:** generate a new pair, put the new public half in `render.yaml` (a pull request, then a release). Keep the old private half until the last dump made with it has expired (12 weeks plus 30 days).
+- **Changing the backup key:** generate a new pair, put the new public half in `render.yaml` (a pull request, then a Blueprint **Manual Sync**, right after a release). Keep the old private half until the last dump made with it has expired (12 weeks plus 30 days).
 
 ## One-time setup (repo owner, by hand)
 
 1. **Scaleway:** an account with a billing alert; a project `kitchen-ops-backups`; in it the bucket `kitchen-ops-db-backups` (Paris, private) with versioning and the lifecycle rule above.
 2. **IAM** (organization menu, top right → **IAM & API keys**): application `kitchen-ops-backup-job` with a policy giving `ObjectStorageObjectsWrite` on the `kitchen-ops-backups` project; an API key for it, preferred project `kitchen-ops-backups`. Store both halves in the password manager.
 3. **Backup key:** in your own terminal (never through a tool that records the output), run `docker run --rm alpine:3.22 sh -c "apk add --no-cache -q age && age-keygen"`. Store all three lines in the password manager and keep a printed copy offline; the `age1…` public half goes in `render.yaml`.
-4. **Render:** after the release that adds the job, click **Manual Sync** on the Blueprint and enter `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (the Scaleway key) and `SENTRY_DSN` (the API project's) for `kitchen-ops-db-backup`.
-5. **GitHub:** the job's deploy hook URL (its **Settings** in Render) as the secret `RENDER_DEPLOY_HOOK_BACKUP` of the `production` environment.
-6. **First run:** **Trigger Run**; in Sentry → **Crons**, check the monitor `kitchen-ops-db-backup` appeared and that its alerts reach you. Then run the drill (B) and record it below.
+4. **Render:** after the release that adds the job, click **Manual Sync** on the Blueprint and enter `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (the Scaleway key) and `SENTRY_DSN` (the API project's) for `kitchen-ops-db-backup`. If the sync doesn't ask for them, set them on the job's **Environment** page.
+5. **First run:** **Trigger Run**; in Sentry → **Crons**, check the monitor `kitchen-ops-db-backup` appeared and that its alerts reach you. Then run the drill (B) and record it below.
 
 ## Drills
 
