@@ -21,9 +21,9 @@ export type UnitCost = bigint & { readonly [brand]: "UnitCost" };
 
 const MONEY_DECIMALS = 2;
 const UNIT_COST_DECIMALS = 6;
-/** Discounts are percentages with up to 2 decimals ("12.5" is 12.5%). */
-const DISCOUNT_DECIMALS = 2;
-const HUNDRED_PERCENT = 100n * 10n ** BigInt(DISCOUNT_DECIMALS);
+/** Discounts and VAT rates are percentages with up to 2 decimals ("12.5" is 12.5%). */
+const PERCENT_DECIMALS = 2;
+const HUNDRED_PERCENT = 100n * 10n ** BigInt(PERCENT_DECIMALS);
 
 export function moneyFromCents(cents: bigint): Money {
   return cents as Money;
@@ -88,7 +88,7 @@ export function lineTotal({
   discountPercent = "0",
 }: LineTotalInput): Money {
   const units = parsePurchaseQuantity(quantity);
-  const discount = parseFixed(discountPercent, DISCOUNT_DECIMALS, "a discount");
+  const discount = parseFixed(discountPercent, PERCENT_DECIMALS, "a discount");
   if (discount < 0n || discount > HUNDRED_PERCENT) {
     throw new RangeError(
       `a discount must be between 0% and 100%, got ${JSON.stringify(discountPercent)}%`,
@@ -101,8 +101,23 @@ export function lineTotal({
   const scale =
     PURCHASE_QUANTITY_DECIMALS +
     UNIT_COST_DECIMALS +
-    DISCOUNT_DECIMALS +
+    PERCENT_DECIMALS +
     2 - // the discount is a percentage: ÷ 100
     MONEY_DECIMALS;
   return moneyFromCents(roundDiv(exact, 10n ** BigInt(scale)));
+}
+
+/**
+ * `percent`% of an amount, rounded once to cents, half away from zero (a rounding point in
+ * decision 0015). For VAT: €63.14 at 21% is €13.2594, so €13.26. The percentage has up to 2
+ * decimals and is between 0 and 100.
+ */
+export function percentageOf(amount: Money, percent: string): Money {
+  const share = parseFixed(percent, PERCENT_DECIMALS, "a percentage");
+  if (share < 0n || share > HUNDRED_PERCENT) {
+    throw new RangeError(
+      `a percentage must be between 0% and 100%, got ${JSON.stringify(percent)}%`,
+    );
+  }
+  return moneyFromCents(roundDiv(amount * share, HUNDRED_PERCENT));
 }
