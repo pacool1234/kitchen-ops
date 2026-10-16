@@ -84,11 +84,13 @@ describe("prepareImage: an image as a data URL a vision model accepts", () => {
     expect(scaled.width).toBe(1500);
   });
 
+  // Up to 2400 pixels: past the limit, while keeping each run (a noise PNG is slow to encode)
+  // well inside the timeout.
   it("no image over the limits is ever sent, and one within them is never changed", async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.integer({ min: 1, max: 3000 }),
-        fc.integer({ min: 1, max: 3000 }),
+        fc.integer({ min: 1, max: 2400 }),
+        fc.integer({ min: 1, max: 2400 }),
         fc.constantFrom<Format>("jpeg", "png"),
         fc.boolean(),
         fc.integer(),
@@ -108,22 +110,33 @@ describe("prepareImage: an image as a data URL a vision model accepts", () => {
           if (withinLimits) expect(sent.bytes).toEqual(original);
         },
       ),
-      { numRuns: 15 },
+      { numRuns: 10 },
     );
-  });
+  }, 60_000);
 
-  it("a PNG within 2000 pixels but over 3.75 MB is sent as a smaller JPEG, or refused if it can't be", async () => {
+  it("a PNG within 2000 pixels but over 3.75 MB is sent as a smaller JPEG of the same size", async () => {
     const original = await image(2000, 1500, "png", { noise: true });
     expect(original.length).toBeGreaterThan(MAX_IMAGE_BYTES);
     const prepared = await prepareImage(original, "png");
-    if (prepared.ok) {
-      expect(prepared.resized).toBe(true);
-      expect(decode(prepared.dataUrl).bytes.length).toBeLessThanOrEqual(
-        MAX_IMAGE_BYTES,
-      );
-    } else {
-      expect(prepared.reason).toMatch(/too large/);
-    }
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.resized).toBe(true);
+    const sent = decode(prepared.dataUrl);
+    expect(sent.type).toBe("image/jpeg");
+    expect(sent.bytes.length).toBeLessThanOrEqual(MAX_IMAGE_BYTES);
+    const { width, height } = await loadImage(Buffer.from(sent.bytes));
+    expect([width, height]).toEqual([2000, 1500]);
+  });
+
+  // At 2000 pixels even pure noise fits in 3.75 MB as a JPEG (about 2.9 MB), so this needs a
+  // smaller limit to show that the last check refuses rather than sends.
+  it("an image still over the byte limit once scaled down is refused, never sent", async () => {
+    const original = await image(800, 800, "jpeg", { noise: true });
+    expect(await prepareImage(original, "jpeg", { maxBytes: 10_000 })).toEqual({
+      ok: false,
+      reason:
+        "the image is too large: over 10000 bytes even at 2000 pixels on its long side",
+    });
   });
 
   it("bytes that only look like an image are refused, saying so", async () => {
