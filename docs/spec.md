@@ -100,8 +100,8 @@ The entities below are a starting hypothesis. The structure of `Movement` is the
 **Numeric representation (Decided)**
 
 - Quantities are integers in the smallest base unit: grams, millilitres, or thousandths of a unit for counted items
-- Money totals are integer cents; unit costs are decimals with 6 places (`numeric(18,6)` in Postgres, a decimal library in TypeScript). JavaScript `number` is never used for money
-- Rounding happens only at defined points (line totals, document totals), with the rule covered by tests
+- Money totals are integer cents; unit costs are decimals with 6 places (`numeric(18,6)` in Postgres, `bigint` millionths in TypeScript; decision 0015). JavaScript `number` is never used for money
+- Rounding happens only at defined points (line totals, received and average unit costs, yields, variance values; listed in decision 0015), half away from zero, with the rule covered by tests
 - Costs exclude VAT (recoverable for the business)
 
 **Invariants (Decided)**
