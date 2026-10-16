@@ -156,8 +156,8 @@ projects:
                 value: production
 
           # Weekly encrypted dump of the production database to a Scaleway bucket: the copy outside
-          # Render (ops/backup, docs/runbooks/restore.md). Updated by the release workflow, like
-          # the services above.
+          # Render (ops/backup, docs/runbooks/restore.md). Render gives cron jobs no deploy hook, so
+          # the release workflow can't update it: deploy it by hand when ops/backup changes.
           - name: kitchen-ops-db-backup
             type: cron
             runtime: docker
