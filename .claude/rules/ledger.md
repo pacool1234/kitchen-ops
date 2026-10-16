@@ -10,13 +10,13 @@ Spec: `docs/spec.md` section 4. These rules restate it for this package.
 ## Purity
 
 - No I/O of any kind: no database, filesystem, network, `Date.now()` or randomness. Time and IDs are passed in as arguments.
-- Zero runtime dependencies except a decimal library. Ask before adding any other.
+- Zero runtime dependencies. Ask before adding any.
 
 ## Numbers
 
 - Quantities: integers in the product's base unit (g, ml, or thousandths of a unit). Use `bigint` or validated safe integers; never fractional numbers.
-- Money totals: integer cents. Unit costs: decimal with 6 places via the decimal library.
-- Rounding only at the documented points (line totals, document totals), using one shared rounding function with its own tests.
+- Money totals: `Money`, `bigint` cents. Unit costs: `UnitCost`, `bigint` millionths (6 places). See decision 0015.
+- Rounding only at the points listed in decision 0015, using the shared rounding function (`roundDiv`, half away from zero) with its own tests.
 
 ## Invariants to keep true and tested
 
