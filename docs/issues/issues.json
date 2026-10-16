@@ -88,5 +88,50 @@
     "milestone": "M2",
     "file": "18-invariant-coverage.md",
     "title": "Every ledger invariant covered by property tests"
+  },
+  {
+    "milestone": "M3",
+    "file": "19-extraction-schema.md",
+    "title": "Extraction result schema"
+  },
+  {
+    "milestone": "M3",
+    "file": "20-gold-set-format.md",
+    "title": "Gold set: format, checks and the first synthetic documents"
+  },
+  {
+    "milestone": "M3",
+    "file": "21-validation-checks.md",
+    "title": "Validation checks before trusting a result"
+  },
+  {
+    "milestone": "M3",
+    "file": "22-llm-extraction.md",
+    "title": "LLM extraction through OpenRouter"
+  },
+  {
+    "milestone": "M3",
+    "file": "23-routing-inputs.md",
+    "title": "Routing: text PDFs, images and Facturae XML"
+  },
+  {
+    "milestone": "M3",
+    "file": "24-eval-metrics.md",
+    "title": "Eval metrics: comparing results with gold answers"
+  },
+  {
+    "milestone": "M3",
+    "file": "25-eval-command.md",
+    "title": "Eval command: one run, a results file and a summary"
+  },
+  {
+    "milestone": "M3",
+    "file": "26-gold-set-complete.md",
+    "title": "Gold set of 20–30 documents"
+  },
+  {
+    "milestone": "M3",
+    "file": "27-first-model-comparison.md",
+    "title": "First model comparison on the gold set"
   }
 ]
