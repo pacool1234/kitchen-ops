@@ -30,6 +30,11 @@ export interface Movement {
   readonly kind: MovementKind;
   /** The id of the movement this one reverses, if it is a reversal. */
   readonly reverses?: string;
+  /**
+   * A flagged adjustment: the only movement allowed to take stock below zero (invariant 6).
+   * Reports list them with `flaggedAdjustments`. Any kind can be flagged.
+   */
+  readonly adjustment?: true;
 }
 
 /** Stock per product, then per storeroom: `balances.get(productId)?.get(storeroomId)`. */
@@ -168,4 +173,33 @@ export function reverseMovement(
     kind: original.kind,
     reverses: original.id,
   };
+}
+
+/**
+ * Adds movements to the existing ones: the checked way to append (invariant 6). Applies the new
+ * movements in order and rejects them all if one that lowers stock leaves it below zero without
+ * being a flagged adjustment. Stock coming in is always accepted. Returns a new list; the one
+ * passed in is unchanged.
+ */
+export function appendMovements(
+  existing: readonly Movement[],
+  added: readonly Movement[],
+): readonly Movement[] {
+  let balances = balancesOf(existing);
+  for (const m of added) {
+    const before = balances.get(m.productId)?.get(m.storeroomId) ?? 0;
+    const stock = addQuantities(before, m.quantity);
+    if (m.quantity < 0 && stock < 0 && m.adjustment !== true) {
+      throw new Error(
+        `movement ${m.id} would take stock of product ${m.productId} in storeroom ${m.storeroomId} to ${stock}; only a flagged adjustment can take stock below zero`,
+      );
+    }
+    balances = applyMovement(balances, m);
+  }
+  return [...existing, ...added];
+}
+
+/** Every flagged adjustment, in list order, for reports (invariant 6). */
+export function flaggedAdjustments(movements: readonly Movement[]): Movement[] {
+  return movements.filter((m) => m.adjustment === true);
 }
