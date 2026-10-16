@@ -2,5 +2,8 @@
   "origin": "synthetic",
   "kind": "text-pdf",
   "notes": "A credit note (factura rectificativa) for two returned items: negative quantities, line totals, VAT and total. Its first line total rounds a half cent away from zero, to -36.58.",
-  "checked": null
+  "checked": {
+    "by": "pacool1234",
+    "on": "2026-10-16"
+  }
 }

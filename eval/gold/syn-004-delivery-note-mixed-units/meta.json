@@ -2,5 +2,8 @@
   "origin": "synthetic",
   "kind": "text-pdf",
   "notes": "A priced delivery note (albarán valorado) with totals. Weights printed with three decimals (2,350 kg is 2.35 kg, not 2350), boxes and units on the same document.",
-  "checked": null
+  "checked": {
+    "by": "pacool1234",
+    "on": "2026-10-16"
+  }
 }
