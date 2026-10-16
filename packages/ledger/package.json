@@ -12,6 +12,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
+    "@types/node": "^24.13.3",
     "@vitest/coverage-v8": "catalog:",
     "fast-check": "^4.10.2",
     "typescript": "catalog:",

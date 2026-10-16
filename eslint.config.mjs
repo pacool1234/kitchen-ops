@@ -84,17 +84,44 @@ export default defineConfigWithVueTs(
               from: { element: { type: ["web", "api", "extract", "shared"] } },
               allow: { to: { module: { origin: ["external", "core"] } } },
             },
-            // Ledger is pure: no runtime dependencies (a decimal library will be allowed here once chosen).
-            // Its tests and tool config files (e.g. vitest.config.ts) may use dev tooling.
+            // Ledger is pure: no runtime dependencies and no Node built-ins (decision 0015 chose
+            // bigint over a decimal library). Its tests and tool config files (e.g.
+            // vitest.config.ts) may use dev tooling and Node built-ins: the invariant coverage
+            // check reads the test files.
             {
               from: {
                 element: { type: "ledger" },
                 file: { categories: ["test", "config"] },
               },
-              allow: { to: { module: { origin: "external" } } },
+              allow: { to: { module: { origin: ["external", "core"] } } },
             },
           ],
         },
+      ],
+    },
+  },
+
+  {
+    // The ledger is pure (spec section 4): no Node globals in its library code. @types/node is
+    // installed for its tests, so the type checker no longer rejects these; this rule does.
+    files: ["packages/ledger/src/**/*.ts"],
+    ignores: ["packages/ledger/src/**/*.test.ts"],
+    rules: {
+      "no-restricted-globals": [
+        "error",
+        ...[
+          "process",
+          "Buffer",
+          "global",
+          "require",
+          "module",
+          "__dirname",
+          "__filename",
+          "setImmediate",
+        ].map((name) => ({
+          name,
+          message: "The ledger is pure: no Node globals in its library code.",
+        })),
       ],
     },
   },
