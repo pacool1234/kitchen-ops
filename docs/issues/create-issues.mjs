@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Creates milestones M0–M4 and the M0/M1 issues in the current GitHub repo.
+// Creates milestones M0–M4 and the issues listed in issues.json in the current GitHub repo.
 // Run once from the repo root after `gh auth login`:
 //   node docs/issues/create-issues.mjs            (dry run: prints what it would do)
 //   node docs/issues/create-issues.mjs --apply    (creates them)

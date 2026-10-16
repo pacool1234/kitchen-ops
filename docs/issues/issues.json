@@ -53,5 +53,40 @@
     "milestone": "M1",
     "file": "11-backups-restore.md",
     "title": "Off-site backups and a restore drill"
+  },
+  {
+    "milestone": "M2",
+    "file": "12-money-and-unit-costs.md",
+    "title": "Money and unit costs as bigint fixed-point"
+  },
+  {
+    "milestone": "M2",
+    "file": "13-unit-conversions.md",
+    "title": "Unit conversions"
+  },
+  {
+    "milestone": "M2",
+    "file": "14-movements-and-stock.md",
+    "title": "Movements and stock on hand"
+  },
+  {
+    "milestone": "M2",
+    "file": "15-posting-documents.md",
+    "title": "Posting documents"
+  },
+  {
+    "milestone": "M2",
+    "file": "16-weighted-average-cost.md",
+    "title": "Weighted-average cost and negative stock"
+  },
+  {
+    "milestone": "M2",
+    "file": "17-yields-and-variance.md",
+    "title": "Yields and variance"
+  },
+  {
+    "milestone": "M2",
+    "file": "18-invariant-coverage.md",
+    "title": "Every ledger invariant covered by property tests"
   }
 ]
