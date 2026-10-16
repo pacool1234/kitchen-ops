@@ -214,8 +214,15 @@ describe("decimal fields accept exactly the decimals they allow", () => {
     whole: fc.nat({ max: 1_000_000 }),
     digits: fc.string({ unit: fc.constantFrom(..."0123456789"), maxLength: 8 }),
   });
-  const text = ({ negative, whole, digits }: fc.RecordValue<typeof decimal>) =>
-    `${negative ? "-" : ""}${whole}${digits === "" ? "" : `.${digits}`}`;
+  const text = ({
+    negative,
+    whole,
+    digits,
+  }: {
+    negative: boolean;
+    whole: number;
+    digits: string;
+  }) => `${negative ? "-" : ""}${whole}${digits === "" ? "" : `.${digits}`}`;
 
   it("a decimal string parses exactly when it has no more decimals than its field allows: 2 for money, 6 for quantities", () => {
     fc.assert(
