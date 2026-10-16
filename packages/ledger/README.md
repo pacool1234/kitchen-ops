@@ -11,7 +11,7 @@ The stock ledger: pure TypeScript domain logic for movements, unit conversions, 
 | File | What it does |
 | --- | --- |
 | `quantity.ts` | `Quantity`: whole base units (g, ml or thousandths of a unit) as safe integers (decision 0010) |
-| `money.ts`, `fixed-point.ts` | `Money` (bigint cents) and `UnitCost` (bigint millionths), line totals, and `roundDiv`, the one rounding function (decision 0015) |
+| `money.ts`, `fixed-point.ts` | `Money` (bigint cents) and `UnitCost` (bigint millionths), line totals, `percentageOf` (VAT), and `roundDiv`, the one rounding function (decision 0015) |
 | `conversion.ts` | Purchase units to base units, per product: 1.5 boxes of 6000 g is 9000 g |
 | `movement.ts` | Movements, stock on hand, cached balances, reversals, and `appendMovements`, which allows negative stock only through a flagged adjustment |
 | `cost.ts` | Received unit cost, weighted-average cost by replaying movements, and the latest purchase price for recipe costing |

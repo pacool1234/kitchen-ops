@@ -65,8 +65,9 @@ export default defineConfigWithVueTs(
           checkAllOrigins: true,
           policies: [
             {
+              // Decision 0016: validation checks line totals with the ledger's own rule.
               from: { element: { type: "extract" } },
-              allow: { to: { element: { type: "shared" } } },
+              allow: { to: { element: { type: ["ledger", "shared"] } } },
             },
             {
               from: { element: { type: "api" } },

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { ExtractedDocument } from "@kitchen-ops/shared";
+import { ExtractedDocument } from "@kitchen-ops/shared";
 import {
   GOLD_DIRECTORY,
   goldEntryProblems,
@@ -10,6 +10,7 @@ import {
 } from "./gold-set";
 import { GoldMeta } from "./meta";
 import { renderGoldPdf } from "./render";
+import { validate } from "../validation/checks";
 
 // A minimal valid entry, to break one thing at a time.
 const expected: ExtractedDocument = {
@@ -139,6 +140,27 @@ describe("the gold set in eval/gold", () => {
       goldEntryProblems(readGoldEntry(GOLD_DIRECTORY, id)),
     );
     expect(problems).toEqual([]);
+  });
+
+  it("every gold answer passes every validation check: a gold answer that doesn't add up is a mistake in the answer", () => {
+    // The date and duplicate checks depend on when and where a document arrives; this context
+    // lets every gold date and number through, so only the document's own checks count.
+    const context = {
+      today: "2026-12-31",
+      maxAgeDays: 365,
+      knownNumbers: [],
+    };
+    const failures = ids.flatMap((id) => {
+      const parsed = ExtractedDocument.safeParse(
+        readGoldEntry(GOLD_DIRECTORY, id).expected,
+      );
+      if (!parsed.success) return []; // reported by the test above
+      // Check names and paths only: messages may show document contents.
+      return validate(parsed.data, context).failures.map(
+        (f) => `${id}: ${f.check} ${f.path}`,
+      );
+    });
+    expect(failures).toEqual([]);
   });
 
   it("every synthetic PDF is exactly what rendering its expected.json produces, so the document matches its answer", async () => {

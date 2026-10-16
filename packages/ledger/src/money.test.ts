@@ -9,6 +9,7 @@ import {
   moneyFromCents,
   parseMoney,
   parseUnitCost,
+  percentageOf,
   subtractMoney,
   sumMoney,
   unitCostFromMillionths,
@@ -187,6 +188,78 @@ describe("lineTotal: quantity × unit price − discount, rounded once to cents"
           expect(lineTotal({ ...line, discountPercent: "0" })).toBe(
             lineTotal(line),
           );
+        },
+      ),
+    );
+  });
+});
+
+describe("percentageOf: a percentage of an amount, rounded once to cents (VAT: base × rate)", () => {
+  const of = (amount: string, percent: string) =>
+    formatMoney(percentageOf(parseMoney(amount), percent));
+
+  it("€17.10 at 10% is €1.71, exactly", () => {
+    expect(of("17.10", "10")).toBe("1.71");
+  });
+
+  it("€63.14 at 21% is €13.2594, rounded to €13.26", () => {
+    expect(of("63.14", "21")).toBe("13.26");
+  });
+
+  it("€122.03 at 10% is €12.203, rounded down to €12.20", () => {
+    expect(of("122.03", "10")).toBe("12.20");
+  });
+
+  it("€0.50 at 1% is exactly half a cent, rounded away from zero: €0.01, and −€0.01 for −€0.50", () => {
+    expect(of("0.50", "1")).toBe("0.01");
+    expect(of("-0.50", "1")).toBe("-0.01");
+  });
+
+  it("a credit note's base, −€36.58 at 10%: −€3.658, rounded to −€3.66", () => {
+    expect(of("-36.58", "10")).toBe("-3.66");
+  });
+
+  it("a percentage with decimals: €10.00 at 5.5% is €0.55", () => {
+    expect(of("10.00", "5.5")).toBe("0.55");
+  });
+
+  it("0% is €0.00, 100% is the amount", () => {
+    expect(of("12.34", "0")).toBe("0.00");
+    expect(of("12.34", "100")).toBe("12.34");
+  });
+
+  it("rejects a percentage below 0 or above 100, or with more than 2 decimals", () => {
+    expect(() => of("10.00", "-1")).toThrow(RangeError);
+    expect(() => of("10.00", "100.01")).toThrow(RangeError);
+    expect(() => of("10.00", "21.005")).toThrow(RangeError);
+  });
+
+  it("a whole number of euros at a whole percentage needs no rounding: €e at p% is e × p cents", () => {
+    fc.assert(
+      fc.property(
+        fc.bigInt({ min: -(10n ** 12n), max: 10n ** 12n }),
+        fc.integer({ min: 0, max: 100 }),
+        (euros, percent) => {
+          expect(
+            percentageOf(moneyFromCents(euros * 100n), String(percent)),
+          ).toBe(euros * BigInt(percent));
+        },
+      ),
+    );
+  });
+
+  it("the result never has the opposite sign to the amount", () => {
+    fc.assert(
+      fc.property(
+        money,
+        fc
+          .integer({ min: 0, max: 10_000 })
+          .map((h) => formatFixed(BigInt(h), 2)),
+        (amount, percent) => {
+          const result = percentageOf(amount, percent);
+          if (amount > 0n) expect(result >= 0n).toBe(true);
+          if (amount < 0n) expect(result <= 0n).toBe(true);
+          if (amount === 0n) expect(result).toBe(0n);
         },
       ),
     );
