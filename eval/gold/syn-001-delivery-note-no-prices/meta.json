@@ -1,0 +1,6 @@
+{
+  "origin": "synthetic",
+  "kind": "text-pdf",
+  "notes": "Delivery note without prices: totals, prices, discounts and VAT are all null. Quantities in boxes, units, kg (one with a decimal) and bunches.",
+  "checked": null
+}
