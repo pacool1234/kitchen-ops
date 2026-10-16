@@ -12,6 +12,22 @@ function assertQuantity(value: number, name: string): void {
   }
 }
 
+/**
+ * A quantity from a bigint count of base units, checked against the same limits. Shared with
+ * unit conversions, which work in bigint; not exported from the package.
+ */
+export function quantityFromBigInt(value: bigint, name: string): Quantity {
+  if (
+    value > BigInt(Number.MAX_SAFE_INTEGER) ||
+    value < BigInt(Number.MIN_SAFE_INTEGER)
+  ) {
+    throw new RangeError(
+      `${name} must be a safe integer of base units, got ${value}`,
+    );
+  }
+  return Number(value);
+}
+
 /** Adds two quantities. Throws a RangeError if an input or the result is not exact. */
 export function addQuantities(a: Quantity, b: Quantity): Quantity {
   assertQuantity(a, "a");
