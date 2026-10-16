@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { parseUnitCost, unitCostFromMillionths } from "./money";
 import {
+  appendMovements,
   applyMovement,
   balancesOf,
   findBalanceMismatches,
+  flaggedAdjustments,
   reverseMovement,
   stockOnHand,
   type Balances,
@@ -345,6 +347,167 @@ describe("reverseMovement: the movement that cancels another", () => {
           documentLineId: "rl",
         });
         expect(ms).toEqual(before);
+      }),
+    );
+  });
+});
+
+describe("appendMovements: negative stock only through a flagged adjustment (invariant 6)", () => {
+  // 6000 g of tomatoes in the cold room, 0 in the dry store.
+  const stocked = frozen([receipt]);
+
+  it("6000 g on hand: wasting 6000 g is accepted and leaves 0", () => {
+    const all = appendMovements(stocked, [{ ...waste, quantity: -6000 }]);
+    expect(all).toEqual([receipt, { ...waste, quantity: -6000 }]);
+    expect(stockOnHand(all, "tomatoes", "cold-room")).toBe(0);
+  });
+
+  it("6000 g on hand: wasting 6001 g is rejected, naming the movement and the stock it would leave", () => {
+    expect(() =>
+      appendMovements(stocked, [{ ...waste, quantity: -6001 }]),
+    ).toThrow(
+      "movement m2 would take stock of product tomatoes in storeroom cold-room to -1",
+    );
+  });
+
+  it("the same waste as a flagged adjustment is accepted, and reports list it", () => {
+    const flagged: Movement = { ...waste, quantity: -6001, adjustment: true };
+    const all = appendMovements(stocked, [flagged]);
+    expect(stockOnHand(all, "tomatoes", "cold-room")).toBe(-1);
+    expect(flaggedAdjustments(all)).toEqual([flagged]);
+  });
+
+  it("checks the new movements in order: taking stock out before it comes in is rejected", () => {
+    const fromDryStore = { ...waste, storeroomId: "dry-store", quantity: -500 };
+    const into = {
+      ...receipt,
+      id: "m3",
+      storeroomId: "dry-store",
+      quantity: 500,
+    };
+    expect(appendMovements(stocked, [into, fromDryStore])).toHaveLength(3);
+    expect(() => appendMovements(stocked, [fromDryStore, into])).toThrow(
+      "movement m2 would take stock of product tomatoes in storeroom dry-store to -500",
+    );
+  });
+
+  it("stock coming in is always accepted, even if it leaves stock below zero", () => {
+    const below = frozen([
+      { ...waste, id: "m1", quantity: -1000, adjustment: true },
+    ]);
+    const all = appendMovements(below, [
+      { ...receipt, id: "m2", quantity: 400 },
+    ]);
+    expect(stockOnHand(all, "tomatoes", "cold-room")).toBe(-600);
+  });
+
+  it("an unflagged movement taking stock further below zero is rejected", () => {
+    const below = frozen([
+      { ...waste, id: "m1", quantity: -1000, adjustment: true },
+    ]);
+    expect(() =>
+      appendMovements(below, [{ ...waste, id: "m2", quantity: -1 }]),
+    ).toThrow("to -1001");
+  });
+
+  it("reversing a receipt whose stock was already used is rejected: post the correction first", () => {
+    const used = frozen([receipt, { ...waste, quantity: -5000 }]);
+    const reversal = reverseMovement(receipt, used, {
+      id: "m3",
+      documentLineId: "delivery-note-1-reversal/line-1",
+    });
+    expect(reversal.adjustment).toBeUndefined();
+    expect(() => appendMovements(used, [reversal])).toThrow("to -5000");
+  });
+
+  it("flaggedAdjustments: none flagged, none listed", () => {
+    expect(flaggedAdjustments(examples)).toEqual([]);
+  });
+});
+
+// Any movements in one location, some flagged, with quantities skewed so that stock often
+// goes below zero.
+const appendCase = fc
+  .tuple(
+    fc.array(
+      fc.record({
+        quantity: fc.integer({ min: -1000, max: 800 }),
+        adjustment: fc.boolean(),
+      }),
+      { maxLength: 30 },
+    ),
+    fc.nat(),
+  )
+  .map(([fields, split]) => {
+    const all = fields.map(({ quantity, adjustment }, i): Movement => ({
+      id: `m${i}`,
+      productId: "tomatoes",
+      storeroomId: "cold-room",
+      quantity,
+      unitCost: parseUnitCost("0.002"),
+      documentLineId: `line${i}`,
+      kind: quantity >= 0 ? "receipt" : "waste",
+      ...(adjustment ? { adjustment: true as const } : {}),
+    }));
+    const at = all.length === 0 ? 0 : split % (all.length + 1);
+    return { existing: frozen(all.slice(0, at)), added: frozen(all.slice(at)) };
+  });
+
+describe("invariant 6 properties", () => {
+  it("invariant 6: whatever is appended, stock only goes below zero, or further below, through a flagged adjustment", () => {
+    fc.assert(
+      fc.property(appendCase, ({ existing, added }) => {
+        // Worked out independently: the stock after each new movement, from scratch.
+        const breaksTheRule = added.some(
+          (m, i) =>
+            m.quantity < 0 &&
+            m.adjustment !== true &&
+            stockOnHand(
+              [...existing, ...added.slice(0, i + 1)],
+              m.productId,
+              m.storeroomId,
+            ) < 0,
+        );
+        if (breaksTheRule) {
+          expect(() => appendMovements(existing, added)).toThrow(
+            /would take stock/,
+          );
+        } else {
+          expect(appendMovements(existing, added)).toEqual([
+            ...existing,
+            ...added,
+          ]);
+        }
+      }),
+    );
+  });
+
+  it("invariant 6: when appendMovements rejects, nothing is added and the existing list is unchanged", () => {
+    fc.assert(
+      fc.property(appendCase, ({ existing, added }) => {
+        const before = structuredClone([...existing]);
+        // The lists and their movements are frozen: changing them would throw a TypeError.
+        try {
+          appendMovements(existing, added);
+        } catch (error) {
+          expect(error).not.toBeInstanceOf(TypeError);
+        }
+        expect(existing).toEqual(before);
+      }),
+    );
+  });
+
+  it("invariant 6: flaggedAdjustments lists exactly the flagged movements, in order", () => {
+    fc.assert(
+      fc.property(appendCase, ({ existing, added }) => {
+        const all = [...existing, ...added];
+        const listed = flaggedAdjustments(all);
+        let flagged = 0;
+        for (const m of all) if (m.adjustment === true) flagged++;
+        expect(listed).toHaveLength(flagged);
+        expect(listed.every((m) => m.adjustment === true)).toBe(true);
+        const positions = listed.map((m) => all.indexOf(m));
+        expect(positions).toEqual([...positions].sort((a, b) => a - b));
       }),
     );
   });
