@@ -22,9 +22,11 @@ function dataUrl(bytes: Uint8Array, format: ImageFormat): string {
   return `data:image/${format};base64,${Buffer.from(bytes).toString("base64")}`;
 }
 
+/** `maxBytes` is only lowered by tests, to reach the last check. */
 export async function prepareImage(
   bytes: Uint8Array,
   format: ImageFormat,
+  { maxBytes = MAX_IMAGE_BYTES }: { maxBytes?: number } = {},
 ): Promise<PreparedImage> {
   let image: Image;
   try {
@@ -33,7 +35,7 @@ export async function prepareImage(
     return { ok: false, reason: "the image couldn't be read" };
   }
   const longSide = Math.max(image.width, image.height);
-  if (longSide <= MAX_IMAGE_LONG_SIDE && bytes.length <= MAX_IMAGE_BYTES) {
+  if (longSide <= MAX_IMAGE_LONG_SIDE && bytes.length <= maxBytes) {
     return { ok: true, dataUrl: dataUrl(bytes, format), resized: false };
   }
 
@@ -47,10 +49,10 @@ export async function prepareImage(
   context.fillRect(0, 0, width, height);
   context.drawImage(image, 0, 0, width, height);
   const jpeg = new Uint8Array(await canvas.encode("jpeg", JPEG_QUALITY));
-  if (jpeg.length > MAX_IMAGE_BYTES) {
+  if (jpeg.length > maxBytes) {
     return {
       ok: false,
-      reason: `the image is too large: over ${MAX_IMAGE_BYTES} bytes even at ${MAX_IMAGE_LONG_SIDE} pixels`,
+      reason: `the image is too large: over ${maxBytes} bytes even at ${MAX_IMAGE_LONG_SIDE} pixels on its long side`,
     };
   }
   return { ok: true, dataUrl: dataUrl(jpeg, "jpeg"), resized: true };
