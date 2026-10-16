@@ -170,6 +170,30 @@ describe("balances: every product's stock in every storeroom", () => {
     ]);
   });
 
+  it("findBalanceMismatches: sorted by product, then storeroom, whatever order the cached balances are in", () => {
+    const cached: Balances = new Map([
+      ["wine", new Map([["dry-store", 1]])],
+      [
+        "eggs",
+        new Map([
+          ["dry-store", 2],
+          ["cold-room", 3],
+        ]),
+      ],
+      ["tomatoes", new Map([["cold-room", 4]])],
+    ]);
+    expect(
+      findBalanceMismatches(cached, []).map(
+        (m) => `${m.productId}/${m.storeroomId}`,
+      ),
+    ).toEqual([
+      "eggs/cold-room",
+      "eggs/dry-store",
+      "tomatoes/cold-room",
+      "wine/dry-store",
+    ]);
+  });
+
   it("invariant 1: applying movements one at a time to a running balance always gives the same stock as adding them all up from scratch", () => {
     fc.assert(
       fc.property(movementList, (ms) => {
