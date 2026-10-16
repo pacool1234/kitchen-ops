@@ -42,8 +42,13 @@ const invalid = { ...valid, lines: [] };
 const structured: ModelConfig = {
   id: "vendor/structured",
   structuredOutput: true,
+  vision: false,
 };
-const plain: ModelConfig = { id: "vendor/plain", structuredOutput: false };
+const plain: ModelConfig = {
+  id: "vendor/plain",
+  structuredOutput: false,
+  vision: false,
+};
 const prompt: Prompt = { version: "v1", text: "Extract the document." };
 const content = [{ type: "text" as const, text: "ALBARÁN ALB-1 …" }];
 

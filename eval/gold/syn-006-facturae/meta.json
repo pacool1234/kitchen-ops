@@ -1,0 +1,9 @@
+{
+  "origin": "synthetic",
+  "kind": "facturae-xml",
+  "notes": "A Facturae 3.2.2 e-invoice, read without a model. The series and number are separate elements; prices carry six decimals and the discount rate four; three VAT rates (4%, 10%, 21%); unit codes for box, unit, kilogram and package. Valid against the official 3.2.2 schema, unsigned.",
+  "checked": {
+    "by": "pacool1234",
+    "on": "2026-10-16"
+  }
+}

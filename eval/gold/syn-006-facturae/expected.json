@@ -1,0 +1,73 @@
+{
+  "documentType": "invoice",
+  "currency": "EUR",
+  "supplier": {
+    "name": "Lácteos Inventados S.L.",
+    "taxId": "B00444331"
+  },
+  "number": "LI260482",
+  "issueDate": "2026-10-14",
+  "totals": {
+    "net": "179.83",
+    "vat": [
+      {
+        "rate": "4.00",
+        "base": "122.28",
+        "amount": "4.89"
+      },
+      {
+        "rate": "10.00",
+        "base": "41.80",
+        "amount": "4.18"
+      },
+      {
+        "rate": "21.00",
+        "base": "15.75",
+        "amount": "3.31"
+      }
+    ],
+    "total": "192.21"
+  },
+  "lines": [
+    {
+      "supplierCode": "LI-010",
+      "description": "Leche entera 1 L, caja de 6",
+      "quantity": "12",
+      "unit": "caja",
+      "unitPrice": "6.90",
+      "discountPercent": null,
+      "vatRate": "4.00",
+      "lineTotal": "82.80"
+    },
+    {
+      "supplierCode": "LI-120",
+      "description": "Mantequilla 500 g",
+      "quantity": "10",
+      "unit": "ud",
+      "unitPrice": "4.40",
+      "discountPercent": "5.00",
+      "vatRate": "10.00",
+      "lineTotal": "41.80"
+    },
+    {
+      "supplierCode": "LI-305",
+      "description": "Queso curado, cuña",
+      "quantity": "2.35",
+      "unit": "kg",
+      "unitPrice": "16.80",
+      "discountPercent": null,
+      "vatRate": "4.00",
+      "lineTotal": "39.48"
+    },
+    {
+      "supplierCode": "LI-900",
+      "description": "Bayetas multiusos, pack de 10",
+      "quantity": "3",
+      "unit": "paquete",
+      "unitPrice": "5.25",
+      "discountPercent": null,
+      "vatRate": "21.00",
+      "lineTotal": "15.75"
+    }
+  ]
+}
