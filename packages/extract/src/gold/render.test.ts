@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExtractedDocument, ExtractedLine } from "@kitchen-ops/shared";
 import {
   formatDate,
@@ -64,8 +64,16 @@ describe("renderGoldPdf: a synthetic document from its expected.json", () => {
     expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("is the same, byte for byte, every time: no clock, no randomness", async () => {
+    // Only Date is faked; the clock is moved between the two renders, so reading it would show.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2020-01-01T00:00:00Z"));
     const first = await renderGoldPdf(invoiceWith(3));
+    vi.setSystemTime(new Date("2030-06-15T12:34:56Z"));
     const second = await renderGoldPdf(invoiceWith(3));
     expect(first.equals(second)).toBe(true);
   });
