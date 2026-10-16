@@ -15,7 +15,7 @@ Full spec: `docs/spec.md`. Decisions and their reasons: `docs/decisions/`. Read 
 ## Layout and dependency rules
 
 - `apps/web` Vue 3 PWA · `apps/api` Fastify API · `packages/ledger` pure domain logic · `packages/extract` extraction + eval harness · `packages/shared` Zod schemas and shared types
-- `ledger` depends on nothing. `extract` depends only on `shared`. `api` may depend on `ledger`, `extract`, `shared`. `web` depends only on `shared`. Never add an import that breaks this, even temporarily.
+- `ledger` depends on nothing. `extract` depends on `ledger` and `shared` (decision 0016). `api` may depend on `ledger`, `extract`, `shared`. `web` depends only on `shared`. Never add an import that breaks this, even temporarily.
 - Packages reference each other as `"@kitchen-ops/<name>": "workspace:*"`.
 
 ## Hard rules

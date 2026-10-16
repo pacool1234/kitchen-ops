@@ -55,7 +55,7 @@ kitchen-ops/
 └── .github/workflows/
 ```
 
-**Dependency rules (Decided):** `ledger` depends on nothing; `extract` depends only on `shared`; `api` depends on `ledger`, `extract` and `shared`; `web` depends only on `shared`. A lint rule enforces this.
+**Dependency rules (Decided):** `ledger` depends on nothing; `extract` depends on `ledger` and `shared` (decision 0016); `api` depends on `ledger`, `extract` and `shared`; `web` depends only on `shared`. A lint rule enforces this.
 
 **Stack**
 
