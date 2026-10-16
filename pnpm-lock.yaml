@@ -172,6 +172,9 @@ importers:
 
   packages/ledger:
     devDependencies:
+      '@types/node':
+        specifier: ^24.13.3
+        version: 24.19.2
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.4(vitest@5.0.4)
