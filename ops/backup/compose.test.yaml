@@ -1,0 +1,47 @@
+# Services for ops/backup/test.sh only. Nothing is published to the host, so this runs next to the
+# development database (docker-compose.yml) and next to CI's Postgres service.
+name: kitchen-ops-backup-test
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: kitchen_ops
+      POSTGRES_PASSWORD: kitchen_ops
+      POSTGRES_DB: kitchen_ops
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kitchen_ops -d kitchen_ops"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  # Stands in for Scaleway: an S3-compatible server that keeps each bucket as a folder.
+  s3:
+    image: rclone/rclone:1.71.2
+    entrypoint: ["sh", "-c"]
+    command:
+      - mkdir -p /data/kitchen-ops-db-backups && exec rclone serve s3 --addr :8080 --auth-key "$$S3_TEST_ACCESS_KEY,$$S3_TEST_SECRET_KEY" /data
+    environment:
+      # Made up for each run by test.sh.
+      S3_TEST_ACCESS_KEY: ${S3_TEST_ACCESS_KEY:?run ops/backup/test.sh}
+      S3_TEST_SECRET_KEY: ${S3_TEST_SECRET_KEY:?run ops/backup/test.sh}
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "8080"]
+      interval: 1s
+      timeout: 5s
+      retries: 15
+
+  # The backup image, configured like the cron job in render.yaml but pointed at the services above.
+  backup:
+    build: .
+    environment:
+      DATABASE_URL: postgres://kitchen_ops:kitchen_ops@db:5432/kitchen_ops
+      BACKUP_S3_BUCKET: kitchen-ops-db-backups
+      AWS_ENDPOINT_URL: http://s3:8080
+      AWS_DEFAULT_REGION: fr-par
+      AWS_ACCESS_KEY_ID: ${S3_TEST_ACCESS_KEY:?run ops/backup/test.sh}
+      AWS_SECRET_ACCESS_KEY: ${S3_TEST_SECRET_KEY:?run ops/backup/test.sh}
+      # For restore.sh and psql, as in docker-compose.yml.
+      PGHOST: db
+      PGUSER: kitchen_ops
+      PGPASSWORD: kitchen_ops

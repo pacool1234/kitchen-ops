@@ -8,3 +8,5 @@ coverage/
 *.sarif
 # Screenshots and page snapshots from the Playwright browser tool
 .playwright-mcp/
+# Restore drills: a downloaded backup and the key that decrypts it (docs/runbooks/restore.md)
+.restore-drill/

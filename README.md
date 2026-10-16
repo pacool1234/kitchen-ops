@@ -106,7 +106,7 @@ git tag -a v0.1.0 <commit> -m "v0.1.0"
 git push origin v0.1.0
 ```
 
-The "Deploy production" workflow checks that the commit is on `main` and that staging runs it. It then deploys the API and the web app to production and waits until production's `/health` reports that commit.
+The "Deploy production" workflow checks that the commit is on `main` and that staging runs it. It then deploys the API, the web app and the backup job to production and waits until production's `/health` reports that commit.
 
 ### One-time setup (repo owner, by hand)
 
@@ -142,7 +142,16 @@ Sentry (EU region), one project per app: `kitchen-ops-api` and `kitchen-ops-web`
 
 **Uptime:** a Sentry uptime monitor calls `https://kitchen-ops-api.onrender.com/health` and alerts by email. Staging is not monitored: its free API sleeps when idle.
 
+## Backups
+
+The production database has two copies: Render's point-in-time recovery (past 3 days), and a weekly encrypted dump in a Scaleway bucket (kept 12 weeks), made by the cron job `kitchen-ops-db-backup` from `ops/backup`. Sentry alerts when a weekly run fails or doesn't happen.
+
+How to restore from either, the retention rules, the one-time setup and the record of restore drills: [`docs/runbooks/restore.md`](docs/runbooks/restore.md). Why it works this way: decision 0014.
+
+`bash ops/backup/test.sh` (Docker needed) runs a full backup and restore against a throwaway database; CI runs it on every pull request.
+
 ## Docs
 
 - `docs/spec.md`: the spec
 - `docs/decisions/`: decision records, with the reasons
+- `docs/runbooks/`: step-by-step procedures (restoring the database)

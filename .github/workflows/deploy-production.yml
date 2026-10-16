@@ -83,6 +83,19 @@ jobs:
             echo "$name: $(curl -fsS -X POST "$hook&ref=$SHA")"
           done
 
+      # The weekly backup cron job (render.yaml) runs the backup image from the same commit. Its
+      # hook is added after the first Blueprint sync creates the job (docs/runbooks/restore.md),
+      # so a missing one only warns. Nothing to wait for: the new image is used from the next run.
+      - name: Update the backup job
+        env:
+          BACKUP_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_BACKUP }}
+        run: |
+          if [ -z "$BACKUP_HOOK" ]; then
+            echo "::warning::The RENDER_DEPLOY_HOOK_BACKUP secret is missing from the production environment, so the backup job was not updated."
+            exit 0
+          fi
+          echo "BACKUP_HOOK: $(curl -fsS -X POST "$BACKUP_HOOK&ref=$SHA")"
+
       - name: Production runs this commit
         run: |
           for attempt in $(seq 1 60); do
