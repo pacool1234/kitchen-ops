@@ -8,6 +8,8 @@ export const ModelConfig = z.strictObject({
   id: z.string().min(1),
   /** Whether the model honours `response_format: json_schema`. Otherwise the schema goes in the prompt. */
   structuredOutput: z.boolean(),
+  /** Whether the model reads images. Photos and scans only go to models that do. */
+  vision: z.boolean(),
   /** Why it's on the list, or anything worth knowing about it. */
   note: z.string().optional(),
 });
