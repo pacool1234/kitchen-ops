@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import PDFDocument from "pdfkit";
 import { loadImage } from "@napi-rs/canvas";
 import { ExtractedDocument } from "@kitchen-ops/shared";
 import { GOLD_DIRECTORY, goldIds, readGoldEntry } from "../gold/gold-set";
@@ -13,6 +12,7 @@ import {
   pdfPageTexts,
   renderPdfPages,
 } from "./pdf";
+import { imageOnlyPdf } from "./testing";
 
 /** The gold text PDFs, with their answers. */
 const goldTextPdfs = goldIds(GOLD_DIRECTORY).flatMap((id) => {
@@ -29,21 +29,6 @@ const goldTextPdfs = goldIds(GOLD_DIRECTORY).flatMap((id) => {
     },
   ];
 });
-
-/** A PDF whose pages are only images, as a scanner saves them. */
-async function imageOnlyPdf(pages: readonly Uint8Array[]): Promise<Uint8Array> {
-  const document = new PDFDocument({ autoFirstPage: false, margin: 0 });
-  const chunks: Buffer[] = [];
-  document.on("data", (chunk: Buffer) => chunks.push(chunk));
-  const done = new Promise((resolve) => document.on("end", resolve));
-  for (const page of pages) {
-    document.addPage({ size: "A4", margin: 0 });
-    document.image(Buffer.from(page), 0, 0, { fit: [595.28, 841.89] });
-  }
-  document.end();
-  await done;
-  return new Uint8Array(Buffer.concat(chunks));
-}
 
 describe("pdfPageTexts: a text PDF's text, page by page, with table rows kept on one line", () => {
   it("there are gold text PDFs to test with, including one of two pages", () => {

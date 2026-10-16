@@ -18,40 +18,58 @@ describe("loadModels: model IDs come from config/models.json, never from code", 
     expect(() => loadModels(MODELS_FILE)).not.toThrow();
   });
 
-  it("reads each model's ID and whether it supports structured output", () => {
+  it("reads each model's ID, whether it supports structured output and whether it can read images", () => {
     const file = fileWith(
       JSON.stringify({
         models: [
-          { id: "vendor/cheap-model", structuredOutput: true },
+          { id: "vendor/cheap-model", structuredOutput: true, vision: true },
           {
             id: "vendor/other-model",
             structuredOutput: false,
+            vision: false,
             note: "no JSON mode",
           },
         ],
       }),
     );
     expect(loadModels(file)).toEqual([
-      { id: "vendor/cheap-model", structuredOutput: true },
+      { id: "vendor/cheap-model", structuredOutput: true, vision: true },
       {
         id: "vendor/other-model",
         structuredOutput: false,
+        vision: false,
         note: "no JSON mode",
       },
     ]);
   });
 
+  it("a model must say whether it can read images: photos and scans only go to models that can", () => {
+    expect(() =>
+      loadModels(
+        fileWith(
+          JSON.stringify({ models: [{ id: "a/b", structuredOutput: true }] }),
+        ),
+      ),
+    ).toThrow("models.0.vision");
+  });
+
   it("rejects a model without an ID, or with an unknown key, naming the field", () => {
     expect(() =>
       loadModels(
-        fileWith(JSON.stringify({ models: [{ structuredOutput: true }] })),
+        fileWith(
+          JSON.stringify({
+            models: [{ structuredOutput: true, vision: true }],
+          }),
+        ),
       ),
     ).toThrow("models.0.id");
     expect(() =>
       loadModels(
         fileWith(
           JSON.stringify({
-            models: [{ id: "a/b", structuredOutput: true, price: 1 }],
+            models: [
+              { id: "a/b", structuredOutput: true, vision: true, price: 1 },
+            ],
           }),
         ),
       ),
