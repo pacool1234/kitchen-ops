@@ -1,0 +1,508 @@
+{
+  "documentType": "invoice",
+  "currency": "EUR",
+  "supplier": {
+    "name": "Pescados Imaginarios S.L.",
+    "taxId": "B00555011"
+  },
+  "number": "FV-2026-1187",
+  "issueDate": "2026-10-13",
+  "totals": {
+    "net": "1568.13",
+    "vat": [
+      {
+        "rate": "10",
+        "base": "1560.13",
+        "amount": "156.01"
+      },
+      {
+        "rate": "21",
+        "base": "8.00",
+        "amount": "1.68"
+      }
+    ],
+    "total": "1725.82"
+  },
+  "lines": [
+    {
+      "supplierCode": "PI-101",
+      "description": "Merluza de pincho",
+      "quantity": "4.250",
+      "unit": "kg",
+      "unitPrice": "14.90",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "63.33"
+    },
+    {
+      "supplierCode": "PI-102",
+      "description": "Lubina de ración",
+      "quantity": "3.100",
+      "unit": "kg",
+      "unitPrice": "11.75",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "36.43"
+    },
+    {
+      "supplierCode": "PI-103",
+      "description": "Dorada de ración",
+      "quantity": "2.840",
+      "unit": "kg",
+      "unitPrice": "10.95",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "31.10"
+    },
+    {
+      "supplierCode": "PI-104",
+      "description": "Rape limpio",
+      "quantity": "1.960",
+      "unit": "kg",
+      "unitPrice": "24.50",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "48.02"
+    },
+    {
+      "supplierCode": "PI-105",
+      "description": "Bacalao desalado lomo",
+      "quantity": "2.500",
+      "unit": "kg",
+      "unitPrice": "19.80",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "49.50"
+    },
+    {
+      "supplierCode": "PI-106",
+      "description": "Salmón noruego lomo",
+      "quantity": "3.320",
+      "unit": "kg",
+      "unitPrice": "16.40",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "54.45"
+    },
+    {
+      "supplierCode": "PI-107",
+      "description": "Atún rojo lomo",
+      "quantity": "1.150",
+      "unit": "kg",
+      "unitPrice": "42.00",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "48.30"
+    },
+    {
+      "supplierCode": "PI-108",
+      "description": "Pez espada rodajas",
+      "quantity": "2.000",
+      "unit": "kg",
+      "unitPrice": "18.60",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "37.20"
+    },
+    {
+      "supplierCode": "PI-109",
+      "description": "Gallo limpio",
+      "quantity": "1.720",
+      "unit": "kg",
+      "unitPrice": "15.30",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "26.32"
+    },
+    {
+      "supplierCode": "PI-110",
+      "description": "Lenguado",
+      "quantity": "1.380",
+      "unit": "kg",
+      "unitPrice": "26.90",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "37.12"
+    },
+    {
+      "supplierCode": "PI-111",
+      "description": "Rodaballo",
+      "quantity": "2.640",
+      "unit": "kg",
+      "unitPrice": "21.75",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "57.42"
+    },
+    {
+      "supplierCode": "PI-112",
+      "description": "Sardina",
+      "quantity": "3.000",
+      "unit": "kg",
+      "unitPrice": "5.80",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "17.40"
+    },
+    {
+      "supplierCode": "PI-113",
+      "description": "Boquerón",
+      "quantity": "2.500",
+      "unit": "kg",
+      "unitPrice": "7.20",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "18.00"
+    },
+    {
+      "supplierCode": "PI-114",
+      "description": "Caballa",
+      "quantity": "2.200",
+      "unit": "kg",
+      "unitPrice": "6.40",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "14.08"
+    },
+    {
+      "supplierCode": "PI-115",
+      "description": "Jurel",
+      "quantity": "1.800",
+      "unit": "kg",
+      "unitPrice": "4.95",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "8.91"
+    },
+    {
+      "supplierCode": "PI-201",
+      "description": "Calamar limpio",
+      "quantity": "2.450",
+      "unit": "kg",
+      "unitPrice": "13.60",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "33.32"
+    },
+    {
+      "supplierCode": "PI-202",
+      "description": "Sepia limpia",
+      "quantity": "1.900",
+      "unit": "kg",
+      "unitPrice": "12.20",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "23.18"
+    },
+    {
+      "supplierCode": "PI-203",
+      "description": "Pulpo cocido",
+      "quantity": "2.300",
+      "unit": "kg",
+      "unitPrice": "27.50",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "63.25"
+    },
+    {
+      "supplierCode": "PI-204",
+      "description": "Chipirón",
+      "quantity": "1.250",
+      "unit": "kg",
+      "unitPrice": "17.90",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "22.38"
+    },
+    {
+      "supplierCode": "PI-301",
+      "description": "Gamba blanca",
+      "quantity": "1.000",
+      "unit": "kg",
+      "unitPrice": "32.00",
+      "discountPercent": "3",
+      "vatRate": "10",
+      "lineTotal": "31.04"
+    },
+    {
+      "supplierCode": "PI-302",
+      "description": "Langostino tigre",
+      "quantity": "2.000",
+      "unit": "kg",
+      "unitPrice": "23.40",
+      "discountPercent": "3",
+      "vatRate": "10",
+      "lineTotal": "45.40"
+    },
+    {
+      "supplierCode": "PI-303",
+      "description": "Cigala",
+      "quantity": "0.850",
+      "unit": "kg",
+      "unitPrice": "48.00",
+      "discountPercent": "3",
+      "vatRate": "10",
+      "lineTotal": "39.58"
+    },
+    {
+      "supplierCode": "PI-304",
+      "description": "Carabinero",
+      "quantity": "0.600",
+      "unit": "kg",
+      "unitPrice": "65.00",
+      "discountPercent": "3",
+      "vatRate": "10",
+      "lineTotal": "37.83"
+    },
+    {
+      "supplierCode": "PI-305",
+      "description": "Bogavante vivo",
+      "quantity": "1.400",
+      "unit": "kg",
+      "unitPrice": "39.50",
+      "discountPercent": "3",
+      "vatRate": "10",
+      "lineTotal": "53.64"
+    },
+    {
+      "supplierCode": "PI-306",
+      "description": "Mejillón gallego",
+      "quantity": "5.000",
+      "unit": "kg",
+      "unitPrice": "2.80",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "14.00"
+    },
+    {
+      "supplierCode": "PI-307",
+      "description": "Almeja fina",
+      "quantity": "1.500",
+      "unit": "kg",
+      "unitPrice": "24.90",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "37.35"
+    },
+    {
+      "supplierCode": "PI-308",
+      "description": "Berberecho",
+      "quantity": "1.000",
+      "unit": "kg",
+      "unitPrice": "14.50",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "14.50"
+    },
+    {
+      "supplierCode": "PI-309",
+      "description": "Navaja",
+      "quantity": "1.200",
+      "unit": "kg",
+      "unitPrice": "19.90",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "23.88"
+    },
+    {
+      "supplierCode": "PI-310",
+      "description": "Vieira con concha",
+      "quantity": "12",
+      "unit": "ud",
+      "unitPrice": "2.35",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "28.20"
+    },
+    {
+      "supplierCode": "PI-311",
+      "description": "Ostra n.º 3",
+      "quantity": "24",
+      "unit": "ud",
+      "unitPrice": "1.65",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "39.60"
+    },
+    {
+      "supplierCode": "PI-401",
+      "description": "Huevas de merluza",
+      "quantity": "0.900",
+      "unit": "kg",
+      "unitPrice": "9.80",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "8.82"
+    },
+    {
+      "supplierCode": "PI-402",
+      "description": "Anchoa en salazón, lata",
+      "quantity": "6",
+      "unit": "ud",
+      "unitPrice": "7.45",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "44.70"
+    },
+    {
+      "supplierCode": "PI-403",
+      "description": "Bacalao salado entero",
+      "quantity": "3.500",
+      "unit": "kg",
+      "unitPrice": "12.90",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "45.15"
+    },
+    {
+      "supplierCode": "PI-404",
+      "description": "Caldo de pescado 1 L",
+      "quantity": "8",
+      "unit": "ud",
+      "unitPrice": "3.10",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "24.80"
+    },
+    {
+      "supplierCode": "PI-405",
+      "description": "Fumet concentrado",
+      "quantity": "4",
+      "unit": "ud",
+      "unitPrice": "5.60",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "22.40"
+    },
+    {
+      "supplierCode": "PI-406",
+      "description": "Hielo en escamas, saco",
+      "quantity": "2",
+      "unit": "ud",
+      "unitPrice": "4.00",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "8.00"
+    },
+    {
+      "supplierCode": "PI-501",
+      "description": "Langostino congelado 2 kg",
+      "quantity": "2",
+      "unit": "caja",
+      "unitPrice": "18.90",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "37.80"
+    },
+    {
+      "supplierCode": "PI-502",
+      "description": "Calamar congelado en anillas",
+      "quantity": "3",
+      "unit": "bolsa",
+      "unitPrice": "6.75",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "20.25"
+    },
+    {
+      "supplierCode": "PI-503",
+      "description": "Filete de merluza congelado 5 kg",
+      "quantity": "1",
+      "unit": "caja",
+      "unitPrice": "37.50",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "37.50"
+    },
+    {
+      "supplierCode": "PI-504",
+      "description": "Gamba pelada congelada",
+      "quantity": "4",
+      "unit": "bolsa",
+      "unitPrice": "8.95",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "35.80"
+    },
+    {
+      "supplierCode": "PI-505",
+      "description": "Mejillón media concha",
+      "quantity": "2",
+      "unit": "bolsa",
+      "unitPrice": "5.40",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "10.80"
+    },
+    {
+      "supplierCode": "PI-506",
+      "description": "Pulpo congelado",
+      "quantity": "2.800",
+      "unit": "kg",
+      "unitPrice": "15.20",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "42.56"
+    },
+    {
+      "supplierCode": "PI-507",
+      "description": "Lomo de bacalao congelado",
+      "quantity": "2",
+      "unit": "caja",
+      "unitPrice": "44.00",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "88.00"
+    },
+    {
+      "supplierCode": "PI-508",
+      "description": "Sepia congelada",
+      "quantity": "1.600",
+      "unit": "kg",
+      "unitPrice": "8.40",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "13.44"
+    },
+    {
+      "supplierCode": "PI-509",
+      "description": "Cola de rape congelada",
+      "quantity": "2.100",
+      "unit": "kg",
+      "unitPrice": "16.80",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "35.28"
+    },
+    {
+      "supplierCode": "PI-510",
+      "description": "Surimi en barra",
+      "quantity": "5",
+      "unit": "ud",
+      "unitPrice": "2.25",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "11.25"
+    },
+    {
+      "supplierCode": "PI-511",
+      "description": "Palitos de mar",
+      "quantity": "3",
+      "unit": "ud",
+      "unitPrice": "1.95",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "5.85"
+    },
+    {
+      "supplierCode": "PI-512",
+      "description": "Salmón ahumado",
+      "quantity": "0.750",
+      "unit": "kg",
+      "unitPrice": "28.00",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "21.00"
+    }
+  ]
+}

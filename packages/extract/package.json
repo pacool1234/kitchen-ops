@@ -8,9 +8,19 @@
   },
   "scripts": {
     "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "gold:render": "tsx scripts/render-gold.ts"
+  },
+  "dependencies": {
+    "@kitchen-ops/shared": "workspace:*",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:"
+    "@types/node": "^24.13.3",
+    "@types/pdfkit": "^0.17.6",
+    "pdfkit": "^0.20.2",
+    "tsx": "^4.23.15",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

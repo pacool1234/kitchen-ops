@@ -1,0 +1,48 @@
+{
+  "documentType": "invoice",
+  "currency": "EUR",
+  "supplier": {
+    "name": "Distribuciones Ficticias del Norte S.A.",
+    "taxId": "A00987651"
+  },
+  "number": "R-2026/00012",
+  "issueDate": "2026-10-20",
+  "totals": {
+    "net": "-48.36",
+    "vat": [
+      {
+        "rate": "10",
+        "base": "-36.58",
+        "amount": "-3.66"
+      },
+      {
+        "rate": "21",
+        "base": "-11.78",
+        "amount": "-2.47"
+      }
+    ],
+    "total": "-54.49"
+  },
+  "lines": [
+    {
+      "supplierCode": "DF-1001",
+      "description": "Aceite de oliva virgen extra 5 L",
+      "quantity": "-1",
+      "unit": "ud",
+      "unitPrice": "38.50",
+      "discountPercent": "5",
+      "vatRate": "10",
+      "lineTotal": "-36.58"
+    },
+    {
+      "supplierCode": "DF-8020",
+      "description": "Lavavajillas industrial 10 L",
+      "quantity": "-1",
+      "unit": "ud",
+      "unitPrice": "12.40",
+      "discountPercent": "5",
+      "vatRate": "21",
+      "lineTotal": "-11.78"
+    }
+  ]
+}

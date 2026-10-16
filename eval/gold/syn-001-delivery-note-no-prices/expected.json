@@ -1,0 +1,63 @@
+{
+  "documentType": "delivery-note",
+  "currency": "EUR",
+  "supplier": {
+    "name": "Huerta La Ejemplar S.L.",
+    "taxId": "B00123455"
+  },
+  "number": "ALB-2026-0418",
+  "issueDate": "2026-10-14",
+  "totals": null,
+  "lines": [
+    {
+      "supplierCode": "HT-001",
+      "description": "Tomate pera",
+      "quantity": "2",
+      "unit": "caja",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "HT-014",
+      "description": "Lechuga romana",
+      "quantity": "12",
+      "unit": "ud",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "HT-022",
+      "description": "Cebolla dulce",
+      "quantity": "5.5",
+      "unit": "kg",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "HT-030",
+      "description": "Pimiento rojo",
+      "quantity": "3",
+      "unit": "kg",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "HT-041",
+      "description": "Perejil",
+      "quantity": "4",
+      "unit": "manojo",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    }
+  ]
+}
