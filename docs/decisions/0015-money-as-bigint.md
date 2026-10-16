@@ -24,10 +24,10 @@ They are *branded* types: TypeScript treats them as different types, so a unit c
 | Line total: quantity × unit price − discount | cents | #29 |
 | Received unit cost: line total ÷ quantity in base units (`receivedUnitCost`) | 6 decimals | #33 |
 | Weighted-average cost, at each recalculation (`averageCost`) | 6 decimals | #33 |
-| Gross quantity from a yield: net ÷ yield | whole base units | #34 |
-| Variance value: unexplained variance × average cost | cents | #34 |
+| Gross quantity from a yield: net ÷ yield, per recipe line before multiplying by dishes sold (`grossQuantity`) | whole base units | #34 |
+| Variance value: unexplained variance × average cost (`varianceValue`) | cents | #34 |
 
-Document totals are sums of rounded line totals, so they need no rounding of their own. Line discounts are percentages with up to 2 decimals (the "Dto." column on Spanish delivery notes and invoices), applied before the line total is rounded.
+Document totals are sums of rounded line totals, so they need no rounding of their own. Line discounts are percentages with up to 2 decimals (the "Dto." column on Spanish delivery notes and invoices), applied before the line total is rounded. Recipe yields are percentages with up to 2 decimals too ("62.5"), above 0 and possibly above 100% for food that gains weight when cooked.
 
 Quantities stay safe-integer numbers (decision 0010).
 
