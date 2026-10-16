@@ -1,4 +1,8 @@
 import { formatFixed, parseFixed, roundDiv } from "./fixed-point";
+import {
+  PURCHASE_QUANTITY_DECIMALS,
+  parsePurchaseQuantity,
+} from "./purchase-quantity";
 
 // Money and UnitCost are both bigints underneath, on different scales. The brand (a property
 // that exists only for the type checker) stops one being passed where the other is expected,
@@ -17,8 +21,6 @@ export type UnitCost = bigint & { readonly [brand]: "UnitCost" };
 
 const MONEY_DECIMALS = 2;
 const UNIT_COST_DECIMALS = 6;
-/** A document line's quantity, in its purchase unit, may have up to 6 decimals ("2.5" kg). */
-const LINE_QUANTITY_DECIMALS = 6;
 /** Discounts are percentages with up to 2 decimals ("12.5" is 12.5%). */
 const DISCOUNT_DECIMALS = 2;
 const HUNDRED_PERCENT = 100n * 10n ** BigInt(DISCOUNT_DECIMALS);
@@ -85,7 +87,7 @@ export function lineTotal({
   unitPrice,
   discountPercent = "0",
 }: LineTotalInput): Money {
-  const units = parseFixed(quantity, LINE_QUANTITY_DECIMALS, "a line quantity");
+  const units = parsePurchaseQuantity(quantity);
   const discount = parseFixed(discountPercent, DISCOUNT_DECIMALS, "a discount");
   if (discount < 0n || discount > HUNDRED_PERCENT) {
     throw new RangeError(
@@ -97,7 +99,7 @@ export function lineTotal({
   // Cents are 10^-2 €, so divide by 10^14 to get cents, rounding once.
   const exact = units * unitPrice * (HUNDRED_PERCENT - discount);
   const scale =
-    LINE_QUANTITY_DECIMALS +
+    PURCHASE_QUANTITY_DECIMALS +
     UNIT_COST_DECIMALS +
     DISCOUNT_DECIMALS +
     2 - // the discount is a percentage: ÷ 100
