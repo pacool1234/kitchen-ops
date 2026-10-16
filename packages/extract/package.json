@@ -12,6 +12,7 @@
     "gold:render": "tsx scripts/render-gold.ts"
   },
   "dependencies": {
+    "@kitchen-ops/ledger": "workspace:*",
     "@kitchen-ops/shared": "workspace:*",
     "zod": "catalog:"
   },
