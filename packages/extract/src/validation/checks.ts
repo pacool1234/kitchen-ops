@@ -314,7 +314,7 @@ function date(
 }
 
 /** Document numbers compared ignoring case and spaces: "f - 1" is "F-1". */
-const normalizedNumber = (number: string) =>
+export const normalizedNumber = (number: string) =>
   number.replace(/\s+/g, "").toUpperCase();
 
 function duplicate(
