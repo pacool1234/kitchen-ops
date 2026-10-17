@@ -1,0 +1,108 @@
+{
+  "documentType": "invoice",
+  "currency": "EUR",
+  "supplier": {
+    "name": "Bebidas Imaginarias del Levante, S.A.",
+    "taxId": "A00444554"
+  },
+  "number": "R-2026/00042",
+  "issueDate": "2026-10-15",
+  "totals": {
+    "net": "-1019.34",
+    "vat": [
+      {
+        "rate": "10",
+        "base": "-228.19",
+        "amount": "-22.82"
+      },
+      {
+        "rate": "21",
+        "base": "-791.15",
+        "amount": "-166.14"
+      }
+    ],
+    "total": "-1208.30"
+  },
+  "lines": [
+    {
+      "supplierCode": "BC-3010",
+      "description": "Barril cerveza rubia 30 l",
+      "quantity": "-4",
+      "unit": "ud",
+      "unitPrice": "92.40",
+      "discountPercent": "5",
+      "vatRate": "21",
+      "lineTotal": "-351.12"
+    },
+    {
+      "supplierCode": "VT-2201",
+      "description": "Vino tinto crianza D.O. Inventada (caja 6)",
+      "quantity": "-4",
+      "unit": "caja",
+      "unitPrice": "54.75",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "-219.00"
+    },
+    {
+      "supplierCode": "VB-2215",
+      "description": "Vino blanco verdejo (caja 6)",
+      "quantity": "-2",
+      "unit": "caja",
+      "unitPrice": "47.90",
+      "discountPercent": "3",
+      "vatRate": "21",
+      "lineTotal": "-92.93"
+    },
+    {
+      "supplierCode": "GI-4002",
+      "description": "Ginebra premium 70 cl",
+      "quantity": "-6",
+      "unit": "botella",
+      "unitPrice": "21.35",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "-128.10"
+    },
+    {
+      "supplierCode": "AG-1103",
+      "description": "Agua con gas 0,5 l (caja 24)",
+      "quantity": "-5",
+      "unit": "caja",
+      "unitPrice": "9.85",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "-49.25"
+    },
+    {
+      "supplierCode": "RF-1420",
+      "description": "Refresco cola lata 33 cl (pack 24)",
+      "quantity": "-7",
+      "unit": "pack",
+      "unitPrice": "11.25",
+      "discountPercent": "10",
+      "vatRate": "10",
+      "lineTotal": "-70.88"
+    },
+    {
+      "supplierCode": "ZU-1530",
+      "description": "Zumo melocotón 20 cl (caja 24)",
+      "quantity": "-3",
+      "unit": "caja",
+      "unitPrice": "13.62",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "-40.86"
+    },
+    {
+      "supplierCode": "TO-4110",
+      "description": "Tónica 20 cl (caja 24)",
+      "quantity": "-4",
+      "unit": "caja",
+      "unitPrice": "16.80",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "-67.20"
+    }
+  ]
+}

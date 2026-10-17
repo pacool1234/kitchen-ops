@@ -1,0 +1,6 @@
+{
+  "origin": "synthetic",
+  "kind": "facturae-xml",
+  "notes": "A Facturae 3.2.1 corrective invoice (rectificativa por diferencias, class OR) correcting prices, not returning goods: quantities are positive and unit prices negative. The seller is a self-employed person, so the name is joined from a first name and two surnames. At 4% the per-line VAT amounts add up to -0.68, but the invoice states -0.67, worked out on the base. The original invoice it corrects is only in the Corrective block. Valid against the official 3.2.1 schema, unsigned.",
+  "checked": null
+}

@@ -24,10 +24,18 @@ export const KINDS_BY_EXTENSION: Readonly<Record<string, readonly GoldKind[]>> =
     xml: ["facturae-xml"],
   };
 
+/**
+ * How a synthetic text PDF was made: rendered from its expected.json by `gold:render`, or made
+ * elsewhere (by hand or with another tool) and checked by a person.
+ */
+export const GOLD_MADE = ["rendered", "elsewhere"] as const;
+
 /** `meta.json` in each gold folder. Unknown keys are rejected, so a typo can't hide a field. */
 export const GoldMeta = z.strictObject({
   origin: z.enum(GOLD_ORIGINS),
   kind: z.enum(GOLD_KINDS),
+  /** Required for a synthetic text PDF, and only there (checked in `goldEntryProblems`). */
+  made: z.enum(GOLD_MADE).optional(),
   /** What makes this document hard. Never client data. */
   notes: z.string().min(1),
   /**
@@ -40,3 +48,15 @@ export const GoldMeta = z.strictObject({
     .nullable(),
 });
 export type GoldMeta = z.infer<typeof GoldMeta>;
+
+/**
+ * Whether `gold:render` writes this document's source.pdf, and so whether the gold set test checks
+ * it against the renderer. A PDF made elsewhere is never overwritten.
+ */
+export function isRendered(meta: GoldMeta): boolean {
+  return (
+    meta.origin === "synthetic" &&
+    meta.kind === "text-pdf" &&
+    meta.made === "rendered"
+  );
+}

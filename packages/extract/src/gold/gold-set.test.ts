@@ -8,7 +8,15 @@ import {
   readGoldEntry,
   type GoldEntry,
 } from "./gold-set";
-import { GoldMeta } from "./meta";
+import fc from "fast-check";
+import {
+  GOLD_KINDS,
+  GOLD_MADE,
+  GOLD_ORIGINS,
+  GoldMeta,
+  isRendered,
+  type GoldKind,
+} from "./meta";
 import { renderGoldPdf } from "./render";
 import { validate } from "../validation/checks";
 
@@ -33,12 +41,14 @@ const expected: ExtractedDocument = {
     },
   ],
 };
-const meta: GoldMeta = {
+/** Without `made`: what anything but a synthetic text PDF looks like. */
+const withoutMade: GoldMeta = {
   origin: "synthetic",
   kind: "text-pdf",
   notes: "A minimal example.",
   checked: { by: "repo-owner", on: "2026-10-16" },
 };
+const meta: GoldMeta = { ...withoutMade, made: "rendered" };
 const valid: GoldEntry = {
   id: "syn-999-example",
   files: ["expected.json", "meta.json", "source.pdf"],
@@ -112,7 +122,7 @@ describe("goldEntryProblems: what makes a gold folder invalid", () => {
       goldEntryProblems({
         ...valid,
         files: ["expected.json", "meta.json", "source.xml"],
-        meta: { ...meta, kind: "photo" },
+        meta: { ...withoutMade, kind: "photo" },
       }),
     ).toEqual([
       "syn-999-example: a .xml source can't be of kind photo (expected facturae-xml)",
@@ -126,13 +136,101 @@ describe("goldEntryProblems: what makes a gold folder invalid", () => {
       "syn-999-example: expected.json hasn't been checked against its source by a person (meta.json: checked)",
     ]);
   });
+
+  it("a synthetic text PDF that doesn't say how it was made", () => {
+    expect(goldEntryProblems({ ...valid, meta: withoutMade })).toEqual([
+      "syn-999-example: a synthetic text PDF must say how it was made (meta.json: made: rendered or elsewhere)",
+    ]);
+  });
+
+  it("anything else saying how it was made: an own PDF, or a photo", () => {
+    expect(
+      goldEntryProblems({ ...valid, meta: { ...meta, origin: "own" } }),
+    ).toEqual([
+      "syn-999-example: only a synthetic text PDF says how it was made (meta.json: made)",
+    ]);
+    expect(
+      goldEntryProblems({
+        ...valid,
+        files: ["expected.json", "meta.json", "source.jpg"],
+        meta: { ...meta, kind: "photo" },
+      }),
+    ).toEqual([
+      "syn-999-example: only a synthetic text PDF says how it was made (meta.json: made)",
+    ]);
+  });
+});
+
+/** A source file that fits each kind. */
+const SOURCE_FOR: Record<GoldKind, string> = {
+  "text-pdf": "source.pdf",
+  scan: "source.pdf",
+  photo: "source.jpg",
+  "facturae-xml": "source.xml",
+};
+
+const anyMeta = fc.record({
+  origin: fc.constantFrom(...GOLD_ORIGINS),
+  kind: fc.constantFrom(...GOLD_KINDS),
+  made: fc.constantFrom(undefined, ...GOLD_MADE),
+});
+
+/** A folder with this origin, kind and `made` (left out when undefined), otherwise valid. */
+const entryWith = ({
+  made,
+  ...rest
+}: {
+  origin: GoldMeta["origin"];
+  kind: GoldKind;
+  made: GoldMeta["made"];
+}): GoldEntry => {
+  return {
+    ...valid,
+    files: ["expected.json", "meta.json", SOURCE_FOR[rest.kind]],
+    meta: { ...withoutMade, ...rest, ...(made === undefined ? {} : { made }) },
+  };
+};
+
+describe("isRendered: what gold:render may overwrite", () => {
+  it("never an own document or a scan, even one wrongly marked made: rendered", () => {
+    expect(isRendered(meta)).toBe(true);
+    expect(isRendered({ ...meta, origin: "own" })).toBe(false);
+    expect(isRendered({ ...meta, kind: "scan" })).toBe(false);
+  });
+});
+
+describe("how a synthetic text PDF was made: properties", () => {
+  it("a folder says how it was made exactly when it's a synthetic text PDF", () => {
+    fc.assert(
+      fc.property(anyMeta, (m) => {
+        const shouldSay = m.origin === "synthetic" && m.kind === "text-pdf";
+        const says = m.made !== undefined;
+        expect(goldEntryProblems(entryWith(m))).toHaveLength(
+          shouldSay === says ? 0 : 1,
+        );
+      }),
+    );
+  });
+
+  it("a valid folder is rendered, so checked against the renderer, exactly when it says made: rendered", () => {
+    fc.assert(
+      fc.property(anyMeta, (m) => {
+        const entry = entryWith(m);
+        fc.pre(goldEntryProblems(entry).length === 0);
+        expect(isRendered(GoldMeta.parse(entry.meta))).toBe(
+          m.made === "rendered",
+        );
+      }),
+    );
+  });
 });
 
 describe("the gold set in eval/gold", () => {
   const ids = goldIds(GOLD_DIRECTORY);
 
-  it("has documents", () => {
-    expect(ids.length).toBeGreaterThan(0);
+  it("has 20 to 30 documents: enough for the metrics to mean something, few enough to check by hand (spec section 9)", () => {
+    expect(ids.length).toBeGreaterThanOrEqual(20);
+    expect(ids.length).toBeLessThanOrEqual(30);
   });
 
   it("every folder is complete, valid and checked by a person", () => {
@@ -163,18 +261,12 @@ describe("the gold set in eval/gold", () => {
     expect(failures).toEqual([]);
   });
 
-  it("every synthetic PDF is exactly what rendering its expected.json produces, so the document matches its answer", async () => {
+  it("every rendered synthetic PDF is exactly what rendering its expected.json produces, so the document matches its answer", async () => {
     const outdated: string[] = [];
     for (const id of ids) {
       const entry = readGoldEntry(GOLD_DIRECTORY, id);
       const parsedMeta = GoldMeta.safeParse(entry.meta);
-      if (
-        !parsedMeta.success ||
-        parsedMeta.data.origin !== "synthetic" ||
-        parsedMeta.data.kind !== "text-pdf"
-      ) {
-        continue;
-      }
+      if (!parsedMeta.success || !isRendered(parsedMeta.data)) continue;
       const rendered = await renderGoldPdf(entry.expected as ExtractedDocument);
       const committed = readFileSync(
         new URL(`${id}/source.pdf`, GOLD_DIRECTORY),
