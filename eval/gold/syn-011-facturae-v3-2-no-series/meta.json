@@ -1,0 +1,6 @@
+{
+  "origin": "synthetic",
+  "kind": "facturae-xml",
+  "notes": "A Facturae 3.2 e-invoice, the oldest supported namespace. No series, and a slash in the number. The seller's tax ID is written with a hyphen. Weights with three decimals (12.480 kg is 12.48), a unit price with three decimals, a 3% discount rounded once on the line, a line without an article code, and three VAT rates. Valid against the official 3.2 schema, unsigned.",
+  "checked": null
+}

@@ -4,7 +4,7 @@ Committed eval documents: own, public or synthetic, never client documents. Each
 
 Written from each folder's `meta.json` by `pnpm --filter @kitchen-ops/extract gold:readme`. Don't edit it by hand: edit the `meta.json` and run that instead.
 
-9 documents: 8 text-pdf, 0 scan, 0 photo, 1 facturae-xml.
+11 documents: 8 text-pdf, 0 scan, 0 photo, 3 facturae-xml.
 
 | Folder | Origin | Kind | Made | What makes it hard |
 | --- | --- | --- | --- | --- |
@@ -17,3 +17,5 @@ Written from each folder's `meta.json` by `pnpm --filter @kitchen-ops/extract go
 | syn-007-invoice-three-vat-rates | synthetic | text-pdf | elsewhere | It has 12 lines on one page and difficulty is medium |
 | syn-008-invoice-two-pages-totals-last | synthetic | text-pdf | elsewhere | It has 27 lines over two A4 pages, with the totals only on page 2. Difficulty is hard |
 | syn-009-credit-note-returned-drinks | synthetic | text-pdf | elsewhere | It credits returned drinks from invoice F-2026/01987. It has 8 lines on one page and difficulty is medium |
+| syn-010-facturae-credit-note-price-correction | synthetic | facturae-xml | | A Facturae 3.2.1 corrective invoice (rectificativa por diferencias, class OR) correcting prices, not returning goods: quantities are positive and unit prices negative. The seller is a self-employed person, so the name is joined from a first name and two surnames. At 4% the per-line VAT amounts add up to -0.68, but the invoice states -0.67, worked out on the base. The original invoice it corrects is only in the Corrective block. Valid against the official 3.2.1 schema, unsigned. |
+| syn-011-facturae-v3-2-no-series | synthetic | facturae-xml | | A Facturae 3.2 e-invoice, the oldest supported namespace. No series, and a slash in the number. The seller's tax ID is written with a hyphen. Weights with three decimals (12.480 kg is 12.48), a unit price with three decimals, a 3% discount rounded once on the line, a line without an article code, and three VAT rates. Valid against the official 3.2 schema, unsigned. |
