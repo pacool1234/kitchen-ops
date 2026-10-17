@@ -151,7 +151,10 @@ const record = (costMicroUsd: number | null): CallRecord => ({
   structuredOutputFailed: false,
 });
 
-/** A fake extraction reading every document perfectly, at the costs given in turn. */
+/**
+ * A fake extraction reading every document perfectly, at the costs given in turn (null: cost not
+ * reported), then 0.
+ */
 function perfectReader(costs: (number | null)[]): RunOptions["extract"] {
   const gold = new Map(
     goldSet.documents.map((d) => [sha256Hex(d.source), d.gold]),
@@ -159,13 +162,15 @@ function perfectReader(costs: (number | null)[]): RunOptions["extract"] {
   let call = 0;
   return async (_client, bytes): Promise<FileExtraction> => {
     const sha256 = sha256Hex(bytes);
+    const cost = call < costs.length ? (costs[call] as number | null) : 0;
+    call++;
     return {
       sha256,
       route: "pdf-text",
       result: {
         status: "extracted",
         document: gold.get(sha256)!,
-        record: record(costs[call++] ?? 0),
+        record: record(cost),
       },
     };
   };
