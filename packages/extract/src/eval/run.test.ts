@@ -181,8 +181,11 @@ function perfectReader(costs: (number | null)[]): RunOptions["extract"] {
   };
 }
 
+/** Six gold documents, so the counts below don't change as the gold set grows. */
+const six: EvalSet = { ...goldSet, documents: goldSet.documents.slice(0, 6) };
+
 const subsetOfGold = fc
-  .subarray([...goldSet.documents], { minLength: 1 })
+  .subarray([...six.documents], { minLength: 1 })
   .chain((documents) =>
     fc.shuffledSubarray(documents, { minLength: documents.length }),
   );
@@ -219,7 +222,7 @@ describe("runEval: properties", () => {
         async (costs, cap) => {
           const [run] = await runEval(
             options({
-              set: goldSet,
+              set: six,
               extract: perfectReader(costs),
               maxMicroUsd: cap,
             }),
@@ -246,7 +249,7 @@ describe("runEval: properties", () => {
 describe("runEval: stopping", () => {
   it("a call with no reported cost stops the run: the cap can't be kept without knowing what was spent", async () => {
     const [run] = await runEval(
-      options({ set: goldSet, extract: perfectReader([100, null, 100]) }),
+      options({ set: six, extract: perfectReader([100, null, 100]) }),
     );
     expect(run!.documents).toHaveLength(2);
     expect(run!.notRun).toHaveLength(4);
@@ -256,7 +259,7 @@ describe("runEval: stopping", () => {
   it("the cap is for the whole run: once passed, later models don't run at all", async () => {
     const runs = await runEval(
       options({
-        set: goldSet,
+        set: six,
         models: [structured, plain],
         extract: perfectReader([600, 600]),
         maxMicroUsd: 1000,
@@ -272,7 +275,7 @@ describe("runEval: stopping", () => {
     // The first model spends 600 on its 6 documents; the second passes 1000 on its fifth.
     const runs = await runEval(
       options({
-        set: goldSet,
+        set: six,
         models: [structured, plain],
         extract: perfectReader(Array.from({ length: 12 }, () => 100)),
         maxMicroUsd: 1000,
