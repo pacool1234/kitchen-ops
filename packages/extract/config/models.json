@@ -1,3 +1,22 @@
 {
-  "models": []
+  "models": [
+    {
+      "id": "google/gemini-3.8-flash",
+      "structuredOutput": true,
+      "vision": true,
+      "note": "0.75/3.75"
+    },
+    {
+      "id": "openai/gpt-6-luna",
+      "structuredOutput": true,
+      "vision": true,
+      "note": "0.1/0.5"
+    },
+    {
+      "id": "anthropic/claude-opus-5.5",
+      "structuredOutput": true,
+      "vision": true,
+      "note": "4/20"
+    }
+  ]
 }
