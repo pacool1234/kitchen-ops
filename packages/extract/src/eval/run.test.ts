@@ -121,6 +121,11 @@ describe("runEval: routing, extraction, validation and evaluation, document by d
     }
   });
 
+  it("a structured-output call whose first answer matched the schema isn't a failure", async () => {
+    const [run] = await runEval(options({}));
+    expect(run!.structuredOutput).toEqual({ part: 0, whole: 1 });
+  });
+
   it("each model gets its own run; the structured-output failure rate only counts models that ask for it", async () => {
     const { client } = fakeClient(
       reply("not JSON"),
@@ -261,5 +266,21 @@ describe("runEval: stopping", () => {
     expect(runs[1]!.documents).toHaveLength(0);
     expect(runs[1]!.notRun).toHaveLength(6);
     expect(runs[1]!.stoppedBecause).toBe("spending-cap");
+  });
+
+  it("what earlier models spent counts against the cap for later ones", async () => {
+    // The first model spends 600 on its 6 documents; the second passes 1000 on its fifth.
+    const runs = await runEval(
+      options({
+        set: goldSet,
+        models: [structured, plain],
+        extract: perfectReader(Array.from({ length: 12 }, () => 100)),
+        maxMicroUsd: 1000,
+      }),
+    );
+    expect(runs[0]!.documents).toHaveLength(6);
+    expect(runs[0]!.stoppedBecause).toBeNull();
+    expect(runs[1]!.documents).toHaveLength(5);
+    expect(runs[1]!.notRun).toHaveLength(1);
   });
 });
