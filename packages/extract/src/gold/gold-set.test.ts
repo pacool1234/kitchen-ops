@@ -41,13 +41,14 @@ const expected: ExtractedDocument = {
     },
   ],
 };
-const meta: GoldMeta = {
+/** Without `made`: what anything but a synthetic text PDF looks like. */
+const withoutMade: GoldMeta = {
   origin: "synthetic",
   kind: "text-pdf",
-  made: "rendered",
   notes: "A minimal example.",
   checked: { by: "repo-owner", on: "2026-10-16" },
 };
+const meta: GoldMeta = { ...withoutMade, made: "rendered" };
 const valid: GoldEntry = {
   id: "syn-999-example",
   files: ["expected.json", "meta.json", "source.pdf"],
@@ -121,7 +122,7 @@ describe("goldEntryProblems: what makes a gold folder invalid", () => {
       goldEntryProblems({
         ...valid,
         files: ["expected.json", "meta.json", "source.xml"],
-        meta: { ...meta, kind: "photo" },
+        meta: { ...withoutMade, kind: "photo" },
       }),
     ).toEqual([
       "syn-999-example: a .xml source can't be of kind photo (expected facturae-xml)",
@@ -137,8 +138,7 @@ describe("goldEntryProblems: what makes a gold folder invalid", () => {
   });
 
   it("a synthetic text PDF that doesn't say how it was made", () => {
-    const { made: _, ...unsaid } = meta;
-    expect(goldEntryProblems({ ...valid, meta: unsaid })).toEqual([
+    expect(goldEntryProblems({ ...valid, meta: withoutMade })).toEqual([
       "syn-999-example: a synthetic text PDF must say how it was made (meta.json: made: rendered or elsewhere)",
     ]);
   });
@@ -184,11 +184,10 @@ const entryWith = ({
   kind: GoldKind;
   made: GoldMeta["made"];
 }): GoldEntry => {
-  const { made: _, ...others } = meta;
   return {
     ...valid,
     files: ["expected.json", "meta.json", SOURCE_FOR[rest.kind]],
-    meta: { ...others, ...rest, ...(made === undefined ? {} : { made }) },
+    meta: { ...withoutMade, ...rest, ...(made === undefined ? {} : { made }) },
   };
 };
 
