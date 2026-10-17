@@ -191,6 +191,14 @@ const entryWith = ({
   };
 };
 
+describe("isRendered: what gold:render may overwrite", () => {
+  it("never an own document or a scan, even one wrongly marked made: rendered", () => {
+    expect(isRendered(meta)).toBe(true);
+    expect(isRendered({ ...meta, origin: "own" })).toBe(false);
+    expect(isRendered({ ...meta, kind: "scan" })).toBe(false);
+  });
+});
+
 describe("how a synthetic text PDF was made: properties", () => {
   it("a folder says how it was made exactly when it's a synthetic text PDF", () => {
     fc.assert(
