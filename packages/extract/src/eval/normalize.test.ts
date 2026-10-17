@@ -122,7 +122,9 @@ describe("document numbers compare like the duplicate check does", () => {
     expect(sameDocumentNumber("f - 1", "F-1")).toBe(true);
   });
 
-  it("but not separators, until #58", () => {
-    expect(sameDocumentNumber("LI26-0482", "LI260482")).toBe(false);
+  it("and the separators -, / and . (#58)", () => {
+    expect(sameDocumentNumber("LI26-0482", "LI260482")).toBe(true);
+    expect(sameDocumentNumber("LI26/0482", "li26.0482")).toBe(true);
+    expect(sameDocumentNumber("F1", "F10")).toBe(false);
   });
 });

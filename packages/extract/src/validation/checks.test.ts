@@ -70,6 +70,14 @@ function failures(document: ExtractedDocument, ctx = context) {
   return validate(document, ctx).failures.map((f) => `${f.check} ${f.path}`);
 }
 
+/** Whether the duplicate check flags `number` when `known` was already received. */
+function isDuplicate(number: string, known: string): boolean {
+  return validate(
+    { ...invoice, number },
+    { ...context, knownNumbers: [known] },
+  ).failures.some((f) => f.check === "duplicate");
+}
+
 describe("validate: a result that adds up", () => {
   it("the hand-worked invoice passes every check", () => {
     expect(validate(invoice, context)).toEqual({ passed: true, failures: [] });
@@ -222,6 +230,25 @@ describe("validate: each check, failing", () => {
     expect(failures(invoice, { ...context, knownNumbers: ["F-2"] })).toEqual(
       [],
     );
+  });
+
+  it("duplicate: the separators -, / and . don't count either, so a PDF and a Facturae copy of one invoice match", () => {
+    for (const known of ["LI26-0482", "LI26/0482", "li26 0482", "LI26.0482"]) {
+      expect(isDuplicate("LI260482", known), known).toBe(true);
+    }
+  });
+
+  it("duplicate: numbers without separators are compared exactly, so F1, F10 and F01 are three numbers", () => {
+    expect(isDuplicate("F1", "F10")).toBe(false);
+    expect(isDuplicate("F1", "F01")).toBe(false);
+    expect(isDuplicate("F10", "F01")).toBe(false);
+    expect(isDuplicate("F10", "f10")).toBe(true);
+  });
+
+  it("duplicate: only spaces, -, / and . are ignored; any other character still counts, so F_1, F#1 and F1 are three numbers", () => {
+    expect(isDuplicate("F_1", "F1")).toBe(false);
+    expect(isDuplicate("F#1", "F1")).toBe(false);
+    expect(isDuplicate("F_1", "F#1")).toBe(false);
   });
 
   it("missing-value: on every document, the tax ID, number, date, and each line's quantity, unit and a description or code", () => {
@@ -399,6 +426,55 @@ describe("validation properties", () => {
           expect(validate(changed, context).passed).toBe(false);
         },
       ),
+    );
+  });
+});
+
+describe("duplicate: document numbers, properties", () => {
+  const SEPARATORS = ["-", "/", ".", " "];
+  const core = fc.string({
+    unit: fc.constantFrom(..."aAbB019"),
+    minLength: 1,
+    maxLength: 8,
+  });
+  const anyNumber = fc.string({
+    unit: fc.constantFrom(..."aAbB019", ...SEPARATORS),
+    minLength: 1,
+    maxLength: 10,
+  });
+  const insertions = fc.array(
+    fc.tuple(fc.nat(), fc.constantFrom(...SEPARATORS)),
+    { maxLength: 4 },
+  );
+  /** `value` with separators inserted at the given positions. */
+  const insert = (value: string, at: readonly [number, string][]) =>
+    at.reduce((text, [position, separator]) => {
+      const i = position % (text.length + 1);
+      return text.slice(0, i) + separator + text.slice(i);
+    }, value);
+  const strip = (value: string) => value.replace(/[-/. ]/g, "");
+
+  it("inserting separators anywhere, in either number, never makes it a different number", () => {
+    fc.assert(
+      fc.property(core, insertions, insertions, (number, a, b) => {
+        expect(isDuplicate(insert(number, a), insert(number, b))).toBe(true);
+      }),
+    );
+  });
+
+  it("removing separators never changes whether two numbers are the same", () => {
+    fc.assert(
+      fc.property(anyNumber, anyNumber, (a, b) => {
+        expect(isDuplicate(strip(a), strip(b))).toBe(isDuplicate(a, b));
+      }),
+    );
+  });
+
+  it("numbers of only letters and digits are the same exactly when their text is, ignoring case", () => {
+    fc.assert(
+      fc.property(core, core, (a, b) => {
+        expect(isDuplicate(a, b)).toBe(a.toUpperCase() === b.toUpperCase());
+      }),
     );
   });
 });
