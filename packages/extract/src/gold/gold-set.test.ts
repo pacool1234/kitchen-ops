@@ -228,8 +228,9 @@ describe("how a synthetic text PDF was made: properties", () => {
 describe("the gold set in eval/gold", () => {
   const ids = goldIds(GOLD_DIRECTORY);
 
-  it("has documents", () => {
-    expect(ids.length).toBeGreaterThan(0);
+  it("has 20 to 30 documents: enough for the metrics to mean something, few enough to check by hand (spec section 9)", () => {
+    expect(ids.length).toBeGreaterThanOrEqual(20);
+    expect(ids.length).toBeLessThanOrEqual(30);
   });
 
   it("every folder is complete, valid and checked by a person", () => {
