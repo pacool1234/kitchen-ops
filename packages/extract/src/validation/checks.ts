@@ -313,9 +313,13 @@ function date(
   return [];
 }
 
-/** Document numbers compared ignoring case and spaces: "f - 1" is "F-1". */
+/**
+ * Document numbers compared ignoring case, spaces and the separators -, / and .: "LI26-0482",
+ * "li26 0482" and "LI260482" are one number (#58). Facturae keeps the series and the number
+ * apart and routing joins them with nothing in between, while a PDF may print a separator.
+ */
 export const normalizedNumber = (number: string) =>
-  number.replace(/\s+/g, "").toUpperCase();
+  number.replace(/[\s\-/.]+/g, "").toUpperCase();
 
 function duplicate(
   document: ExtractedDocument,
