@@ -17,6 +17,7 @@ import {
   isRendered,
   type GoldKind,
 } from "./meta";
+import { fileMetadata } from "./metadata";
 import { renderGoldPdf } from "./render";
 import { validate } from "../validation/checks";
 
@@ -275,5 +276,19 @@ describe("the gold set in eval/gold", () => {
     }
     // Fix with: pnpm --filter @kitchen-ops/extract gold:render
     expect(outdated).toEqual([]);
+  });
+
+  it("no source file carries metadata: the repository is public, and a phone photo's EXIF holds where it was taken", () => {
+    const found = ids.flatMap((id) => {
+      const source = readGoldEntry(GOLD_DIRECTORY, id).files.find((file) =>
+        file.startsWith("source."),
+      );
+      if (source === undefined) return []; // reported by the folder test
+      const bytes = readFileSync(new URL(`${id}/${source}`, GOLD_DIRECTORY));
+      return fileMetadata(new Uint8Array(bytes)).map(
+        (what) => `${id}: ${what}`,
+      );
+    });
+    expect(found).toEqual([]);
   });
 });
