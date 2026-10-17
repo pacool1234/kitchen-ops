@@ -11,7 +11,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "gold:render": "tsx scripts/render-gold.ts",
     "gold:readme": "tsx scripts/gold-readme.ts",
-    "eval": "tsx --env-file-if-exists=.env scripts/eval.ts"
+    "eval": "tsx --env-file-if-exists=.env scripts/eval.ts",
+    "eval:compare": "tsx scripts/eval-compare.ts"
   },
   "dependencies": {
     "@kitchen-ops/ledger": "workspace:*",

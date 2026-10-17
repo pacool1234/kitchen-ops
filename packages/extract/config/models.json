@@ -14,9 +14,9 @@
     },
     {
       "id": "anthropic/claude-opus-5.5",
-      "structuredOutput": true,
+      "structuredOutput": false,
       "vision": true,
-      "note": "4/20"
+      "note": "4/20. Structured output off: Anthropic accepts at most 16 nullable fields in a schema, and ours has 18 (400 invalid_request_error, 2026-10-18)."
     }
   ]
 }

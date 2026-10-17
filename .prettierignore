@@ -1,4 +1,6 @@
 # Prettier also skips everything in .gitignore.
 pnpm-lock.yaml
+# Written by the eval command and never edited by hand: JSON.stringify's layout, kept as written.
+eval/results/
 # Hand-written docs, spec and decision records keep their own formatting.
 *.md
