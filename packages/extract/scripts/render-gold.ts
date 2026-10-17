@@ -1,18 +1,17 @@
-// Renders source.pdf for every synthetic text-PDF gold document from its expected.json.
-// Run after writing or editing an expected.json:
+// Renders source.pdf for every synthetic text-PDF gold document marked "made": "rendered", from
+// its expected.json. PDFs made elsewhere are never touched. Run after writing or editing one:
 //   pnpm --filter @kitchen-ops/extract gold:render
 // Prints folder names only, never document contents.
 import { writeFileSync } from "node:fs";
 import { ExtractedDocument } from "@kitchen-ops/shared";
 import { GOLD_DIRECTORY, goldIds, readGoldEntry } from "../src/gold/gold-set";
-import { GoldMeta } from "../src/gold/meta";
+import { GoldMeta, isRendered } from "../src/gold/meta";
 import { renderGoldPdf } from "../src/gold/render";
 
 for (const id of goldIds(GOLD_DIRECTORY)) {
   const entry = readGoldEntry(GOLD_DIRECTORY, id);
   const meta = GoldMeta.safeParse(entry.meta);
-  if (!meta.success || meta.data.origin !== "synthetic") continue;
-  if (meta.data.kind !== "text-pdf") continue;
+  if (!meta.success || !isRendered(meta.data)) continue;
 
   const expected = ExtractedDocument.safeParse(entry.expected);
   if (!expected.success) {

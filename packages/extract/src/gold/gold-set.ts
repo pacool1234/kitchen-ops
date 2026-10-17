@@ -116,6 +116,18 @@ export function goldEntryProblems(entry: GoldEntry): string[] {
           `a .${extension} source can't be of kind ${result.data.kind} (expected ${kinds.join(" or ")})`,
         );
       }
+      const syntheticTextPdf =
+        result.data.origin === "synthetic" && result.data.kind === "text-pdf";
+      if (syntheticTextPdf && result.data.made === undefined) {
+        problems.push(
+          "a synthetic text PDF must say how it was made (meta.json: made: rendered or elsewhere)",
+        );
+      }
+      if (!syntheticTextPdf && result.data.made !== undefined) {
+        problems.push(
+          "only a synthetic text PDF says how it was made (meta.json: made)",
+        );
+      }
       if (result.data.checked === null) {
         problems.push(
           "expected.json hasn't been checked against its source by a person (meta.json: checked)",
