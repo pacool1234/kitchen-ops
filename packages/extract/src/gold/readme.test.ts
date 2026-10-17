@@ -23,8 +23,8 @@ const facturae: GoldMeta = {
 const rows = (readme: string) =>
   readme
     .split("\n")
-    .filter((line) => line.startsWith("| "))
-    .slice(1);
+    .filter((line) => line.startsWith("|"))
+    .slice(2);
 
 describe("goldReadme: the README listing every gold document", () => {
   it("one row per document, in the order given: folder, origin, kind, how it was made, what makes it hard", () => {
