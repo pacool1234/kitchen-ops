@@ -245,6 +245,12 @@ describe("validate: each check, failing", () => {
     expect(isDuplicate("F10", "f10")).toBe(true);
   });
 
+  it("duplicate: only spaces, -, / and . are ignored; any other character still counts, so F_1, F#1 and F1 are three numbers", () => {
+    expect(isDuplicate("F_1", "F1")).toBe(false);
+    expect(isDuplicate("F#1", "F1")).toBe(false);
+    expect(isDuplicate("F_1", "F#1")).toBe(false);
+  });
+
   it("missing-value: on every document, the tax ID, number, date, and each line's quantity, unit and a description or code", () => {
     const missing: ExtractedDocument = {
       ...invoice,
