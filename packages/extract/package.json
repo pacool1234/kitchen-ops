@@ -9,7 +9,8 @@
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc -p tsconfig.json",
-    "gold:render": "tsx scripts/render-gold.ts"
+    "gold:render": "tsx scripts/render-gold.ts",
+    "eval": "tsx --env-file-if-exists=.env scripts/eval.ts"
   },
   "dependencies": {
     "@kitchen-ops/ledger": "workspace:*",
