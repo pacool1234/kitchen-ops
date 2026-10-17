@@ -1,0 +1,413 @@
+{
+  "documentType": "invoice",
+  "currency": "EUR",
+  "supplier": {
+    "name": "CÁRNICAS Y PESCADOS FICTICIOS S.L.",
+    "taxId": "B00666776"
+  },
+  "number": "2026/A/004512",
+  "issueDate": "2026-10-13",
+  "totals": {
+    "net": "3752.15",
+    "vat": [
+      {
+        "rate": "21",
+        "base": "707.20",
+        "amount": "148.51"
+      },
+      {
+        "rate": "10",
+        "base": "1760.62",
+        "amount": "176.06"
+      },
+      {
+        "rate": "4",
+        "base": "1284.33",
+        "amount": "51.37"
+      }
+    ],
+    "total": "4128.09"
+  },
+  "lines": [
+    {
+      "supplierCode": "100245",
+      "description": "Solomillo de ternera",
+      "quantity": "8.450",
+      "unit": "kg",
+      "unitPrice": "32.90",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "278.01"
+    },
+    {
+      "supplierCode": "100251",
+      "description": "Entrecot de vaca madurada",
+      "quantity": "6.215",
+      "unit": "kg",
+      "unitPrice": "27.40",
+      "discountPercent": "5",
+      "vatRate": "10",
+      "lineTotal": "161.78"
+    },
+    {
+      "supplierCode": "100260",
+      "description": "Carrillera de cerdo ibérico",
+      "quantity": "4.730",
+      "unit": "kg",
+      "unitPrice": "12.85",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "60.78"
+    },
+    {
+      "supplierCode": "100277",
+      "description": "Secreto ibérico",
+      "quantity": "3.905",
+      "unit": "kg",
+      "unitPrice": "17.60",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "68.73"
+    },
+    {
+      "supplierCode": "100283",
+      "description": "Pechuga de pollo campero",
+      "quantity": "9.640",
+      "unit": "kg",
+      "unitPrice": "7.35",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "70.85"
+    },
+    {
+      "supplierCode": "100290",
+      "description": "Muslo de pollo deshuesado",
+      "quantity": "5.120",
+      "unit": "kg",
+      "unitPrice": "5.95",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "30.46"
+    },
+    {
+      "supplierCode": "100312",
+      "description": "Paletilla de cordero lechal",
+      "quantity": "2.875",
+      "unit": "kg",
+      "unitPrice": "19.80",
+      "discountPercent": "2.5",
+      "vatRate": "10",
+      "lineTotal": "55.50"
+    },
+    {
+      "supplierCode": "100330",
+      "description": "Carne picada mixta",
+      "quantity": "6.000",
+      "unit": "kg",
+      "unitPrice": "8.45",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "50.70"
+    },
+    {
+      "supplierCode": "100347",
+      "description": "Hamburguesa vacuno 180 g (caja 20)",
+      "quantity": "4",
+      "unit": "caja",
+      "unitPrice": "23.60",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "94.40"
+    },
+    {
+      "supplierCode": "100355",
+      "description": "Chorizo criollo (bandeja 1 kg)",
+      "quantity": "5",
+      "unit": "ud",
+      "unitPrice": "9.15",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "45.75"
+    },
+    {
+      "supplierCode": "200110",
+      "description": "Lubina de estero 600/800",
+      "quantity": "5.335",
+      "unit": "kg",
+      "unitPrice": "13.20",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "70.42"
+    },
+    {
+      "supplierCode": "200125",
+      "description": "Dorada de crianza 400/600",
+      "quantity": "4.180",
+      "unit": "kg",
+      "unitPrice": "9.75",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "40.76"
+    },
+    {
+      "supplierCode": "200140",
+      "description": "Merluza de pincho",
+      "quantity": "3.765",
+      "unit": "kg",
+      "unitPrice": "18.40",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "69.28"
+    },
+    {
+      "supplierCode": "200162",
+      "description": "Bacalao desalado lomo",
+      "quantity": "4.000",
+      "unit": "kg",
+      "unitPrice": "21.90",
+      "discountPercent": "5",
+      "vatRate": "10",
+      "lineTotal": "83.22"
+    },
+    {
+      "supplierCode": "200178",
+      "description": "Pulpo cocido pata",
+      "quantity": "2.240",
+      "unit": "kg",
+      "unitPrice": "34.50",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "77.28"
+    },
+    {
+      "supplierCode": "200190",
+      "description": "Calamar limpio congelado",
+      "quantity": "5.000",
+      "unit": "kg",
+      "unitPrice": "11.30",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "56.50"
+    },
+    {
+      "supplierCode": "200205",
+      "description": "Gamba roja (caja 1 kg)",
+      "quantity": "3",
+      "unit": "caja",
+      "unitPrice": "42.00",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "126.00"
+    },
+    {
+      "supplierCode": "200219",
+      "description": "Langostino cocido 40/60 (caja 2 kg)",
+      "quantity": "4",
+      "unit": "caja",
+      "unitPrice": "26.80",
+      "discountPercent": "3",
+      "vatRate": "10",
+      "lineTotal": "103.98"
+    },
+    {
+      "supplierCode": "200233",
+      "description": "Mejillón de roca (malla 5 kg)",
+      "quantity": "2",
+      "unit": "bolsa",
+      "unitPrice": "14.75",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "29.50"
+    },
+    {
+      "supplierCode": "200247",
+      "description": "Almeja japónica",
+      "quantity": "1.850",
+      "unit": "kg",
+      "unitPrice": "16.90",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "31.27"
+    },
+    {
+      "supplierCode": "200256",
+      "description": "Salmón ahumado loncheado",
+      "quantity": "1.500",
+      "unit": "kg",
+      "unitPrice": "29.80",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "44.70"
+    },
+    {
+      "supplierCode": "300011",
+      "description": "Aceite de oliva virgen extra (caja 4 x 5 l)",
+      "quantity": "12",
+      "unit": "caja",
+      "unitPrice": "89.50",
+      "discountPercent": "2.5",
+      "vatRate": "4",
+      "lineTotal": "1047.15"
+    },
+    {
+      "supplierCode": "300018",
+      "description": "Huevos camperos M (caja 180)",
+      "quantity": "2",
+      "unit": "caja",
+      "unitPrice": "38.70",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "77.40"
+    },
+    {
+      "supplierCode": "300024",
+      "description": "Leche entera fresca",
+      "quantity": "18",
+      "unit": "l",
+      "unitPrice": "1.12",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "20.16"
+    },
+    {
+      "supplierCode": "300031",
+      "description": "Queso curado de oveja (pieza)",
+      "quantity": "3.410",
+      "unit": "kg",
+      "unitPrice": "18.95",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "64.62"
+    },
+    {
+      "supplierCode": "300039",
+      "description": "Pan de cristal precocido (caja 24)",
+      "quantity": "3",
+      "unit": "caja",
+      "unitPrice": "19.20",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "57.60"
+    },
+    {
+      "supplierCode": "300047",
+      "description": "Harina de trigo floja 5 kg",
+      "quantity": "4",
+      "unit": "bolsa",
+      "unitPrice": "4.35",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "17.40"
+    },
+    {
+      "supplierCode": "300052",
+      "description": "Arroz bomba 1 kg (pack 10)",
+      "quantity": "2",
+      "unit": "pack",
+      "unitPrice": "31.50",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "63.00"
+    },
+    {
+      "supplierCode": "300066",
+      "description": "Pimentón de la Vera dulce 750 g",
+      "quantity": "2",
+      "unit": "ud",
+      "unitPrice": "12.40",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "24.80"
+    },
+    {
+      "supplierCode": "300071",
+      "description": "Sal en escamas 1,4 kg",
+      "quantity": "3",
+      "unit": "ud",
+      "unitPrice": "7.65",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "22.95"
+    },
+    {
+      "supplierCode": "400103",
+      "description": "Vino tinto Ribera ficticia 75 cl",
+      "quantity": "24",
+      "unit": "botella",
+      "unitPrice": "8.90",
+      "discountPercent": "5",
+      "vatRate": "21",
+      "lineTotal": "202.92"
+    },
+    {
+      "supplierCode": "400118",
+      "description": "Vino blanco Rueda ficticio 75 cl",
+      "quantity": "18",
+      "unit": "botella",
+      "unitPrice": "6.45",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "116.10"
+    },
+    {
+      "supplierCode": "400126",
+      "description": "Cava brut nature 75 cl",
+      "quantity": "12",
+      "unit": "botella",
+      "unitPrice": "7.80",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "93.60"
+    },
+    {
+      "supplierCode": "500210",
+      "description": "Servilleta tissue 40x40 2 capas",
+      "quantity": "2400",
+      "unit": "ud",
+      "unitPrice": "0.0185",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "44.40"
+    },
+    {
+      "supplierCode": "500224",
+      "description": "Mantel individual papel 30x40",
+      "quantity": "1500",
+      "unit": "ud",
+      "unitPrice": "0.0275",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "41.25"
+    },
+    {
+      "supplierCode": "500239",
+      "description": "Palillos enfundados",
+      "quantity": "5000",
+      "unit": "ud",
+      "unitPrice": "0.0038",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "19.00"
+    },
+    {
+      "supplierCode": "500247",
+      "description": "Detergente lavavajillas 25 kg",
+      "quantity": "2",
+      "unit": "ud",
+      "unitPrice": "61.35",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "122.70"
+    },
+    {
+      "supplierCode": "500256",
+      "description": "Film alimentario 45 cm 1.500 m",
+      "quantity": "3",
+      "unit": "ud",
+      "unitPrice": "24.90",
+      "discountPercent": "10",
+      "vatRate": "21",
+      "lineTotal": "67.23"
+    }
+  ]
+}

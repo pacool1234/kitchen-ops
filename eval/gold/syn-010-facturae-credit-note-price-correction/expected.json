@@ -1,0 +1,78 @@
+{
+  "documentType": "invoice",
+  "currency": "EUR",
+  "supplier": {
+    "name": "Rosa Inventada Ejemplar",
+    "taxId": "00067890V"
+  },
+  "number": "R260007",
+  "issueDate": "2026-10-09",
+  "totals": {
+    "net": "-18.36",
+    "vat": [
+      {
+        "rate": "4.00",
+        "base": "-16.86",
+        "amount": "-0.67"
+      },
+      {
+        "rate": "10.00",
+        "base": "-1.50",
+        "amount": "-0.15"
+      }
+    ],
+    "total": "-19.18"
+  },
+  "lines": [
+    {
+      "supplierCode": "FV-101",
+      "description": "Tomate pera, diferencia de precio",
+      "quantity": "18.5",
+      "unit": "kg",
+      "unitPrice": "-0.35",
+      "discountPercent": null,
+      "vatRate": "4.00",
+      "lineTotal": "-6.48"
+    },
+    {
+      "supplierCode": "FV-114",
+      "description": "Pimiento rojo, diferencia de precio",
+      "quantity": "7.2",
+      "unit": "kg",
+      "unitPrice": "-0.40",
+      "discountPercent": null,
+      "vatRate": "4.00",
+      "lineTotal": "-2.88"
+    },
+    {
+      "supplierCode": "FV-230",
+      "description": "Aceite de oliva virgen extra 5 L, diferencia de precio",
+      "quantity": "2",
+      "unit": "garrafa",
+      "unitPrice": "-3.15",
+      "discountPercent": null,
+      "vatRate": "4.00",
+      "lineTotal": "-6.30"
+    },
+    {
+      "supplierCode": "FV-305",
+      "description": "Champiñón laminado 500 g, diferencia de precio",
+      "quantity": "10",
+      "unit": "bandeja",
+      "unitPrice": "-0.12",
+      "discountPercent": null,
+      "vatRate": "4.00",
+      "lineTotal": "-1.20"
+    },
+    {
+      "supplierCode": "FV-410",
+      "description": "Gazpacho 1 L, diferencia de precio",
+      "quantity": "6",
+      "unit": "brik",
+      "unitPrice": "-0.25",
+      "discountPercent": null,
+      "vatRate": "10.00",
+      "lineTotal": "-1.50"
+    }
+  ]
+}

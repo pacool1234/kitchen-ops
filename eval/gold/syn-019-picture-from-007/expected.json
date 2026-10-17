@@ -1,0 +1,153 @@
+{
+  "documentType": "invoice",
+  "currency": "EUR",
+  "supplier": {
+    "name": "Distribuciones Ficticias del Sur S.L.",
+    "taxId": "B00111229"
+  },
+  "number": "F-2026/00315",
+  "issueDate": "2026-10-14",
+  "totals": {
+    "net": "464.36",
+    "vat": [
+      {
+        "rate": "4",
+        "base": "202.16",
+        "amount": "8.09"
+      },
+      {
+        "rate": "10",
+        "base": "110.42",
+        "amount": "11.04"
+      },
+      {
+        "rate": "21",
+        "base": "151.78",
+        "amount": "31.87"
+      }
+    ],
+    "total": "515.36"
+  },
+  "lines": [
+    {
+      "supplierCode": "AC-0101",
+      "description": "Aceite de oliva virgen extra garrafa 5 l",
+      "quantity": "3",
+      "unit": "ud",
+      "unitPrice": "28.45",
+      "discountPercent": "5",
+      "vatRate": "4",
+      "lineTotal": "81.08"
+    },
+    {
+      "supplierCode": "HA-0210",
+      "description": "Harina de trigo T55 saco 25 kg",
+      "quantity": "2",
+      "unit": "ud",
+      "unitPrice": "14.90",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "29.80"
+    },
+    {
+      "supplierCode": "LE-0330",
+      "description": "Leche entera UHT",
+      "quantity": "24",
+      "unit": "l",
+      "unitPrice": "0.89",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "21.36"
+    },
+    {
+      "supplierCode": "HU-0412",
+      "description": "Huevos camperos L (estuche 30)",
+      "quantity": "4",
+      "unit": "caja",
+      "unitPrice": "7.85",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "31.40"
+    },
+    {
+      "supplierCode": "QU-0518",
+      "description": "Queso manchego curado",
+      "quantity": "2.350",
+      "unit": "kg",
+      "unitPrice": "16.90",
+      "discountPercent": "3",
+      "vatRate": "4",
+      "lineTotal": "38.52"
+    },
+    {
+      "supplierCode": "PO-0620",
+      "description": "Pechuga de pollo fileteada",
+      "quantity": "4.875",
+      "unit": "kg",
+      "unitPrice": "6.45",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "31.44"
+    },
+    {
+      "supplierCode": "PE-0733",
+      "description": "Lomo de salmón fresco",
+      "quantity": "3.120",
+      "unit": "kg",
+      "unitPrice": "18.75",
+      "discountPercent": "5",
+      "vatRate": "10",
+      "lineTotal": "55.58"
+    },
+    {
+      "supplierCode": "AG-0801",
+      "description": "Agua mineral 1,5 l (pack 6)",
+      "quantity": "10",
+      "unit": "pack",
+      "unitPrice": "2.34",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "23.40"
+    },
+    {
+      "supplierCode": "CE-0915",
+      "description": "Cerveza botellín 33 cl (caja 24)",
+      "quantity": "3",
+      "unit": "caja",
+      "unitPrice": "15.60",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "46.80"
+    },
+    {
+      "supplierCode": "LI-1002",
+      "description": "Lavavajillas máquina industrial 20 l",
+      "quantity": "2",
+      "unit": "ud",
+      "unitPrice": "31.60",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "63.20"
+    },
+    {
+      "supplierCode": "LI-1017",
+      "description": "Bolsas basura 100x120 (rollo 10)",
+      "quantity": "5",
+      "unit": "pack",
+      "unitPrice": "6.95",
+      "discountPercent": "10",
+      "vatRate": "21",
+      "lineTotal": "31.28"
+    },
+    {
+      "supplierCode": "LI-1023",
+      "description": "Bayeta microfibra 40x40",
+      "quantity": "12",
+      "unit": "ud",
+      "unitPrice": "0.875",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "10.50"
+    }
+  ]
+}

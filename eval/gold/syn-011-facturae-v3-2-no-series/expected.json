@@ -1,0 +1,83 @@
+{
+  "documentType": "invoice",
+  "currency": "EUR",
+  "supplier": {
+    "name": "Cárnicas Imaginarias S.L.",
+    "taxId": "B00555664"
+  },
+  "number": "C2026/1187",
+  "issueDate": "2026-10-13",
+  "totals": {
+    "net": "268.09",
+    "vat": [
+      {
+        "rate": "4.00",
+        "base": "18.00",
+        "amount": "0.72"
+      },
+      {
+        "rate": "10.00",
+        "base": "213.09",
+        "amount": "21.31"
+      },
+      {
+        "rate": "21.00",
+        "base": "37.00",
+        "amount": "7.77"
+      }
+    ],
+    "total": "297.89"
+  },
+  "lines": [
+    {
+      "supplierCode": "CI-011",
+      "description": "Solomillo de ternera",
+      "quantity": "3.275",
+      "unit": "kg",
+      "unitPrice": "28.90",
+      "discountPercent": null,
+      "vatRate": "10.00",
+      "lineTotal": "94.65"
+    },
+    {
+      "supplierCode": "CI-024",
+      "description": "Pechuga de pollo fileteada",
+      "quantity": "12.48",
+      "unit": "kg",
+      "unitPrice": "6.75",
+      "discountPercent": "3.00",
+      "vatRate": "10.00",
+      "lineTotal": "81.71"
+    },
+    {
+      "supplierCode": "CI-031",
+      "description": "Chorizo ibérico",
+      "quantity": "2.6",
+      "unit": "kg",
+      "unitPrice": "14.125",
+      "discountPercent": null,
+      "vatRate": "10.00",
+      "lineTotal": "36.73"
+    },
+    {
+      "supplierCode": "CI-047",
+      "description": "Huevos camperos L",
+      "quantity": "5",
+      "unit": "docena",
+      "unitPrice": "3.60",
+      "discountPercent": null,
+      "vatRate": "4.00",
+      "lineTotal": "18.00"
+    },
+    {
+      "supplierCode": null,
+      "description": "Carbón vegetal, saco 15 kg",
+      "quantity": "2",
+      "unit": "bolsa",
+      "unitPrice": "18.50",
+      "discountPercent": null,
+      "vatRate": "21.00",
+      "lineTotal": "37.00"
+    }
+  ]
+}

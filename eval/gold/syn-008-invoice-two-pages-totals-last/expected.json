@@ -1,0 +1,303 @@
+{
+  "documentType": "invoice",
+  "currency": "EUR",
+  "supplier": {
+    "name": "Antonio Inventado Ejemplo",
+    "taxId": "00012345V"
+  },
+  "number": "FV 487/26",
+  "issueDate": "2026-10-16",
+  "totals": {
+    "net": "366.79",
+    "vat": [
+      {
+        "rate": "4",
+        "base": "232.65",
+        "amount": "9.31"
+      },
+      {
+        "rate": "10",
+        "base": "74.59",
+        "amount": "7.46"
+      },
+      {
+        "rate": "21",
+        "base": "59.55",
+        "amount": "12.51"
+      }
+    ],
+    "total": "396.07"
+  },
+  "lines": [
+    {
+      "supplierCode": null,
+      "description": "Tomate pera",
+      "quantity": "6.420",
+      "unit": "kg",
+      "unitPrice": "1.85",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "11.88"
+    },
+    {
+      "supplierCode": null,
+      "description": "Tomate cherry rama",
+      "quantity": "2.150",
+      "unit": "kg",
+      "unitPrice": "4.20",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "9.03"
+    },
+    {
+      "supplierCode": null,
+      "description": "Lechuga romana",
+      "quantity": "12",
+      "unit": "ud",
+      "unitPrice": "0.75",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "9.00"
+    },
+    {
+      "supplierCode": null,
+      "description": "Cebolla dulce",
+      "quantity": "8.735",
+      "unit": "kg",
+      "unitPrice": "1.15",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "10.05"
+    },
+    {
+      "supplierCode": null,
+      "description": "Patata agria saco 15 kg",
+      "quantity": "2",
+      "unit": "bolsa",
+      "unitPrice": "11.40",
+      "discountPercent": "5",
+      "vatRate": "4",
+      "lineTotal": "21.66"
+    },
+    {
+      "supplierCode": null,
+      "description": "Pimiento rojo",
+      "quantity": "3.380",
+      "unit": "kg",
+      "unitPrice": "2.65",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "8.96"
+    },
+    {
+      "supplierCode": null,
+      "description": "Pimiento verde italiano",
+      "quantity": "2.960",
+      "unit": "kg",
+      "unitPrice": "2.35",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "6.96"
+    },
+    {
+      "supplierCode": null,
+      "description": "Calabacín",
+      "quantity": "4.105",
+      "unit": "kg",
+      "unitPrice": "1.55",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "6.36"
+    },
+    {
+      "supplierCode": null,
+      "description": "Berenjena",
+      "quantity": "2.840",
+      "unit": "kg",
+      "unitPrice": "1.95",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "5.54"
+    },
+    {
+      "supplierCode": null,
+      "description": "Aguacate Hass",
+      "quantity": "5.000",
+      "unit": "kg",
+      "unitPrice": "4.90",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "24.50"
+    },
+    {
+      "supplierCode": null,
+      "description": "Limón",
+      "quantity": "3.250",
+      "unit": "kg",
+      "unitPrice": "1.70",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "5.53"
+    },
+    {
+      "supplierCode": null,
+      "description": "Naranja zumo malla 10 kg",
+      "quantity": "3",
+      "unit": "bolsa",
+      "unitPrice": "8.90",
+      "discountPercent": "3",
+      "vatRate": "4",
+      "lineTotal": "25.90"
+    },
+    {
+      "supplierCode": null,
+      "description": "Fresón caja 2 kg",
+      "quantity": "4",
+      "unit": "caja",
+      "unitPrice": "6.75",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "27.00"
+    },
+    {
+      "supplierCode": null,
+      "description": "Plátano de Canarias",
+      "quantity": "4.615",
+      "unit": "kg",
+      "unitPrice": "2.10",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "9.69"
+    },
+    {
+      "supplierCode": null,
+      "description": "Manzana golden",
+      "quantity": "3.070",
+      "unit": "kg",
+      "unitPrice": "1.95",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "5.99"
+    },
+    {
+      "supplierCode": null,
+      "description": "Ajo morado (malla 1 kg)",
+      "quantity": "2",
+      "unit": "bolsa",
+      "unitPrice": "5.80",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "11.60"
+    },
+    {
+      "supplierCode": null,
+      "description": "Perejil manojo",
+      "quantity": "10",
+      "unit": "ud",
+      "unitPrice": "0.45",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "4.50"
+    },
+    {
+      "supplierCode": null,
+      "description": "Cilantro manojo",
+      "quantity": "6",
+      "unit": "ud",
+      "unitPrice": "0.55",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "3.30"
+    },
+    {
+      "supplierCode": null,
+      "description": "Champiñón laminado bandeja 500 g",
+      "quantity": "8",
+      "unit": "ud",
+      "unitPrice": "1.625",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "13.00"
+    },
+    {
+      "supplierCode": null,
+      "description": "Setas de cardo",
+      "quantity": "1.245",
+      "unit": "kg",
+      "unitPrice": "9.80",
+      "discountPercent": null,
+      "vatRate": "4",
+      "lineTotal": "12.20"
+    },
+    {
+      "supplierCode": null,
+      "description": "Zumo de naranja natural 1 l",
+      "quantity": "6",
+      "unit": "botella",
+      "unitPrice": "2.95",
+      "discountPercent": "5",
+      "vatRate": "10",
+      "lineTotal": "16.82"
+    },
+    {
+      "supplierCode": null,
+      "description": "Aceitunas gordal (cubo 2 kg)",
+      "quantity": "2",
+      "unit": "ud",
+      "unitPrice": "13.50",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "27.00"
+    },
+    {
+      "supplierCode": null,
+      "description": "Almendra marcona tostada",
+      "quantity": "1.500",
+      "unit": "kg",
+      "unitPrice": "15.90",
+      "discountPercent": "10",
+      "vatRate": "10",
+      "lineTotal": "21.47"
+    },
+    {
+      "supplierCode": null,
+      "description": "Nueces peladas",
+      "quantity": "0.750",
+      "unit": "kg",
+      "unitPrice": "12.40",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "9.30"
+    },
+    {
+      "supplierCode": null,
+      "description": "Carbón vegetal saco 10 kg",
+      "quantity": "3",
+      "unit": "bolsa",
+      "unitPrice": "9.45",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "28.35"
+    },
+    {
+      "supplierCode": null,
+      "description": "Bolsas papel kraft (pack 250)",
+      "quantity": "1",
+      "unit": "pack",
+      "unitPrice": "18.70",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "18.70"
+    },
+    {
+      "supplierCode": null,
+      "description": "Cajas plástico retornables",
+      "quantity": "10",
+      "unit": "ud",
+      "unitPrice": "1.25",
+      "discountPercent": null,
+      "vatRate": "21",
+      "lineTotal": "12.50"
+    }
+  ]
+}
