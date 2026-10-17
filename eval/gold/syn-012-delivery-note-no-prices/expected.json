@@ -1,0 +1,173 @@
+{
+  "documentType": "delivery-note",
+  "currency": "EUR",
+  "supplier": {
+    "name": "SUMINISTROS HOSTELEROS INVENTADOS S.L.",
+    "taxId": "B00555664"
+  },
+  "number": "ALB-26-008813",
+  "issueDate": "2026-10-16",
+  "totals": null,
+  "lines": [
+    {
+      "supplierCode": "SH-1102",
+      "description": "LEJIA CONCENTRADA 5 L",
+      "quantity": "4",
+      "unit": "ud",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "SH-1140",
+      "description": "DESENGRASANTE COCINA PROF. 5 L",
+      "quantity": "3",
+      "unit": "ud",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "SH-1188",
+      "description": "LAVAVAJILLAS MAQUINA 12 KG",
+      "quantity": "2",
+      "unit": "ud",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "SH-1203",
+      "description": "ABRILLANTADOR MAQUINA 5 L",
+      "quantity": "2",
+      "unit": "ud",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "SH-1260",
+      "description": "GEL HIDROALCOHOLICO 1 L",
+      "quantity": "6",
+      "unit": "botella",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "SH-1305",
+      "description": "PAPEL SECAMANOS ZIG-ZAG (CAJA 20)",
+      "quantity": "2",
+      "unit": "caja",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "SH-1320",
+      "description": "BOBINA INDUSTRIAL 2 CAPAS",
+      "quantity": "6",
+      "unit": "ud",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "SH-1377",
+      "description": "BOLSA BASURA 85X105 NEGRA",
+      "quantity": "10",
+      "unit": "bolsa",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "SH-1410",
+      "description": "GUANTE NITRILO T-M (CAJA 100)",
+      "quantity": "3",
+      "unit": "caja",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "SH-1455",
+      "description": "FILM TRANSPARENTE 45 CM 300 M",
+      "quantity": "0",
+      "unit": "ud",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "SH-1512",
+      "description": "PAPEL ALUMINIO 30 CM 150 M",
+      "quantity": "2",
+      "unit": "ud",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "AL-2021",
+      "description": "ACEITE GIRASOL ALTO OLEICO 25 L",
+      "quantity": "2",
+      "unit": "ud",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "AL-2050",
+      "description": "SAL MARINA FINA 1 KG (PACK 10)",
+      "quantity": "1",
+      "unit": "pack",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "AL-2077",
+      "description": "QUESO RALLADO MEZCLA",
+      "quantity": "2.500",
+      "unit": "kg",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "AL-2093",
+      "description": "NATA COCINA 18% 1 L",
+      "quantity": "12",
+      "unit": "l",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    },
+    {
+      "supplierCode": "AL-2110",
+      "description": "TOMATE TRITURADO 5 KG",
+      "quantity": "3",
+      "unit": "ud",
+      "unitPrice": null,
+      "discountPercent": null,
+      "vatRate": null,
+      "lineTotal": null
+    }
+  ]
+}

@@ -4,7 +4,7 @@ Committed eval documents: own, public or synthetic, never client documents. Each
 
 Written from each folder's `meta.json` by `pnpm --filter @kitchen-ops/extract gold:readme`. Don't edit it by hand: edit the `meta.json` and run that instead.
 
-11 documents: 8 text-pdf, 0 scan, 0 photo, 3 facturae-xml.
+20 documents: 10 text-pdf, 2 scan, 5 photo, 3 facturae-xml.
 
 | Folder | Origin | Kind | Made | What makes it hard |
 | --- | --- | --- | --- | --- |
@@ -19,3 +19,12 @@ Written from each folder's `meta.json` by `pnpm --filter @kitchen-ops/extract go
 | syn-009-credit-note-returned-drinks | synthetic | text-pdf | elsewhere | It credits returned drinks from invoice F-2026/01987. It has 8 lines on one page and difficulty is medium |
 | syn-010-facturae-credit-note-price-correction | synthetic | facturae-xml | | A Facturae 3.2.1 corrective invoice (rectificativa por diferencias, class OR) correcting prices, not returning goods: quantities are positive and unit prices negative. The seller is a self-employed person, so the name is joined from a first name and two surnames. At 4% the per-line VAT amounts add up to -0.68, but the invoice states -0.67, worked out on the base. The original invoice it corrects is only in the Corrective block. Valid against the official 3.2.1 schema, unsigned. |
 | syn-011-facturae-v3-2-no-series | synthetic | facturae-xml | | A Facturae 3.2 e-invoice, the oldest supported namespace. No series, and a slash in the number. The seller's tax ID is written with a hyphen. Weights with three decimals (12.480 kg is 12.48), a unit price with three decimals, a 3% discount rounded once on the line, a line without an article code, and three VAT rates. Valid against the official 3.2 schema, unsigned. |
+| syn-012-delivery-note-no-prices | synthetic | text-pdf | elsewhere | It has 16 lines on one page, with cleaning supplies and dry goods, and no prices. Difficulty is medium. |
+| syn-013-invoice-multi-page | synthetic | text-pdf | elsewhere | It has 38 lines over two pages, with 24 on page 1 and 14 plus the totals on page 2. Difficulty is hard, mostly from volume and number formats. |
+| syn-014-picture-from-001 | synthetic | photo | | Photo of syn-001 printed |
+| syn-015-picture-from-002 | synthetic | photo | | Photo of syn-002 printed: taken at an angle, with the page sideways in the picture (rotated 90 degrees) and a shadow across it |
+| syn-016-picture-from-003 | synthetic | scan | | Scan of syn-003 printed |
+| syn-017-picture-from-004 | synthetic | photo | | Photo of syn-004 printed |
+| syn-018-picture-from-005 | synthetic | photo | | Photo of syn-005 printed |
+| syn-019-picture-from-007 | synthetic | photo | | Photo of syn-007 printed |
+| syn-020-picture-from-008 | synthetic | scan | | Scan of syn-008 printed: first page is blank |
