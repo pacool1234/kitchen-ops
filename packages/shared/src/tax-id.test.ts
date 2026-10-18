@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
-import { checkSpanishTaxId } from "./tax-id";
+import { checkSpanishTaxId, normalizeTaxId, TaxId } from "./tax-id";
 
 // Control characters worked out by hand:
 // - NIF: the 8 digits mod 23, looked up in "TRWAGMYFPDXBNJZSQVHLCKE". 12345678 mod 23 = 14 → Z.
@@ -134,6 +134,81 @@ describe("tax ID properties", () => {
           expect(checkSpanishTaxId(changed)).toMatchObject({ valid: false });
         },
       ),
+    );
+  });
+});
+
+describe("normalizeTaxId: one way to write each tax ID (#88)", () => {
+  it("upper case, without spaces, dots, hyphens or slashes", () => {
+    expect(normalizeTaxId(" b-00.123.455 ")).toBe("B00123455");
+    expect(normalizeTaxId("12.345.678-z")).toBe("12345678Z");
+    expect(normalizeTaxId("x 1234567 / l")).toBe("X1234567L");
+  });
+
+  it("drops an ES prefix in front of a 9-character ID", () => {
+    expect(normalizeTaxId("ESB00123455")).toBe("B00123455");
+    expect(normalizeTaxId("es-b00123455")).toBe("B00123455");
+    // Not a prefix: without it, nothing of 9 characters would be left.
+    expect(normalizeTaxId("ES0012345")).toBe("ES0012345");
+  });
+
+  it("any way of writing a valid tax ID gives that same ID back", () => {
+    const separator = fc.constantFrom("", "", " ", ".", "-", "/");
+    fc.assert(
+      fc.property(
+        validTaxId,
+        fc.array(separator, { minLength: 13, maxLength: 13 }),
+        fc.array(fc.boolean(), { minLength: 13, maxLength: 13 }),
+        fc.boolean(),
+        (taxId, separators, lower, prefixed) => {
+          const written = [...(prefixed ? `ES${taxId}` : taxId)]
+            .map(
+              (c, i) =>
+                (lower[i] ? c.toLowerCase() : c) + (separators[i] ?? ""),
+            )
+            .join("");
+          expect(normalizeTaxId(written), written).toBe(taxId);
+        },
+      ),
+    );
+  });
+});
+
+describe("TaxId: a supplier's tax ID as the API takes it (#88)", () => {
+  it("takes a valid one written any way, and gives it normalized", () => {
+    expect(TaxId.parse(" b-00.123.455 ")).toBe("B00123455");
+    expect(TaxId.parse("ESB00123455")).toBe("B00123455");
+  });
+
+  it("refuses a wrong control character, with the field code invalid_tax_id", () => {
+    const issues = TaxId.safeParse("B00123456").error?.issues;
+    expect(issues).toEqual([
+      expect.objectContaining({
+        code: "custom",
+        params: { code: "invalid_tax_id" },
+      }),
+    ]);
+  });
+
+  it("refuses a foreign tax ID: only Spanish ones can be checked", () => {
+    expect(TaxId.safeParse("FR12345678901").success).toBe(false);
+  });
+
+  it("takes exactly the tax IDs the check accepts, however they're written", () => {
+    const written = fc.oneof(
+      validTaxId,
+      fc.string({
+        unit: fc.constantFrom(..."0123456789ABEHPXYZ .-"),
+        minLength: 9,
+        maxLength: 12,
+      }),
+    );
+    fc.assert(
+      fc.property(written, (taxId) => {
+        expect(TaxId.safeParse(taxId).success, taxId).toBe(
+          checkSpanishTaxId(normalizeTaxId(taxId)).valid,
+        );
+      }),
     );
   });
 });
