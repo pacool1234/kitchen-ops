@@ -5,7 +5,7 @@ import type { BaseUnit, Locale } from "@kitchen-ops/shared";
 // becomes a JavaScript number (CLAUDE.md), so no amount loses precision, however large.
 
 /** The Intl locale behind each interface language. English is British: €1,234.56, 18/10/2026. */
-const INTL_LOCALE: Record<Locale, string> = { es: "es-ES", en: "en-GB" };
+export const INTL_LOCALE: Record<Locale, string> = { es: "es-ES", en: "en-GB" };
 
 /** The restaurant's time zone: every time is shown in it, whatever the device's (decision 0020). */
 export const RESTAURANT_TIME_ZONE = "Europe/Madrid";
