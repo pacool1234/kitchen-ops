@@ -7,6 +7,7 @@ import {
   createProduct,
   createSupplier,
   createSupplierProduct,
+  loadedAt,
   openCatalogue,
   signedIn,
   syntheticCif,
@@ -34,9 +35,9 @@ test("the product list: a page at a time in Spanish order, filtered by category 
   await signedIn(page, accounts.counter);
   await openCatalogue(page, "Productos");
 
-  // The seed has 43 active products: pages of 20, 20 and 3.
+  // Pages of 20. Not the total: other tests add products while this one runs.
   const pages = page.getByRole("navigation", { name: "Páginas" });
-  await expect(pages.getByText("1–20 de 43")).toBeVisible();
+  await expect(pages.getByText(/^1–20 de \d+$/)).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Aceite de oliva virgen extra" }),
   ).toBeVisible();
@@ -82,20 +83,20 @@ test("office creates a product with its purchase units, then edits and deactivat
 
   // A unit named after the base unit is refused on its own row.
   await page.getByRole("button", { name: "Añadir unidad" }).click();
-  await unitRow(page, 1).getByLabel("Unidad").fill("g");
-  await unitRow(page, 1).getByLabel("Contiene").fill("1");
+  await unitRow(page, 1).getByLabel("Unidad", { exact: true }).fill("g");
+  await unitRow(page, 1).getByLabel("Contiene", { exact: true }).fill("1");
   await page.getByRole("button", { name: "Crear producto" }).click();
   await expect(
     unitRow(page, 1).getByText("Ese nombre está reservado."),
   ).toBeVisible();
 
   // A box of 6 kg, typed in kilos, with its live example.
-  await unitRow(page, 1).getByLabel("Unidad").fill("caja");
-  await unitRow(page, 1).getByLabel("Contiene").fill("6");
+  await unitRow(page, 1).getByLabel("Unidad", { exact: true }).fill("caja");
+  await unitRow(page, 1).getByLabel("Contiene", { exact: true }).fill("6");
   await expect(unitRow(page, 1).getByText("1 caja = 6 kg")).toBeVisible();
   await page.getByRole("button", { name: "Añadir unidad" }).click();
-  await unitRow(page, 2).getByLabel("Unidad").fill("bandeja");
-  await unitRow(page, 2).getByLabel("Contiene").fill("0,5");
+  await unitRow(page, 2).getByLabel("Unidad", { exact: true }).fill("bandeja");
+  await unitRow(page, 2).getByLabel("Contiene", { exact: true }).fill("0,5");
   await expect(unitRow(page, 2).getByText("1 bandeja = 500 g")).toBeVisible();
   await expectAccessible(page);
 
@@ -103,8 +104,12 @@ test("office creates a product with its purchase units, then edits and deactivat
   await expect(toast(page, "Producto creado")).toBeVisible();
   await arrivedAt(page, name);
   // Saved smallest first, the base unit no longer to choose.
-  await expect(unitRow(page, 1).getByLabel("Unidad")).toHaveValue("bandeja");
-  await expect(unitRow(page, 2).getByLabel("Unidad")).toHaveValue("caja");
+  await expect(
+    unitRow(page, 1).getByLabel("Unidad", { exact: true }),
+  ).toHaveValue("bandeja");
+  await expect(
+    unitRow(page, 2).getByLabel("Unidad", { exact: true }),
+  ).toHaveValue("caja");
   await expect(
     page.getByText("No se puede cambiar", { exact: false }),
   ).toBeVisible();
@@ -117,7 +122,9 @@ test("office creates a product with its purchase units, then edits and deactivat
   await page.getByRole("button", { name: "Guardar cambios" }).click();
   await expect(toast(page, "Cambios guardados")).toBeVisible();
   await page.reload();
-  await expect(unitRow(page, 1).getByLabel("Unidad")).toHaveValue("caja");
+  await expect(
+    unitRow(page, 1).getByLabel("Unidad", { exact: true }),
+  ).toHaveValue("caja");
   await expect(unitRow(page, 2)).toHaveCount(0);
 
   await page.getByRole("button", { name: "Desactivar" }).click();
@@ -153,7 +160,7 @@ test("a purchase unit a supplier's pack uses can't be removed", async ({
   });
 
   await page.goto(`/catalogue/products/${product.id}`);
-  await arrivedAt(page, name);
+  await loadedAt(page, name);
   // Its supplier products are listed on its page.
   await expect(page.getByText("Berenjena, caja de 5 kg")).toBeVisible();
 
@@ -165,7 +172,9 @@ test("a purchase unit a supplier's pack uses can't be removed", async ({
     }),
   ).toBeVisible();
   await page.reload();
-  await expect(unitRow(page, 1).getByLabel("Unidad")).toHaveValue("caja");
+  await expect(
+    unitRow(page, 1).getByLabel("Unidad", { exact: true }),
+  ).toHaveValue("caja");
 });
 
 test("counter staff read a product, its purchase units and who sells it, and can't change it", async ({
@@ -180,7 +189,10 @@ test("counter staff read a product, its purchase units and who sells it, and can
   await page.getByLabel("Buscar").fill("tomate pera");
   await page.getByRole("link", { name: "Tomate pera" }).click();
   await arrivedAt(page, "Tomate pera");
-  await expect(page.getByText("1 caja = 6 kg")).toBeVisible();
+  // In its details: the same pack shows again in who sells it.
+  await expect(
+    page.locator("dl").getByText("1 caja = 6 kg", { exact: true }),
+  ).toBeVisible();
   // Sold by two seeded suppliers.
   await expect(
     page

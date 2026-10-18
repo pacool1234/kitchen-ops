@@ -5,6 +5,7 @@ import {
   arrivedAt,
   choose,
   createSupplier,
+  loadedAt,
   signedIn,
   syntheticCif,
   unique,
@@ -28,7 +29,7 @@ test("office maps a supplier's product to ours through the picker, then edits an
   const name = unique(testInfo, "Hortalizas Vega");
   const { id } = await createSupplier(page, { name, taxId: syntheticCif() });
   await page.goto(`/catalogue/suppliers/${id}`);
-  await arrivedAt(page, name);
+  await loadedAt(page, name);
   await expect(
     section(page).getByText("Este proveedor aún no tiene productos"),
   ).toBeVisible();
@@ -82,7 +83,7 @@ test("closing the dialog with changes asks first", async ({
   const name = unique(testInfo, "Frutos Secos Llano");
   const { id } = await createSupplier(page, { name, taxId: syntheticCif() });
   await page.goto(`/catalogue/suppliers/${id}`);
-  await arrivedAt(page, name);
+  await loadedAt(page, name);
 
   await section(page).getByRole("button", { name: "Añadir producto" }).click();
   const dialog = page.getByRole("dialog", {
@@ -105,7 +106,7 @@ test("counter staff read a supplier's products, and can't add or edit them", asy
 }) => {
   await signedIn(page, accounts.counter);
   await page.goto("/catalogue/suppliers");
-  await arrivedAt(page, "Proveedores");
+  await loadedAt(page, "Proveedores");
   await page.getByRole("link", { name: "Lácteos La Pradera, S.L." }).click();
   await arrivedAt(page, "Lácteos La Pradera, S.L.");
   await expect(
