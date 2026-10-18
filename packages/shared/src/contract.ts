@@ -2,7 +2,22 @@ import { z } from "zod";
 import { AuditLogPage, AuditLogQuery } from "./audit";
 import { MeResponse, UpdateMe, type Role } from "./auth";
 import { HealthResponse } from "./health";
+import { IdParams } from "./lists";
 import { ProductList } from "./products";
+import {
+  NewStoreroom,
+  Storeroom,
+  StoreroomChanges,
+  StoreroomPage,
+  StoreroomQuery,
+} from "./storerooms";
+import {
+  NewSupplier,
+  Supplier,
+  SupplierChanges,
+  SupplierPage,
+  SupplierQuery,
+} from "./suppliers";
 
 // The API's contract (decision 0022): every endpoint declared once, here. The API registers its
 // routes from these entries and the web app calls them through them, so a path, a schema or who
@@ -25,8 +40,12 @@ export interface Endpoint {
   readonly params?: z.ZodObject;
   readonly query?: z.ZodObject;
   readonly body?: z.ZodType;
-  /** The 200 response. Errors are always `ErrorBody`. */
+  /** The success status: 201 for a create, 200 otherwise. */
+  readonly status?: 201;
+  /** The success response. Errors are always `ErrorBody`. */
   readonly response: z.ZodType;
+  /** It may answer 409: a value that must be unique is already taken. */
+  readonly conflict?: true;
 }
 
 /** Declares an endpoint, keeping its exact types for the API's handlers and the web's calls. */
@@ -34,16 +53,15 @@ export function endpoint<const E extends Endpoint>(definition: E): E {
   return definition;
 }
 
-/** What every error answer holds: a short code the web app translates, e.g. `forbidden`. */
-export const ErrorBody = z.object({ error: z.string() });
-export type ErrorBody = z.infer<typeof ErrorBody>;
-
 /** The OpenAPI document, checked only as far as the web app could rely on it. */
 export const OpenApiDocument = z.looseObject({
   openapi: z.string(),
   info: z.looseObject({ title: z.string(), version: z.string() }),
   paths: z.record(z.string(), z.unknown()),
 });
+
+/** Who changes the catalogue (spec section 6: "edit products, units and recipes"). */
+const CATALOGUE_WRITERS = { roles: ["office", "owner"] } as const;
 
 export const endpoints = {
   health: endpoint({
@@ -89,6 +107,82 @@ export const endpoints = {
     access: { roles: ["owner"] },
     query: AuditLogQuery,
     response: AuditLogPage,
+  }),
+
+  // The catalogue (#88): everyone signed in reads it; office and owner change it.
+  listStorerooms: endpoint({
+    method: "GET",
+    path: "/api/storerooms",
+    summary:
+      "Storerooms, by name: searched, by type and status, a page at a time",
+    access: "signed-in",
+    query: StoreroomQuery,
+    response: StoreroomPage,
+  }),
+  getStoreroom: endpoint({
+    method: "GET",
+    path: "/api/storerooms/:id",
+    summary: "One storeroom",
+    access: "signed-in",
+    params: IdParams,
+    response: Storeroom,
+  }),
+  createStoreroom: endpoint({
+    method: "POST",
+    path: "/api/storerooms",
+    summary: "Add a storeroom",
+    access: CATALOGUE_WRITERS,
+    body: NewStoreroom,
+    status: 201,
+    response: Storeroom,
+    conflict: true,
+  }),
+  updateStoreroom: endpoint({
+    method: "PATCH",
+    path: "/api/storerooms/:id",
+    summary: "Change a storeroom, or deactivate it",
+    access: CATALOGUE_WRITERS,
+    params: IdParams,
+    body: StoreroomChanges,
+    response: Storeroom,
+    conflict: true,
+  }),
+  listSuppliers: endpoint({
+    method: "GET",
+    path: "/api/suppliers",
+    summary:
+      "Suppliers, by name: searched by name or tax ID, by status, a page at a time",
+    access: "signed-in",
+    query: SupplierQuery,
+    response: SupplierPage,
+  }),
+  getSupplier: endpoint({
+    method: "GET",
+    path: "/api/suppliers/:id",
+    summary: "One supplier",
+    access: "signed-in",
+    params: IdParams,
+    response: Supplier,
+  }),
+  createSupplier: endpoint({
+    method: "POST",
+    path: "/api/suppliers",
+    summary: "Add a supplier, with a Spanish tax ID that passes its checksum",
+    access: CATALOGUE_WRITERS,
+    body: NewSupplier,
+    status: 201,
+    response: Supplier,
+    conflict: true,
+  }),
+  updateSupplier: endpoint({
+    method: "PATCH",
+    path: "/api/suppliers/:id",
+    summary: "Change a supplier, or deactivate it",
+    access: CATALOGUE_WRITERS,
+    params: IdParams,
+    body: SupplierChanges,
+    response: Supplier,
+    conflict: true,
   }),
 } as const;
 

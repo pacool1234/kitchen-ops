@@ -1,5 +1,10 @@
-// Spanish tax IDs and their control characters (spec section 5, stage 4: "supplier tax ID passes
-// its checksum"). Input is as `ExtractedDocument` holds it: upper case, no spaces, dots or hyphens.
+import { z } from "zod";
+import { fieldError } from "./errors";
+
+// Spanish tax IDs and their control characters. Checked on every supplier the catalogue saves
+// (#88), and on every extracted document (spec section 5, stage 4: "supplier tax ID passes its
+// checksum"). Here in packages/shared so the web app can check one before sending it. Input is
+// upper case, without spaces, dots or hyphens, as `ExtractedDocument` holds it.
 
 export type TaxIdCheck =
   | { readonly valid: true; readonly kind: "NIF" | "NIE" | "CIF" }
@@ -80,3 +85,20 @@ export function checkSpanishTaxId(taxId: string): TaxIdCheck {
 
   return invalid("not a NIF, NIE or CIF");
 }
+
+/**
+ * A tax ID in the one form it's stored and compared in: upper case, without spaces, dots,
+ * hyphens or slashes, and without the ES prefix of a Spanish VAT number. "es-b00.123.455" is
+ * "B00123455".
+ */
+export function normalizeTaxId(taxId: string): string {
+  const id = taxId.toUpperCase().replace(/[\s./-]/g, "");
+  return /^ES[A-Z0-9]{9}$/.test(id) ? id.slice(2) : id;
+}
+
+/** A supplier's tax ID, as the API takes it: written any way, normalized, and checked. */
+export const TaxId = z
+  .string()
+  .max(20)
+  .transform(normalizeTaxId)
+  .refine((id) => checkSpanishTaxId(id).valid, fieldError("invalid_tax_id"));

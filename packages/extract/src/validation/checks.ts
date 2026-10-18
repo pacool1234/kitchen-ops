@@ -7,8 +7,11 @@ import {
   sumMoney,
   type Money,
 } from "@kitchen-ops/ledger";
-import type { ExtractedDocument, ExtractedLine } from "@kitchen-ops/shared";
-import { checkSpanishTaxId } from "./tax-id";
+import {
+  checkSpanishTaxId,
+  type ExtractedDocument,
+  type ExtractedLine,
+} from "@kitchen-ops/shared";
 
 // The checks a result must pass before it is trusted (spec section 5, stage 4). Anything that
 // fails goes to review, with the failing check named. Arithmetic uses the ledger's own rules

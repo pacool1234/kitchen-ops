@@ -9,9 +9,11 @@ import { auditRoutes } from "./audit/routes";
 import { createAuth } from "./auth/auth";
 import { registerAuth } from "./auth/fastify";
 import { meRoutes } from "./auth/routes";
+import { catalogueRoutes } from "./catalogue/routes";
 import type { Config } from "./config";
 import { openApiRoutes, registerOpenApi } from "./contract";
 import { createDb } from "./db/client";
+import { registerErrors } from "./errors";
 import { healthRoutes } from "./health/routes";
 import { productRoutes } from "./products/routes";
 import { tagRequest } from "./sentry";
@@ -37,6 +39,8 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   // Request and response schemas are Zod schemas (from packages/shared).
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+  // Every refusal answers an ErrorBody, with a code per field for invalid input.
+  registerErrors(app);
 
   // Return the ID so a problem a user reports can be found in the logs; errors in Sentry carry it too.
   app.addHook("onRequest", async (request, reply) => {
@@ -56,6 +60,7 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   app.register(meRoutes, { db });
   app.register(productRoutes, { db });
   app.register(auditRoutes, { db });
+  app.register(catalogueRoutes, { db });
 
   return app;
 }

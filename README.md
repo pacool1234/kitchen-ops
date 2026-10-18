@@ -117,6 +117,13 @@ Every write is recorded in the audit log, in the same transaction (decision 0025
 
 The log can't be changed: the database refuses updates and deletes to it. The owner reads it at `GET /api/audit-log`.
 
+### Refusing a request
+
+Every refusal answers `{ error, fields? }` (decision 0026):
+- **Invalid input is refused by the endpoint's Zod schemas:** 400 `invalid_input`, with one code per field. A refinement names its code with `fieldError("invalid_tax_id")`, and a new code goes in `FIELD_ERROR_CODES` (`packages/shared/src/errors.ts`).
+- **A row that doesn't exist:** `throw notFound()` (`apps/api/src/errors.ts`), a 404.
+- **A value that must be unique:** give it a unique index, and add the index to `UNIQUE_FIELDS` in `apps/api/src/db/schema.ts` with the field it guards. A duplicate then answers 409, naming that field. Mark the endpoint `conflict: true` in the contract.
+
 ### Adding an API endpoint
 
 Every endpoint is declared once, in `packages/shared/src/contract.ts`, with its method, path, schemas and who may call it (decision 0022).

@@ -38,12 +38,27 @@ function rolesDescription(access: Access): string | readonly string[] {
 type SchemaPart<E, Key extends string, As extends string> =
   E extends Record<Key, infer S> ? Record<As, S> : unknown;
 
-/** A contract endpoint as Fastify route options: method, URL, schemas and who may call it. */
+/** The success response, under its status: 201 for a create, 200 otherwise. */
+type Success<E extends Endpoint> = E extends { status: 201 }
+  ? { 201: E["response"] }
+  : { 200: E["response"] };
+
+/** The refusals an endpoint may answer, each an ErrorBody. */
+type Refusals = Partial<Record<400 | 401 | 403 | 404 | 409, typeof ErrorBody>>;
+
+/**
+ * A contract endpoint as Fastify route options: method, URL, schemas and who may call it. Its
+ * responses describe each refusal it can answer: 401 and 403 unless it's public, 400 if it takes
+ * input, 404 if its path has an ID, and 409 if a value it saves must be unique.
+ */
 export function routeFor<const E extends Endpoint>(e: E) {
-  const response =
-    e.access === "public"
-      ? { 200: e.response }
-      : { 200: e.response, 401: ErrorBody, 403: ErrorBody };
+  const response = {
+    [e.status ?? 200]: e.response,
+    ...(e.access === "public" ? {} : { 401: ErrorBody, 403: ErrorBody }),
+    ...(e.params || e.query || e.body ? { 400: ErrorBody } : {}),
+    ...(e.params ? { 404: ErrorBody } : {}),
+    ...(e.conflict ? { 409: ErrorBody } : {}),
+  } as Success<E> & Refusals;
   return {
     method: e.method,
     url: e.path,

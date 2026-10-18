@@ -38,7 +38,8 @@ describe("endpoints: the API's contract (decision 0022)", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it("the routes that exist today: health, openapi, me, changing me, the product list and the audit log", () => {
+  it("the routes that exist today: health, openapi, me, the products, the audit log, storerooms and suppliers", () => {
+    const writers = { roles: ["office", "owner"] };
     expect(
       Object.values(endpoints).map((e) => [e.method, e.path, e.access]),
     ).toEqual([
@@ -48,7 +49,24 @@ describe("endpoints: the API's contract (decision 0022)", () => {
       ["PATCH", "/api/me", "signed-in"],
       ["GET", "/api/products", "signed-in"],
       ["GET", "/api/audit-log", { roles: ["owner"] }],
+      ["GET", "/api/storerooms", "signed-in"],
+      ["GET", "/api/storerooms/:id", "signed-in"],
+      ["POST", "/api/storerooms", writers],
+      ["PATCH", "/api/storerooms/:id", writers],
+      ["GET", "/api/suppliers", "signed-in"],
+      ["GET", "/api/suppliers/:id", "signed-in"],
+      ["POST", "/api/suppliers", writers],
+      ["PATCH", "/api/suppliers/:id", writers],
     ]);
+  });
+
+  it("a create answers 201; everything else 200", () => {
+    for (const [name, e] of Object.entries(endpoints)) {
+      const status = "status" in e ? e.status : 200;
+      expect(status, name).toBe(
+        e.method === "POST" && name.startsWith("create") ? 201 : 200,
+      );
+    }
   });
 });
 

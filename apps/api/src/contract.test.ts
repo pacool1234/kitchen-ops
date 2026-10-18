@@ -20,7 +20,7 @@ async function registeredRoutes() {
       routes.push({
         method,
         url: route.url,
-        hasResponse: Boolean(response?.[200]),
+        hasResponse: Boolean(response?.[200] ?? response?.[201]),
       });
     }
   });
@@ -104,7 +104,7 @@ describe("GET /api/openapi.json: the OpenAPI document", () => {
     );
   });
 
-  it("each operation has its summary, its 200 response schema and who may call it", async () => {
+  it("each operation has its summary, its success response schema and who may call it", async () => {
     const doc = await openApiDocument();
     for (const e of contract) {
       const operation =
@@ -121,12 +121,27 @@ describe("GET /api/openapi.json: the OpenAPI document", () => {
         string,
         { content?: unknown }
       >;
-      expect(responses["200"]?.content, e.path).toBeDefined();
+      expect(responses[String(e.status ?? 200)]?.content, e.path).toBeDefined();
       if (e.access !== "public") {
         expect(Object.keys(responses), e.path).toEqual(
           expect.arrayContaining(["401", "403"]),
         );
       }
+    }
+  });
+
+  it("describes each refusal an operation can answer: 400 for input, 404 for an ID in the path, 409 for a value that must be unique", async () => {
+    const doc = await openApiDocument();
+    for (const e of contract) {
+      const operation =
+        doc.paths[openApiPath(e.path)]![e.method.toLowerCase()]!;
+      const statuses = Object.keys(operation.responses as object);
+      const name = `${e.method} ${e.path}`;
+      expect(statuses.includes("400"), name).toBe(
+        Boolean(e.params ?? e.query ?? e.body),
+      );
+      expect(statuses.includes("404"), name).toBe(Boolean(e.params));
+      expect(statuses.includes("409"), name).toBe(Boolean(e.conflict));
     }
   });
 

@@ -1,12 +1,15 @@
-// Synthetic data for local development and CI: products, one user per role, and a second counter.
+// Synthetic data for local development and CI: products, storerooms and suppliers, one user per
+// role, and a second counter.
 // Never real supplier, client or staff data.
 import type { Role } from "@kitchen-ops/shared";
 import { count } from "drizzle-orm";
+import type { PgTable } from "drizzle-orm/pg-core";
 import { createAuth } from "../auth/auth";
 import { createUser } from "../auth/users";
 import { ConfigError, loadSeedConfig } from "../config";
 import { createDb } from "./client";
-import { products, users } from "./schema";
+import { products, storerooms, suppliers, users } from "./schema";
+import { seedStorerooms, seedSuppliers } from "./seed-catalogue";
 
 const syntheticProducts: (typeof products.$inferInsert)[] = [
   { name: "Tomato", baseUnit: "g" },
@@ -39,13 +42,19 @@ try {
   const config = loadSeedConfig(process.env);
   const { db, close } = createDb(config.DATABASE_URL);
   try {
-    const [existingProducts] = await db.select({ n: count() }).from(products);
-    if (existingProducts && existingProducts.n > 0) {
-      console.log(`Skipped products: already ${existingProducts.n} rows.`);
-    } else {
-      await db.insert(products).values(syntheticProducts);
-      console.log(`Inserted ${syntheticProducts.length} synthetic products.`);
-    }
+    // Each table only if it's empty, so running the seed again changes nothing.
+    const seedTable = async (name: string, table: PgTable, rows: object[]) => {
+      const [existing] = await db.select({ n: count() }).from(table);
+      if (existing && existing.n > 0) {
+        console.log(`Skipped ${name}: already ${existing.n} rows.`);
+      } else {
+        await db.insert(table).values(rows);
+        console.log(`Inserted ${rows.length} synthetic ${name}.`);
+      }
+    };
+    await seedTable("products", products, syntheticProducts);
+    await seedTable("storerooms", storerooms, seedStorerooms);
+    await seedTable("suppliers", suppliers, seedSuppliers);
 
     const [existingUsers] = await db.select({ n: count() }).from(users);
     if (existingUsers && existingUsers.n > 0) {
