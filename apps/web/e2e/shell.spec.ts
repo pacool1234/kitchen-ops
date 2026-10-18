@@ -108,6 +108,8 @@ test("on a phone, the bottom bar never covers the end of the page", async ({
   isMobile,
 }) => {
   test.skip(!isMobile, "the bottom bar is a phone's");
+  // A short screen, so the page is longer than it and its end has to scroll up past the bar.
+  await page.setViewportSize({ width: 412, height: 480 });
   await signedIn(page);
   await mainNav(page).getByRole("link", { name: "Productos" }).click();
   const table = page.getByRole("table", { name: "Productos activos" });
