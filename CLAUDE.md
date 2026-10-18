@@ -2,7 +2,7 @@
 
 Reusable building blocks for restaurant purchasing and stock control: a deployed walking skeleton, a stock ledger library and a supplier-document extraction pipeline. Pre-employment project; the repo stays generic (no client names or data).
 
-Full spec: `docs/spec.md`. Decisions and their reasons: `docs/decisions/`. Read the relevant section before working on a part of the system, not the whole file every time.
+Full spec: `docs/spec.md`. What's built so far: `docs/architecture.md`. Decisions and their reasons: `docs/decisions/`. Read the relevant section before working on a part of the system, not the whole file every time.
 
 ## Commands
 
