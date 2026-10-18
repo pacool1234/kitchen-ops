@@ -36,6 +36,20 @@
       "when": 1792353242582,
       "tag": "0004_audit_log_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792355167342,
+      "tag": "0005_storerooms_suppliers",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792355168199,
+      "tag": "0006_search_unaccent",
+      "breakpoints": true
     }
   ]
 }

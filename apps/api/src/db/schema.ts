@@ -1,4 +1,9 @@
-import { AUDIT_ACTIONS, BASE_UNITS } from "@kitchen-ops/shared";
+import {
+  AUDIT_ACTIONS,
+  BASE_UNITS,
+  STOREROOM_TYPES,
+} from "@kitchen-ops/shared";
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -7,11 +12,12 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import type { AuditChanges } from "../audit/diff";
 import { users } from "./auth-schema";
-import { createdAt, primaryId } from "./columns";
+import { createdAt, primaryId, updatedAt } from "./columns";
 
 export * from "./auth-schema";
 
@@ -27,6 +33,52 @@ export const products = pgTable("products", {
   active: boolean("active").notNull().default(true),
   createdAt: createdAt(),
 });
+
+/** A storeroom's kind (spec section 3); values come from packages/shared. */
+export const storeroomType = pgEnum("storeroom_type", STOREROOM_TYPES);
+
+/** Where stock is kept (#88). Deactivated rather than deleted: movements will refer to it. */
+export const storerooms = pgTable(
+  "storerooms",
+  {
+    id: primaryId(),
+    name: text("name").notNull(),
+    type: storeroomType("type").notNull(),
+    active: boolean("active").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("storerooms_name_unique").on(sql`lower(${table.name})`),
+  ],
+);
+
+/** Who the restaurant buys from (#88). Deactivated rather than deleted: documents will refer to it. */
+export const suppliers = pgTable(
+  "suppliers",
+  {
+    id: primaryId(),
+    name: text("name").notNull(),
+    /** Normalized (normalizeTaxId in packages/shared), and checked before it's saved. */
+    taxId: text("tax_id").notNull(),
+    contactName: text("contact_name"),
+    email: text("email"),
+    phone: text("phone"),
+    active: boolean("active").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [uniqueIndex("suppliers_tax_id_unique").on(table.taxId)],
+);
+
+/**
+ * The request field each unique index guards: a duplicate answers 409 naming it
+ * (src/errors.ts).
+ */
+export const UNIQUE_FIELDS: Readonly<Record<string, string>> = {
+  storerooms_name_unique: "name",
+  suppliers_tax_id_unique: "taxId",
+};
 
 /** What a write did (spec section 6); values come from packages/shared. */
 export const auditAction = pgEnum("audit_action", AUDIT_ACTIONS);
