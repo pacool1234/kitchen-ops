@@ -1,5 +1,5 @@
 import { ROLES, type Role } from "@kitchen-ops/shared";
-import { House, Package } from "lucide-vue-next";
+import { BookOpen, House } from "lucide-vue-next";
 import type { Component } from "vue";
 import type { MessageKey } from "../i18n";
 
@@ -19,11 +19,13 @@ export interface NavItem {
 
 export const NAV: NavItem[] = [
   { name: "home", label: "home.title", icon: House, roles: ROLES },
+  // Everyone reads the catalogue; office and owner change it (spec section 6). Its pages
+  // show each role what it may do (mayCall), so it's one item for every role.
   {
-    name: "products",
-    label: "products.title",
-    description: "products.description",
-    icon: Package,
+    name: "catalogue",
+    label: "catalogue.title",
+    description: "catalogue.description",
+    icon: BookOpen,
     roles: ROLES,
   },
 ];

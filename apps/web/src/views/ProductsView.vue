@@ -2,6 +2,7 @@
 import { endpoints, type Product } from "@kitchen-ops/shared";
 import { computed, onMounted, ref, watch } from "vue";
 import { ApiError, call } from "../api";
+import CatalogueTabs from "../catalogue/CatalogueTabs.vue";
 import UiDataTable, { type Column } from "../components/ui/UiDataTable.vue";
 import { useT, type MessageKey } from "../i18n";
 import { errorMessageKey } from "../i18n/errors";
@@ -53,18 +54,21 @@ const columns = computed<Column<Product>[]>(() => [
 </script>
 
 <template>
-  <UiDataTable
-    v-model:page="page"
-    :caption="t('products.caption')"
-    :columns="columns"
-    :rows="products"
-    :row-key="(p) => p.id"
-    :total="total"
-    :page-size="PAGE_SIZE"
-    :loading="loading"
-    :error="error && t(error)"
-    :empty-title="t('products.empty')"
-    :empty-description="t('products.emptyDescription')"
-    @retry="load"
-  />
+  <div class="flex flex-col gap-4">
+    <CatalogueTabs />
+    <UiDataTable
+      v-model:page="page"
+      :caption="t('products.caption')"
+      :columns="columns"
+      :rows="products"
+      :row-key="(p) => p.id"
+      :total="total"
+      :page-size="PAGE_SIZE"
+      :loading="loading"
+      :error="error && t(error)"
+      :empty-title="t('products.empty')"
+      :empty-description="t('products.emptyDescription')"
+      @retry="load"
+    />
+  </div>
 </template>

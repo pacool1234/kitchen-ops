@@ -6,6 +6,7 @@ import { useT } from "../i18n";
 import { currentUser } from "../session";
 import { breadcrumbTrail } from "./layout";
 import { NAV, visibleNav } from "./nav";
+import { ownTitle } from "./title";
 import UserMenu from "./UserMenu.vue";
 
 // The frame of every signed-in page (#85). From 1024px: a sidebar with the navigation. Below:
@@ -19,13 +20,29 @@ const user = computed(() => currentUser.value);
 const items = computed(() =>
   user.value ? visibleNav(NAV, user.value.role) : [],
 );
-const title = computed(() => (route.meta.title ? t(route.meta.title) : ""));
+// A page may title itself (a supplier's name); otherwise its route's title.
+const title = computed(
+  () => ownTitle.value?.text ?? (route.meta.title ? t(route.meta.title) : ""),
+);
 const trail = computed(() =>
   breadcrumbTrail(String(route.name), (name) => {
     const meta = router.getRoutes().find((r) => r.name === name)?.meta;
-    return meta && { title: meta.title && t(meta.title), parent: meta.parent };
+    const own = name === route.name ? title.value : undefined;
+    return (
+      meta && {
+        title: own ?? (meta.title && t(meta.title)),
+        parent: meta.parent,
+      }
+    );
   }),
 );
+
+/**
+ * aria-current for a navigation item: "page" on its own page, "true" anywhere inside its
+ * section (a supplier's page, under the catalogue), else nothing.
+ */
+const current = (isExactActive: boolean, isActive: boolean) =>
+  isExactActive ? "page" : isActive ? "true" : undefined;
 </script>
 
 <template>
@@ -48,11 +65,19 @@ const trail = computed(() =>
         <ul class="flex flex-col gap-1">
           <li v-for="item in items" :key="item.name">
             <RouterLink
+              v-slot="{ href, navigate, isActive, isExactActive }"
               :to="{ name: item.name }"
-              class="flex min-h-11 items-center gap-3 rounded-md px-3 font-medium text-fg-muted hover:bg-surface-muted hover:text-fg aria-[current=page]:bg-primary-soft aria-[current=page]:text-primary"
+              custom
             >
-              <component :is="item.icon" class="size-5" aria-hidden="true" />
-              {{ t(item.label) }}
+              <a
+                :href="href"
+                :aria-current="current(isExactActive, isActive)"
+                class="flex min-h-11 items-center gap-3 rounded-md px-3 font-medium text-fg-muted hover:bg-surface-muted hover:text-fg aria-[current]:bg-primary-soft aria-[current]:text-primary"
+                @click="navigate"
+              >
+                <component :is="item.icon" class="size-5" aria-hidden="true" />
+                {{ t(item.label) }}
+              </a>
             </RouterLink>
           </li>
         </ul>
@@ -124,11 +149,19 @@ const trail = computed(() =>
         <ul class="flex">
           <li v-for="item in items" :key="item.name" class="flex-1">
             <RouterLink
+              v-slot="{ href, navigate, isActive, isExactActive }"
               :to="{ name: item.name }"
-              class="flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-medium text-fg-muted aria-[current=page]:text-primary"
+              custom
             >
-              <component :is="item.icon" class="size-6" aria-hidden="true" />
-              {{ t(item.label) }}
+              <a
+                :href="href"
+                :aria-current="current(isExactActive, isActive)"
+                class="flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-medium text-fg-muted aria-[current]:text-primary"
+                @click="navigate"
+              >
+                <component :is="item.icon" class="size-6" aria-hidden="true" />
+                {{ t(item.label) }}
+              </a>
             </RouterLink>
           </li>
         </ul>

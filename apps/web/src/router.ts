@@ -1,5 +1,11 @@
-import { nextTick } from "vue";
-import { createRouter, createWebHistory, START_LOCATION } from "vue-router";
+import { endpoints, mayCall, type Role } from "@kitchen-ops/shared";
+import { nextTick, type Component } from "vue";
+import {
+  createRouter,
+  createWebHistory,
+  START_LOCATION,
+  type RouteRecordRaw,
+} from "vue-router";
 import { whoAmI } from "./auth";
 import { adoptUserLocale, type MessageKey } from "./i18n";
 import { setCurrentUser } from "./session";
@@ -15,7 +21,49 @@ declare module "vue-router" {
     title?: MessageKey;
     /** The route above this page in the breadcrumb, by name. */
     parent?: string;
+    /** Who may open the page; anyone signed in if left out. Others go to its parent. */
+    mayEnter?: (role: Role) => boolean;
   }
+}
+
+/**
+ * A catalogue section's routes: its list (`/catalogue/suppliers`), a new item's form
+ * (`…/new`, for the roles that may create one) and an item's page (`…/:id`).
+ */
+function itemRoutes(
+  path: string,
+  item: string,
+  pages: {
+    list: () => Promise<Component>;
+    item: () => Promise<Component>;
+    title: MessageKey;
+    itemTitle: MessageKey;
+    newTitle: MessageKey;
+    mayCreate: (role: Role) => boolean;
+  },
+): RouteRecordRaw[] {
+  return [
+    {
+      path,
+      name: path,
+      component: pages.list,
+      meta: { title: pages.title, parent: "catalogue" },
+    },
+    {
+      path: `${path}/new`,
+      name: `new-${item}`,
+      component: pages.item,
+      meta: { title: pages.newTitle, parent: path, mayEnter: pages.mayCreate },
+    },
+    {
+      path: `${path}/:id`,
+      name: item,
+      component: pages.item,
+      props: true,
+      // Until it has loaded; then the page is titled with the item's name.
+      meta: { title: pages.itemTitle, parent: path },
+    },
+  ];
 }
 
 // Each page's code loads when it's first visited, so the first load carries only the frame and
@@ -61,12 +109,39 @@ export const router = createRouter({
           component: () => import("./views/HomeView.vue"),
           meta: { title: "home.title" },
         },
+        // The catalogue (#89): its sections' lists, and a page for each item.
         {
-          path: "products",
-          name: "products",
-          component: () => import("./views/ProductsView.vue"),
-          meta: { title: "products.title", parent: "home" },
+          path: "catalogue",
+          name: "catalogue",
+          redirect: { name: "products" },
+          meta: { title: "catalogue.title", parent: "home" },
+          children: [
+            {
+              path: "products",
+              name: "products",
+              component: () => import("./views/ProductsView.vue"),
+              meta: { title: "products.title", parent: "catalogue" },
+            },
+            ...itemRoutes("suppliers", "supplier", {
+              list: () => import("./catalogue/SuppliersView.vue"),
+              item: () => import("./catalogue/SupplierView.vue"),
+              title: "suppliers.title",
+              itemTitle: "suppliers.item",
+              newTitle: "suppliers.new",
+              mayCreate: (role) => mayCall(endpoints.createSupplier, role),
+            }),
+            ...itemRoutes("storerooms", "storeroom", {
+              list: () => import("./catalogue/StoreroomsView.vue"),
+              item: () => import("./catalogue/StoreroomView.vue"),
+              title: "storerooms.title",
+              itemTitle: "storerooms.item",
+              newTitle: "storerooms.new",
+              mayCreate: (role) => mayCall(endpoints.createStoreroom, role),
+            }),
+          ],
         },
+        // The product list's address before the catalogue.
+        { path: "products", redirect: { name: "products" } },
       ],
     },
     // Development and browser-test builds only: production builds drop the route and its code.
@@ -94,6 +169,10 @@ router.beforeEach(async (to) => {
   if (me === "two-factor-required") return { name: "setup-2fa" };
   setCurrentUser(me);
   await adoptUserLocale(me);
+  // A page the role can't use (a new supplier's form, for counter staff): its parent instead.
+  if (to.meta.mayEnter && !to.meta.mayEnter(me.role)) {
+    return to.meta.parent ? { name: to.meta.parent } : { name: "home" };
+  }
   return true;
 });
 
