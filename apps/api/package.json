@@ -14,6 +14,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
+    "db:reset": "tsx --env-file-if-exists=.env src/db/reset.ts",
     "db:seed": "tsx --env-file-if-exists=.env src/db/seed.ts"
   },
   "devDependencies": {
