@@ -152,6 +152,7 @@ How to restore from either, the retention rules, the one-time setup and the reco
 
 ## Docs
 
-- `docs/spec.md`: the spec
+- `docs/spec.md`: the spec, the plan
+- `docs/architecture.md`: what's built so far, and what isn't yet
 - `docs/decisions/`: decision records, with the reasons
 - `docs/runbooks/`: step-by-step procedures (restoring the database)
