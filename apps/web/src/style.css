@@ -10,14 +10,6 @@
   --error: var(--color-danger);
 }
 
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-}
-
 .app-header {
   background: var(--green);
   color: var(--paper);
@@ -31,32 +23,41 @@ body {
   padding: 1rem;
 }
 
+/* A page that sets its own width, such as the component gallery. */
+.app-main-wide {
+  padding: 0;
+}
+
+/*
+ * Element styles for the views that predate the design system, which wear class="legacy". Kept
+ * off everything else, so they never reach the components.
+ */
 /* Tailwind's reset takes away headings' weight and paragraphs' margins: put them back. */
-h1 {
+.legacy h1 {
   font-size: 1.4rem;
   font-weight: 700;
   margin: 1rem 0;
 }
 
-p {
+.legacy p {
   margin: 0.75rem 0;
 }
 
-form {
+.legacy form {
   display: grid;
   gap: 1rem;
 }
 
-label {
+.legacy label {
   display: grid;
   gap: 0.35rem;
   font-weight: 500;
 }
 
 /* At least 16px, so phones do not zoom in on focus; tall enough to tap. */
-input,
-button,
-select {
+.legacy input,
+.legacy button,
+.legacy select {
   font: inherit;
   font-size: 1rem;
   min-height: 2.75rem;
@@ -64,26 +65,26 @@ select {
   border-radius: 0.5rem;
 }
 
-input,
-select {
+.legacy input,
+.legacy select {
   border: 1px solid var(--color-line-strong);
   background: var(--color-surface);
 }
 
-button {
+.legacy button {
   border: none;
   background: var(--green);
   color: var(--paper);
   font-weight: 600;
 }
 
-button.secondary {
+.legacy button.secondary {
   background: transparent;
   color: var(--green);
   border: 1px solid var(--green);
 }
 
-button:disabled {
+.legacy button:disabled {
   opacity: 0.6;
 }
 

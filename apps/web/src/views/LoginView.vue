@@ -52,43 +52,45 @@ async function verifyCode() {
 </script>
 
 <template>
-  <LanguageSwitch :signed-in="false" />
-  <h1>{{ t("signIn.title") }}</h1>
+  <div class="legacy">
+    <LanguageSwitch :signed-in="false" />
+    <h1>{{ t("signIn.title") }}</h1>
 
-  <form v-if="step === 'password'" @submit.prevent="signIn">
-    <label>
-      {{ t("signIn.email") }}
-      <input v-model="email" type="email" autocomplete="username" required />
-    </label>
-    <label>
-      {{ t("signIn.password") }}
-      <input
-        v-model="password"
-        type="password"
-        autocomplete="current-password"
-        required
-      />
-    </label>
-    <button type="submit" :disabled="busy">
-      {{ t("signIn.submit") }}
-    </button>
-  </form>
+    <form v-if="step === 'password'" @submit.prevent="signIn">
+      <label>
+        {{ t("signIn.email") }}
+        <input v-model="email" type="email" autocomplete="username" required />
+      </label>
+      <label>
+        {{ t("signIn.password") }}
+        <input
+          v-model="password"
+          type="password"
+          autocomplete="current-password"
+          required
+        />
+      </label>
+      <button type="submit" :disabled="busy">
+        {{ t("signIn.submit") }}
+      </button>
+    </form>
 
-  <form v-else @submit.prevent="verifyCode">
-    <p>{{ t("signIn.codePrompt") }}</p>
-    <label>
-      {{ t("signIn.code") }}
-      <input
-        v-model="code"
-        inputmode="numeric"
-        autocomplete="one-time-code"
-        pattern="[0-9]{6}"
-        maxlength="6"
-        required
-      />
-    </label>
-    <button type="submit" :disabled="busy">{{ t("signIn.verify") }}</button>
-  </form>
+    <form v-else @submit.prevent="verifyCode">
+      <p>{{ t("signIn.codePrompt") }}</p>
+      <label>
+        {{ t("signIn.code") }}
+        <input
+          v-model="code"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          pattern="[0-9]{6}"
+          maxlength="6"
+          required
+        />
+      </label>
+      <button type="submit" :disabled="busy">{{ t("signIn.verify") }}</button>
+    </form>
 
-  <p v-if="error" class="error" role="alert">{{ t(error) }}</p>
+    <p v-if="error" class="error" role="alert">{{ t(error) }}</p>
+  </div>
 </template>
