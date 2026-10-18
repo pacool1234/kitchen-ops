@@ -126,6 +126,12 @@ export async function evalCommand(
     throw new Error(`there is no set "${setName}". ${USAGE}`);
   }
   const ids = required(values.model, "--model");
+  // Twice in one command, both runs would take one run number and the second couldn't be saved,
+  // after both had been paid for (#71).
+  const repeated = ids.find((id, i) => ids.indexOf(id) !== i);
+  if (repeated !== undefined) {
+    throw new Error(`--model ${repeated} is given more than once`);
+  }
   const prompt = loadPrompt(required(values.prompt, "--prompt"));
   const configured = loadModels(deps.modelsFile);
   const models = ids.map((id): ModelConfig => {
