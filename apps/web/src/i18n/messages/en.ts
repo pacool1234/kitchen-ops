@@ -9,6 +9,7 @@ export const en: Messages = {
   },
   language: {
     label: "Language",
+    current: "Language: {language}",
     saveFailed: "Your language could not be saved. Try again.",
   },
   roles: {
@@ -36,25 +37,48 @@ export const en: Messages = {
   twoFactor: {
     title: "Set up two-factor authentication",
     intro:
-      "Owner accounts need an authenticator app (for example Google Authenticator, Microsoft Authenticator or 1Password). Confirm your password to start.",
+      "Owner accounts sign in with their password and a code from an authenticator app, such as Google Authenticator, Microsoft Authenticator or 1Password.",
+    stepPassword: "Confirm your password",
     password: "Password",
     continue: "Continue",
     wrongPassword: "Wrong password.",
     unexpectedAnswer: "Unexpected answer from the server. Try again.",
-    scan: "Scan this code with your authenticator app:",
+    stepScan: "Scan the code with the app",
     qrAlt: "QR code for your authenticator app",
-    manualKey: "Or type this key into the app:",
-    backupTitle: "Backup codes.",
+    manualKey: "Can't scan it? Type this key into the app:",
+    copyKey: "Copy the key",
+    keyCopied: "Key copied",
+    stepBackup: "Keep the backup codes",
     backupText:
       "Each works once if you lose your phone. Store them somewhere safe now; they are not shown again.",
+    copyCodes: "Copy the codes",
+    codesCopied: "Codes copied",
+    copyFailed: "Couldn't copy. Select it and copy it by hand.",
+    stepConfirm: "Enter the code the app shows",
     code: "Code from the app",
     submit: "Turn on 2FA",
   },
+  home: {
+    title: "Home",
+    greeting: "Hello, {name}",
+    intro: "What would you like to do?",
+  },
   products: {
     title: "Products",
-    loading: "Loading…",
-    empty: "No products yet.",
-    loadFailed: "Could not load products. Check your connection and reload.",
+    caption: "Active products",
+    name: "Name",
+    baseUnit: "Base unit",
+    description: "See the active products and the unit each is counted in.",
+    loadFailed:
+      "Could not load the products. Check your connection and try again.",
+    empty: "No products yet",
+    emptyDescription: "Products appear here once they're added.",
+  },
+  shell: {
+    skipToContent: "Skip to content",
+    mainNav: "Main",
+    breadcrumb: "You are here",
+    userMenu: "User menu",
     signOut: "Sign out",
   },
   ui: {

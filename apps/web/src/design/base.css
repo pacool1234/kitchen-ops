@@ -9,6 +9,24 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  /*
+   * The phone's bottom navigation bar is fixed over the page: what's below it scrolls up past
+   * it, and toasts sit above it. From 1024px the navigation is a sidebar.
+   */
+  :root {
+    --bottom-nav-height: 0px;
+  }
+
+  :root:has([data-bottom-nav]) {
+    --bottom-nav-height: calc(4rem + env(safe-area-inset-bottom));
+  }
+
+  @media (width >= 64rem) {
+    :root:has([data-bottom-nav]) {
+      --bottom-nav-height: 0px;
+    }
+  }
+
   :root[data-theme="light"] {
     color-scheme: light;
   }

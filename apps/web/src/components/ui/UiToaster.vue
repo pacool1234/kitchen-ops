@@ -56,7 +56,7 @@ const tones = {
       </ToastClose>
     </ToastRoot>
     <ToastViewport
-      class="fixed end-0 bottom-0 z-[100] flex w-full max-w-sm flex-col gap-2 p-4 outline-none"
+      class="fixed end-0 bottom-(--bottom-nav-height) z-[100] flex w-full max-w-sm flex-col gap-2 p-4 outline-none"
     />
   </ToastProvider>
 </template>

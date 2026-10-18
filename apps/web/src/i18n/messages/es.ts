@@ -9,6 +9,7 @@ export const es = {
   },
   language: {
     label: "Idioma",
+    current: "Idioma: {language}",
     saveFailed: "No se ha podido guardar el idioma. Inténtalo de nuevo.",
   },
   roles: {
@@ -38,27 +39,51 @@ export const es = {
   twoFactor: {
     title: "Activar la verificación en dos pasos",
     intro:
-      "Las cuentas de dirección necesitan una app de autenticación (por ejemplo, Google Authenticator, Microsoft Authenticator o 1Password). Confirma tu contraseña para empezar.",
+      "Las cuentas de dirección entran con la contraseña y un código de una app de autenticación, como Google Authenticator, Microsoft Authenticator o 1Password.",
+    stepPassword: "Confirma tu contraseña",
     password: "Contraseña",
     continue: "Continuar",
     wrongPassword: "La contraseña no es correcta.",
     unexpectedAnswer:
       "El servidor ha respondido algo inesperado. Inténtalo de nuevo.",
-    scan: "Escanea este código con tu app de autenticación:",
+    stepScan: "Escanea el código con la app",
     qrAlt: "Código QR para tu app de autenticación",
-    manualKey: "O escribe esta clave en la app:",
-    backupTitle: "Códigos de respaldo.",
+    manualKey: "¿No puedes escanearlo? Escribe esta clave en la app:",
+    copyKey: "Copiar la clave",
+    keyCopied: "Clave copiada",
+    stepBackup: "Guarda los códigos de respaldo",
     backupText:
       "Cada uno sirve una vez si pierdes el móvil. Guárdalos ahora en un lugar seguro: no se vuelven a mostrar.",
+    copyCodes: "Copiar los códigos",
+    codesCopied: "Códigos copiados",
+    copyFailed: "No se ha podido copiar. Selecciónalo y cópialo a mano.",
+    stepConfirm: "Escribe el código que muestra la app",
     code: "Código de la app",
     submit: "Activar la verificación",
   },
+  home: {
+    title: "Inicio",
+    greeting: "Hola, {name}",
+    intro: "¿Qué quieres hacer?",
+  },
   products: {
     title: "Productos",
-    loading: "Cargando…",
-    empty: "Todavía no hay productos.",
+    caption: "Productos activos",
+    name: "Nombre",
+    baseUnit: "Unidad base",
+    description:
+      "Consulta los productos activos y la unidad en que se cuentan.",
     loadFailed:
-      "No se han podido cargar los productos. Comprueba la conexión y recarga la página.",
+      "No se han podido cargar los productos. Comprueba la conexión y vuelve a intentarlo.",
+    empty: "Todavía no hay productos",
+    emptyDescription: "Los productos aparecen aquí al darlos de alta.",
+  },
+  // The app's frame: navigation, page title, user menu (src/shell).
+  shell: {
+    skipToContent: "Saltar al contenido",
+    mainNav: "Principal",
+    breadcrumb: "Estás en",
+    userMenu: "Menú de usuario",
     signOut: "Cerrar sesión",
   },
   // The components' own text (src/components/ui).
