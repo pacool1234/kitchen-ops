@@ -52,16 +52,17 @@ const ProviderReply = z.union([
 /** Errors are kept to this many characters, so a long provider reply can't fill a results file. */
 const MAX_MESSAGE = 500;
 
-/** What the provider said: the message in its JSON reply, or the reply itself if it isn't JSON. */
+/** What the provider said: the message in its JSON reply, or else its reply as it came. */
 function providerMessage(raw: unknown): string | null {
-  const value = typeof raw === "string" ? (parseJson(raw) ?? raw) : raw;
-  const parsed = ProviderReply.safeParse(value);
+  const parsed = ProviderReply.safeParse(
+    typeof raw === "string" ? parseJson(raw) : raw,
+  );
   if (parsed.success) {
     return "error" in parsed.data
       ? parsed.data.error.message
       : parsed.data.message;
   }
-  return typeof value === "string" && value.trim() !== "" ? value : null;
+  return typeof raw === "string" && raw.trim() !== "" ? raw : null;
 }
 
 const Completion = z.object({
