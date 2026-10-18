@@ -1,3 +1,4 @@
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
   createOpenRouterClient,
@@ -109,6 +110,151 @@ describe("createOpenRouterClient: one chat completion", () => {
       .complete({ model: "m", messages: [] })
       .catch((e: unknown) => e)) as Error;
     expect(error.message).not.toContain("test-key");
+  });
+});
+
+/** The error OpenRouter sent in #52 when Anthropic refused the schema, shortened. */
+const providerError = {
+  error: {
+    code: 400,
+    message: "Provider returned error",
+    metadata: {
+      raw: JSON.stringify({
+        type: "error",
+        error: {
+          type: "invalid_request_error",
+          message: "Schemas contains too many parameters with union types",
+        },
+      }),
+      provider_name: "Azure",
+      previous_errors: [{ code: 400, message: "Provider returned error" }],
+    },
+  },
+};
+
+async function errorMessage(
+  status: number,
+  body: unknown,
+  apiKey = "test-key",
+) {
+  const { fetch } = fakeFetch(status, body);
+  const client = createOpenRouterClient({ apiKey, fetch });
+  const error = (await client
+    .complete({ model: "m", messages: [] })
+    .catch((e: unknown) => e)) as Error;
+  return error.message;
+}
+
+describe("createOpenRouterClient: the provider's own error (#64)", () => {
+  it("an error status gives the provider's message from error.metadata, with its name", async () => {
+    expect(await errorMessage(400, providerError)).toBe(
+      "OpenRouter answered 400: Provider returned error. Azure said: Schemas contains too many parameters with union types",
+    );
+  });
+
+  it("so does a provider error inside a 200 reply", async () => {
+    expect(await errorMessage(200, providerError)).toBe(
+      "OpenRouter answered 200 with an error: Provider returned error. Azure said: Schemas contains too many parameters with union types",
+    );
+  });
+
+  it("raw text that isn't JSON is used as it is, on one line", async () => {
+    expect(
+      await errorMessage(502, {
+        error: {
+          message: "Provider returned error",
+          metadata: { raw: "upstream timed out\nafter 60 s" },
+        },
+      }),
+    ).toBe(
+      "OpenRouter answered 502: Provider returned error. The provider said: upstream timed out after 60 s",
+    );
+  });
+
+  it("raw JSON with a top-level message is read too", async () => {
+    expect(
+      await errorMessage(400, {
+        error: {
+          message: "Provider returned error",
+          metadata: {
+            raw: JSON.stringify({ message: "model not found" }),
+            provider_name: "Example",
+          },
+        },
+      }),
+    ).toBe(
+      "OpenRouter answered 400: Provider returned error. Example said: model not found",
+    );
+  });
+
+  it("raw JSON in another shape is used as it is", async () => {
+    expect(
+      await errorMessage(400, {
+        error: {
+          message: "Provider returned error",
+          metadata: { raw: '{"detail":"bad request"}' },
+        },
+      }),
+    ).toBe(
+      'OpenRouter answered 400: Provider returned error. The provider said: {"detail":"bad request"}',
+    );
+  });
+
+  it("with no metadata, the message is OpenRouter's alone", async () => {
+    expect(
+      await errorMessage(429, {
+        error: { message: "Rate limit exceeded", metadata: {} },
+      }),
+    ).toBe("OpenRouter answered 429: Rate limit exceeded");
+  });
+
+  // Digits only, so no piece of the key can come from the message's own words.
+  const key = fc.string({
+    unit: fc.constantFrom(..."0123456789"),
+    minLength: 20,
+    maxLength: 40,
+  });
+  // Lengths are spelled out: fast-check keeps strings short, and the cut is at 500 characters.
+  // Half the time the key lands near the cut, which falls about 440 characters into `raw`.
+  const filler = fc
+    .oneof(fc.integer({ min: 0, max: 700 }), fc.integer({ min: 380, max: 500 }))
+    .map((n) => "x".repeat(n));
+
+  it("never holds the key or any piece of it longer than 4 characters, wherever the cut falls", async () => {
+    await fc.assert(
+      fc.asyncProperty(key, filler, filler, async (apiKey, before, after) => {
+        const message = await errorMessage(
+          400,
+          {
+            error: {
+              message: `Bad key ${apiKey}`,
+              metadata: { raw: `${before}${apiKey}${after}` },
+            },
+          },
+          apiKey,
+        );
+        for (let i = 0; i + 5 <= apiKey.length; i++) {
+          expect(message).not.toContain(apiKey.slice(i, i + 5));
+        }
+      }),
+    );
+  });
+
+  it("is at most 500 characters, ending with an ellipsis when cut", async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc
+          .integer({ min: 0, max: 2000 })
+          .chain((n) => fc.string({ minLength: n, maxLength: n })),
+        async (raw) => {
+          const message = await errorMessage(400, {
+            error: { message: "Provider returned error", metadata: { raw } },
+          });
+          expect(message.length).toBeLessThanOrEqual(500);
+          if (message.length === 500) expect(message.endsWith("…")).toBe(true);
+        },
+      ),
+    );
   });
 });
 

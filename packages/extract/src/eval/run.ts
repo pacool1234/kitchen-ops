@@ -49,6 +49,11 @@ export interface DocumentResult {
   /** Field paths, never values. */
   readonly differences: readonly string[];
   readonly record: CallRecord | null;
+  /**
+   * Why the model call failed, as the client reported it. Always null for the private set: a
+   * provider's error could quote the document.
+   */
+  readonly failure: string | null;
   /** What was read. Always null for the private set. */
   readonly document: ExtractedDocument | null;
 }
@@ -131,6 +136,10 @@ export async function runEval(options: RunOptions): Promise<ModelRun[]> {
         validationFailures: failures,
         differences: evaluation.comparison?.differences ?? [],
         record: result.record,
+        failure:
+          set.name === "gold" && result.status === "failed"
+            ? result.message
+            : null,
         document:
           set.name === "gold" && result.status === "extracted"
             ? result.document

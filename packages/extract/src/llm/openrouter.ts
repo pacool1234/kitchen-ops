@@ -31,8 +31,39 @@ export class OpenRouterError extends Error {
 }
 
 const ErrorBody = z.object({
-  error: z.object({ message: z.string() }),
+  error: z.object({
+    message: z.string(),
+    // The provider's own reply, when the error came from it: `raw` is its body, as text.
+    metadata: z
+      .object({
+        raw: z.unknown().optional(),
+        provider_name: z.string().optional(),
+      })
+      .optional(),
+  }),
 });
+
+/** The provider's reply as Anthropic and OpenAI shape it, or with a top-level message. */
+const ProviderReply = z.union([
+  z.object({ error: z.object({ message: z.string() }) }),
+  z.object({ message: z.string() }),
+]);
+
+/** Errors are kept to this many characters, so a long provider reply can't fill a results file. */
+const MAX_MESSAGE = 500;
+
+/** What the provider said: the message in its JSON reply, or else its reply as it came. */
+function providerMessage(raw: unknown): string | null {
+  const parsed = ProviderReply.safeParse(
+    typeof raw === "string" ? parseJson(raw) : raw,
+  );
+  if (parsed.success) {
+    return "error" in parsed.data
+      ? parsed.data.error.message
+      : parsed.data.message;
+  }
+  return typeof raw === "string" && raw.trim() !== "" ? raw : null;
+}
 
 const Completion = z.object({
   choices: z
@@ -62,13 +93,24 @@ export function createOpenRouterClient({
   apiKey: string;
   fetch?: typeof globalThis.fetch;
 }): OpenRouterClient {
-  /** OpenRouter's own error message, never echoing the key. */
-  const errorMessage = (body: unknown) => {
+  /** OpenRouter's error message and the provider's, on one line, never echoing the key. */
+  const errorMessage = (start: string, body: unknown) => {
     const parsed = ErrorBody.safeParse(body);
-    const message = parsed.success
+    let message = parsed.success
       ? parsed.data.error.message
       : "unreadable reply";
-    return message.replaceAll(apiKey, "[key]").slice(0, 300);
+    const metadata = parsed.success ? parsed.data.error.metadata : undefined;
+    const provider = providerMessage(metadata?.raw);
+    if (provider !== null) {
+      message += `. ${metadata?.provider_name ?? "The provider"} said: ${provider}`;
+    }
+    // The key is masked before the cut, so no part of it can survive at the end.
+    const whole = `${start}: ${message}`
+      .replaceAll(apiKey, "[key]")
+      .replace(/\s+/g, " ");
+    return whole.length > MAX_MESSAGE
+      ? `${whole.slice(0, MAX_MESSAGE - 1)}…`
+      : whole;
   };
 
   return {
@@ -84,14 +126,17 @@ export function createOpenRouterClient({
       const reply = parseJson(await response.text());
       if (!response.ok) {
         throw new OpenRouterError(
-          `OpenRouter answered ${response.status}: ${errorMessage(reply)}`,
+          errorMessage(`OpenRouter answered ${response.status}`, reply),
           response.status,
         );
       }
       // Errors from the provider can also arrive inside a 200.
       if (ErrorBody.safeParse(reply).success) {
         throw new OpenRouterError(
-          `OpenRouter answered ${response.status} with an error: ${errorMessage(reply)}`,
+          errorMessage(
+            `OpenRouter answered ${response.status} with an error`,
+            reply,
+          ),
           response.status,
         );
       }

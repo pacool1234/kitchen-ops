@@ -1,3 +1,4 @@
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import type { ModelConfig } from "../llm/config";
 import type { ChatReply } from "../llm/openrouter";
@@ -120,6 +121,115 @@ describe("summaryMarkdown: the report, silent error rate first", () => {
       info,
     );
     expect(summary).toContain("Not requested: the schema went in the prompt.");
+  });
+});
+
+const refused =
+  "OpenRouter answered 400: Provider returned error. Azure said: Schemas contains too many parameters";
+const timedOut = "OpenRouter answered 504: Gateway timeout";
+
+/** The run's documents, each failed with the message given, or not failed for null. */
+function withFailures(
+  base: ModelRun,
+  failures: readonly (string | null)[],
+): ModelRun {
+  const document = base.documents[1]!;
+  return {
+    ...base,
+    documents: failures.map((failure) => ({
+      ...document,
+      failure,
+      reviewBecause: failure === null ? document.reviewBecause : "failed",
+    })),
+  };
+}
+
+/** The "Why calls failed" list, as [count, message] pairs. */
+function failureList(summary: string): [number, string][] {
+  return [...summary.matchAll(/^- (\d+) × (.*)$/gm)].map((m) => [
+    Number(m[1]),
+    m[2]!,
+  ]);
+}
+
+describe("summaryMarkdown: why calls failed (#64)", () => {
+  it("lists each distinct message under Review rate with its count, most common first", async () => {
+    const summary = summaryMarkdown(
+      withFailures(await run(), [timedOut, refused, null, refused]),
+      info,
+    );
+    const review = summary.slice(
+      summary.indexOf("## Review rate"),
+      summary.indexOf("## Header field accuracy"),
+    );
+    expect(review).toContain("Why calls failed:");
+    expect(failureList(review)).toEqual([
+      [2, refused],
+      [1, timedOut],
+    ]);
+  });
+
+  it("has no list when no call failed", async () => {
+    const summary = summaryMarkdown(await run(), info);
+    expect(summary).not.toContain("Why calls failed");
+  });
+
+  it("a private run's summary holds no failure message, even if one reached its results", async () => {
+    const summary = summaryMarkdown(
+      withFailures(await run(), [refused, refused]),
+      { ...info, set: "private" },
+    );
+    expect(summary).not.toContain("Why calls failed");
+    expect(summary).not.toContain("Schemas contains");
+  });
+
+  it("a private run, end to end, holds no failure message in its summary or results", async () => {
+    const [result] = await runEval({
+      set: {
+        ...goldSet,
+        name: "private",
+        source: "client",
+        documents: [textPdf],
+      },
+      models: [model],
+      prompt: { version: "v1", text: "Extract the document." },
+      client: {
+        complete: async () => {
+          throw new Error(refused);
+        },
+      },
+      maxMicroUsd: 1_000_000,
+      today: "2026-10-18",
+    });
+    const privateInfo: RunInfo = { ...info, set: "private" };
+    expect(result!.documents[0]!.reviewBecause).toBe("failed");
+    expect(summaryMarkdown(result!, privateInfo)).not.toContain(
+      "Schemas contains",
+    );
+    expect(JSON.stringify(resultsJson(result!, privateInfo))).not.toContain(
+      "Schemas contains",
+    );
+  });
+
+  it("for any mix of failed and successful documents, the counts add up to the failed documents", async () => {
+    const base = await run();
+    await fc.assert(
+      fc.property(
+        fc.array(fc.constantFrom(null, refused, timedOut, "fetch failed"), {
+          maxLength: 30,
+        }),
+        (failures) => {
+          const list = failureList(
+            summaryMarkdown(withFailures(base, failures), info),
+          );
+          const failed = failures.filter((f) => f !== null);
+          expect(list.reduce((sum, [n]) => sum + n, 0)).toBe(failed.length);
+          expect(new Set(list.map(([, m]) => m))).toEqual(new Set(failed));
+          const counts = list.map(([n]) => n);
+          expect(counts).toEqual([...counts].sort((a, b) => b - a));
+        },
+      ),
+    );
   });
 });
 

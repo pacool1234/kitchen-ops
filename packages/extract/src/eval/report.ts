@@ -82,6 +82,26 @@ export function summaryMarkdown(run: ModelRun, info: RunInfo): string {
       );
     }
   }
+  // Most common first; ties in the order they first happened. Never for the private set, even
+  // if a message reached its results: a provider's error could quote the document.
+  const failures = new Map<string, number>();
+  if (info.set === "gold") {
+    for (const { failure } of run.documents) {
+      if (failure !== null)
+        failures.set(failure, (failures.get(failure) ?? 0) + 1);
+    }
+  }
+  const failureLines =
+    failures.size === 0
+      ? []
+      : [
+          "",
+          "Why calls failed:",
+          "",
+          ...[...failures]
+            .sort(([, a], [, b]) => b - a)
+            .map(([message, n]) => `- ${n} × ${message}`),
+        ];
   const cost = summary.cost;
   const costLines = [
     cost.perDocumentMicroUsd === null
@@ -107,8 +127,9 @@ export function summaryMarkdown(run: ModelRun, info: RunInfo): string {
             `By reason: ${[...reasons].map(([reason, n]) => `${reason} ${n}`).join(", ")}.`,
           ]
         : []),
+      ...failureLines,
       "",
-      `Correct: ${formatRatio({ part: summary.outcomes.correct, whole: summary.documents })}.`,
+      `Correct:${formatRatio({ part: summary.outcomes.correct, whole: summary.documents })}.`,
     ],
     "Header field accuracy": [
       `Over the ${compared} documents that produced a document.`,
