@@ -1,8 +1,10 @@
-# kitchen-ops — Technical Spec (v0.1)
+# kitchen-ops — Technical Spec (v0.2)
 
-Status: master copy as of 14 Oct 2026. This file is the source of truth; the Claude Doc it was exported from is a historical copy.
+Status: master copy as of 18 Oct 2026. This file is the source of truth; the Claude Doc it was exported from is a historical copy of v0.1.
 
 A pre-employment repo of reusable building blocks for restaurant purchasing and stock control: a deployed skeleton, a stock ledger library and a document-extraction pipeline. Anything marked **Hypothesis** waits for the November discovery session.
+
+Phase 1 (sections 1–10, milestones M0–M4) is done and tagged `pre-employment-v1`. Phase 2 (section 11, M5–M10) builds a working app on top of it, on stated assumptions instead of waiting for discovery.
 
 ## 1. Purpose and scope
 
@@ -26,6 +28,7 @@ Build, before any employment starts, the parts of a restaurant purchasing and st
 - **Decided:** settled; change only with a written reason (add a record in `docs/decisions/`)
 - **Proposed:** default choice, revisit once before building on it
 - **Hypothesis:** depends on how the client works; validate in discovery
+- **Assumed:** a Hypothesis answered without discovery so that phase 2 can be built (section 11.1). Revisit if a real client works differently
 
 ## 2. Architecture
 
@@ -246,9 +249,20 @@ Render prices as checked in October 2026; confirm before subscribing. A solo wor
 
 Timebox: if M1 isn't done within about two weekends, simplify the infrastructure rather than polishing it.
 
+Phase 2 (section 11.4 has the details; each milestone also meets the quality bar in 11.2):
+
+| Milestone | Done when |
+| --- | --- |
+| M5. Catalogue and foundations | Products, conversions, storerooms, suppliers and supplier products editable in Spanish on desktop and phone; design system, i18n, audit log; Playwright and axe in CI |
+| M6. Document intake | A phone photo or a PDF becomes a draft through a background extraction job, with live status, duplicate detection and recorded cost |
+| M7. Review and post | A delivery note goes from photo to stock with only corrections typed; invoices correct prices; stored movements agree with `packages/ledger` |
+| M8. Stock, counts, waste and transfers | Stock per storeroom with its value; offline counts sync exactly once; waste and transfers recorded |
+| M9. Recipes, sales and variance | A month of demo sales and counts produces a traceable variance report and an owner's dashboard |
+| M10. Version 1.0 | `v1.0.0` in production; a demo restaurant on staging; each role's main task done from the user guide without help |
+
 ## 10. Open questions for discovery
 
-No technical decisions remain open (see `docs/decisions/`). These answers from the November session can still change this spec:
+No technical decisions remain open (see `docs/decisions/`). These answers from the November session can still change this spec. Until then, phase 2 builds on the assumed answers in section 11.1:
 
 | Question | What it changes |
 | --- | --- |
@@ -260,3 +274,134 @@ No technical decisions remain open (see `docs/decisions/`). These answers from t
 | Is there connectivity in storerooms and cold rooms? | Offline counting in the PWA |
 | Which units and packs do staff think in? | UnitConversion design, counting UI |
 | How do they weigh review time against errors? | Extraction thresholds (section 5) |
+
+## 11. Phase 2: a working app (Proposed)
+
+Phase 1 (M0–M4, tagged `pre-employment-v1`) built the parts that hold for any restaurant: the deployed skeleton, the ledger and the extraction pipeline. Nothing connects them to a person yet.
+
+Phase 2 builds the app people use every day. A delivery arrives, someone photographs the delivery note, the office checks what was read, and stock and costs update. Staff count stock on their phones, and the owner sees where money is lost.
+
+This is a practice project, so phase 2 doesn't wait for discovery. It goes ahead on the stated assumptions below, chosen to make the app realistic and to teach the most (decision 0020). The repo stays generic (section 8). The restaurant below is fictional, and production holds only synthetic or own data.
+
+### 11.1 Assumptions in place of discovery (Assumed)
+
+| Question (section 10) | Assumed answer | What it makes us build |
+| --- | --- | --- |
+| Delivery notes, or only invoices? | **Most suppliers** bring a delivery note with the goods and send an invoice later, per delivery or monthly. **A few** send only an invoice. | Delivery notes create movements on receipt (as section 3 assumes). Invoices are matched to their delivery notes and correct the price. An invoice-only supplier's invoice creates movements itself |
+| Storerooms, and transfers? | Three: a cold room, a dry store and the bar. The bar takes drinks from the dry store | Stock per storeroom, and transfer documents |
+| Written recipes? | Yes, for about 30 dishes, with quantities | Recipe costing, and variance from the first full month |
+| POS export? | A daily CSV of sales by product line | Sales import, mapping POS codes to recipes, theoretical use |
+| Who does what? | Kitchen and bar staff receive deliveries and count on their phones. An office person enters invoices and fixes mappings. The owner reads reports | Roles as in section 6, with phone-first screens for the counter role |
+| Signal in storerooms? | None in the cold room | Counting works offline and syncs when back online |
+| Units staff think in | Packs: cases, bottles, kg, bunches | Counting and receiving in purchase units, converted to base units |
+| Review time against errors | Errors cost more: a wrong cost misleads for months | Anything that fails a check goes to review, and so does a new supplier's first documents |
+
+**The restaurant we design for:**
+- one business, about 10 users and 40 suppliers;
+- about 400 products and 300 supplier documents a month;
+- the interface in Spanish (es-ES), with English as a second language.
+
+### 11.2 The quality bar (every phase 2 milestone)
+
+The aim is an app that feels professional: fast, consistent, easy on a phone in a cold room, and trustworthy with money.
+
+- **Designed, not assembled:**
+  - one design system: tokens, components and spacing, used everywhere;
+  - empty, loading and error states for every screen;
+  - mobile-first for counter tasks, desktop-first for the office and owner.
+- **Accessible:** WCAG 2.2 AA. Automated checks (axe) run in CI on every screen, and every flow works with a keyboard.
+- **Spanish first:** every string goes through i18n. Dates, numbers and money are in Spanish format (`1.234,56 €`).
+- **Tested end to end:** each milestone's core flow has a browser test (Playwright) against the real API and Postgres in CI, alongside unit and property tests.
+- **Trustworthy writes:**
+  - every write goes through the API, inside a transaction where it touches stock;
+  - every write is in the audit log (section 6);
+  - posting keeps the ledger's invariants. Database-level property tests check that stored movements rebuild the same stock and cost as `packages/ledger`.
+- **Fast:** a performance budget per screen, checked in CI. Lists of hundreds of products stay instant.
+- **Observable:** structured logs per request and job. Sentry on every app and worker, including background jobs.
+- **Explained:**
+  - each technical choice has a decision record before it's built on;
+  - each milestone updates `docs/architecture.md`;
+  - a short user guide covers each role.
+- **Demonstrable:** staging runs a demo restaurant with synthetic data: suppliers, documents, recipes and a month of sales. It is reset nightly.
+
+### 11.3 Choices to make (Proposed)
+
+Each is settled by a decision record at the start of the milestone that first needs it.
+
+| Choice | Default to try | First needed |
+| --- | --- | --- |
+| Component library and styling | A headless component library with Tailwind CSS, and our own design tokens | M5 |
+| Internationalisation | vue-i18n | M5 |
+| Browser tests | Playwright, with axe for accessibility | M5 |
+| API contract | OpenAPI generated from the Zod schemas, and a typed client in the web app | M5 |
+| Background jobs | A Postgres-backed queue (pg-boss): no extra service. Runs in the extraction worker from section 7 | M6 |
+| File storage | Scaleway Object Storage (section 7), with uploads and downloads through short-lived signed URLs | M6 |
+| Offline data | IndexedDB, with a queue of writes synced through idempotent API calls | M8 |
+| Charts | A small, accessible chart library for reports | M9 |
+
+### 11.4 Milestones
+
+**M5. Catalogue and foundations**
+- **The foundations:** the design system, i18n, Playwright and axe in CI, the OpenAPI client, and the audit log.
+- **The catalogue:**
+  - products, with base unit, category, default storeroom and active;
+  - unit conversions per product, storerooms, and suppliers with their tax ID checked;
+  - supplier products: a supplier's code, description and pack, mapped to one of our products.
+- **Done when:** an office user can create and edit all of these in Spanish, with validation messages, on desktop and phone. Every write is in the audit log. The flow passes in Playwright and axe, and the catalogue has a searchable, paginated list.
+
+**M6. Document intake**
+- **Getting a document in:**
+  - upload a PDF or Facturae file on desktop, or take one or several photos on a phone;
+  - the original goes to object storage, and a document whose file hash is already known is caught as a duplicate.
+- **Reading it:**
+  - extraction runs as a background job with retries, using the default model and client-safe routing (section 5);
+  - its status (queued, reading, ready for review, failed) shows live in the app;
+  - each document's model cost is recorded.
+- **Done when:**
+  - a phone photo becomes a readable draft, and the app shows its progress;
+  - a failed job can be retried from the app;
+  - Playwright covers the flow, with a fake model in CI.
+
+**M7. Review and post**
+- **The review screen:** the original document next to the fields read.
+  - Failed checks are highlighted, and lines are editable.
+  - The supplier is found by tax ID, or created on the spot.
+- **Mapping lines to products:** by supplier code, then description, then a suggestion from a model. Each mapping is confirmed once and remembered.
+- **Posting:** through `packages/ledger`, atomically, into append-only movements.
+- **Invoices:** matched to their delivery notes, with price differences shown and posted as cost corrections.
+- **Reversing:** owners can reverse a posted document.
+- **Done when:**
+  - a delivery note goes from photo to stock with no data typed except corrections;
+  - an invoice corrects the prices of its delivery notes;
+  - database-level property tests show stored movements and `packages/ledger` agree on stock and cost;
+  - every step is in the audit log.
+
+**M8. Stock, counts, waste and transfers**
+- **Stock:** on hand per product and storeroom, valued at average cost, with the movements behind it.
+- **Counting:** sessions on a phone that work offline and sync exactly once.
+- **Waste and transfers:** recording waste with a reason, and moving stock between storerooms.
+- **Done when:**
+  - a count made with the network off syncs correctly when it's back, even if sent twice;
+  - stock and value match the ledger;
+  - the counting flow is quick with one hand.
+
+**M9. Recipes, sales and variance**
+- **Recipes:** with yields, and costed at each ingredient's latest price.
+- **Sales:** a daily POS CSV import, mapping POS codes to recipes, and re-importing a day doesn't double it.
+- **Variance:** the report per product and period, sorted by money lost. An owner's dashboard shows stock value, the last purchases, the biggest variances and food cost against sales.
+- **Done when:** a month of demo sales and counts produces a variance report the owner can act on, and every figure can be traced to its documents.
+
+**M10. Version 1.0**
+- **Polish:** a pass on performance, accessibility and copy over every screen.
+- **The demo restaurant** on staging, reset nightly, and a short guided first run for each role.
+- **Before release:** the user guide, and a security review (auth, permissions per role, file access, rate limits).
+- **Done when:** a release tagged `v1.0.0` runs in production. Someone new can sign in to the demo, follow the guide and complete each role's main task without help.
+
+### 11.5 Out of scope for phase 2
+
+- More than one business per installation (multi-tenancy).
+- Ordering from suppliers.
+- Native mobile apps: the PWA covers phones.
+- The non-goals in section 1 still hold: no invoices or tickets issued, no accounting, no POS.
+
+**Budget:** the background worker adds about $7 a month in production (section 7). About 300 documents a month cost about $3 in model calls (decision 0018). Both fit the €30 budget, checked again at M6.
