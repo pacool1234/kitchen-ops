@@ -116,12 +116,14 @@ export const router = createRouter({
           redirect: { name: "products" },
           meta: { title: "catalogue.title", parent: "home" },
           children: [
-            {
-              path: "products",
-              name: "products",
-              component: () => import("./views/ProductsView.vue"),
-              meta: { title: "products.title", parent: "catalogue" },
-            },
+            ...itemRoutes("products", "product", {
+              list: () => import("./catalogue/ProductsView.vue"),
+              item: () => import("./catalogue/ProductView.vue"),
+              title: "products.title",
+              itemTitle: "products.item",
+              newTitle: "products.new",
+              mayCreate: (role) => mayCall(endpoints.createProduct, role),
+            }),
             ...itemRoutes("suppliers", "supplier", {
               list: () => import("./catalogue/SuppliersView.vue"),
               item: () => import("./catalogue/SupplierView.vue"),

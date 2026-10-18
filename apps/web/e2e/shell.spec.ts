@@ -117,9 +117,9 @@ test("on a phone, the bottom bar never covers the end of the page", async ({
   await page.setViewportSize({ width: 412, height: 480 });
   await signedIn(page);
   await mainNav(page).getByRole("link", { name: "Catálogo" }).click();
-  // A full page of the seed's products: the header row and 20.
-  const table = page.getByRole("table", { name: "Productos activos" });
-  await expect(table.getByRole("row")).toHaveCount(21);
+  // A full page of the seed's products: 20 cards, on a phone.
+  const cards = page.getByRole("list", { name: "Productos" });
+  await expect(cards.getByRole("listitem")).toHaveCount(20);
 
   await page.mouse.wheel(0, 10_000);
   await expect(async () => {

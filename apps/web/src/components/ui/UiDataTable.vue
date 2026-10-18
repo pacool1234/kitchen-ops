@@ -7,7 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-vue-next";
-import { computed } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useT } from "../../i18n";
 import { formatCount } from "../../i18n/format";
@@ -86,10 +86,20 @@ function sortIcon(column: Column<Row>) {
   return sort.value.direction === "asc" ? ArrowUp : ArrowDown;
 }
 
-// With cards, an error or an empty list shows once, for both layouts, not once in each.
+// With a card slot, below 768px the rows are cards. Only the layout that shows is rendered, so
+// the page holds one copy of each row, for screen readers and for tests alike.
+const WIDE = "(min-width: 768px)";
+const wide = ref(window.matchMedia(WIDE).matches);
+const onWidth = (event: MediaQueryListEvent) => (wide.value = event.matches);
+onMounted(() => window.matchMedia(WIDE).addEventListener("change", onWidth));
+onUnmounted(() =>
+  window.matchMedia(WIDE).removeEventListener("change", onWidth),
+);
+const cards = computed(() => Boolean(slots.card) && !wide.value);
+// As cards, an error or an empty list shows on its own, without a list around it.
 const cardStates = computed(
   () =>
-    Boolean(slots.card) &&
+    cards.value &&
     !props.loading &&
     (Boolean(props.error) || props.rows.length === 0),
 );
@@ -117,8 +127,8 @@ const align = (column: Column<Row>) =>
     </template>
     <!-- A wide table scrolls on its own; the region lets a keyboard scroll it too. -->
     <div
-      v-else
-      :class="['overflow-x-auto', $slots.card && 'hidden md:block']"
+      v-else-if="!cards"
+      class="overflow-x-auto"
       role="region"
       :aria-label="caption"
       tabindex="0"
@@ -221,7 +231,7 @@ const align = (column: Column<Row>) =>
         </tbody>
       </table>
     </div>
-    <div v-if="$slots.card && !cardStates" class="md:hidden">
+    <div v-if="cards && !cardStates">
       <ul v-if="loading" :aria-label="caption" aria-busy="true">
         <li
           v-for="row in Math.min(pageSize, 3)"

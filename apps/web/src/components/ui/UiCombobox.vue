@@ -11,7 +11,7 @@ import {
   ComboboxTrigger,
   ComboboxViewport,
 } from "reka-ui";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useT } from "../../i18n";
 import UiFieldShell from "./UiFieldShell.vue";
 import type { SelectOption } from "./options";
@@ -19,7 +19,9 @@ import { matchesSearch } from "./search";
 import { control, option, popover } from "./styles";
 
 // A choice from a long list, found by typing (#85), on Reka UI's Combobox. The search ignores
-// capitals and accents ("limon" finds "Limón"); Reka's own filter doesn't.
+// capitals and accents ("limon" finds "Limón"); Reka's own filter doesn't. With `remote`, the
+// page searches instead (#89): it gets each `search` as typed, and passes the matches back as
+// `options`, so a list of hundreds never has to load at once.
 const props = defineProps<{
   label: string;
   options: readonly SelectOption[];
@@ -28,21 +30,37 @@ const props = defineProps<{
   optional?: boolean;
   placeholder?: string;
   disabled?: boolean;
+  /** The page searches: `options` are its matches for the last `search`. */
+  remote?: boolean;
+  /** The chosen option's label, when it may not be among the current `options`. */
+  selectedLabel?: string;
 }>();
+const emit = defineEmits<{ search: [text: string] }>();
 const model = defineModel<string>();
 const t = useT();
 const search = ref("");
 
 const matching = computed(() =>
-  props.options.filter((o) => matchesSearch(o.label, search.value)),
+  props.remote
+    ? props.options
+    : props.options.filter((o) => matchesSearch(o.label, search.value)),
 );
 const labelOf = (value: unknown) =>
-  props.options.find((o) => o.value === value)?.label ?? "";
+  props.options.find((o) => o.value === value)?.label ??
+  (value === model.value ? (props.selectedLabel ?? "") : "");
+watch(search, (text) => {
+  if (props.remote) emit("search", text);
+});
 
 // Closed, the next search starts from every option again.
+const isOpen = ref(false);
 function onOpen(open: boolean) {
+  isOpen.value = open;
   if (!open) search.value = "";
 }
+// Closed, Reka leaves aria-activedescendant naming an option that's no longer in the page,
+// which axe rightly refuses (aria-valid-attr-value). It's only meant while the list is open.
+const closedAttrs = { "aria-activedescendant": undefined };
 </script>
 
 <template>
@@ -72,6 +90,7 @@ function onOpen(open: boolean) {
       >
         <Search class="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
         <ComboboxInput
+          v-bind="isOpen ? {} : closedAttrs"
           :id="id"
           v-model="search"
           :display-value="labelOf"

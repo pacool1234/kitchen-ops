@@ -42,6 +42,11 @@ export async function signedIn(
   });
 }
 
+/** Waits for a page opened by its address (goto, reload): no focus moves on a full load. */
+export async function loadedAt(page: Page, title: string): Promise<void> {
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
+}
+
 /**
  * Waits until the page titled `title` has arrived: after each navigation the app moves focus
  * to the title, which would close a select a test had already opened.
@@ -60,10 +65,14 @@ export async function openCatalogue(
   section: CatalogueSection,
 ): Promise<void> {
   await mainNav(page).getByRole("link", { name: "Catálogo" }).click();
-  await page
-    .getByRole("navigation", { name: "Secciones del catálogo" })
-    .getByRole("link", { name: section })
-    .click();
+  // The catalogue opens on its products: the other sections are a link away.
+  if (section !== "Productos") {
+    await arrivedAt(page, "Productos");
+    await page
+      .getByRole("navigation", { name: "Secciones del catálogo" })
+      .getByRole("link", { name: section })
+      .click();
+  }
   await arrivedAt(page, section);
 }
 
@@ -83,6 +92,39 @@ export async function createSupplier(
   body: { name: string; taxId: string; email?: string },
 ): Promise<{ id: string }> {
   const response = await page.request.post("/api/suppliers", { data: body });
+  expect(response.status(), await response.text()).toBe(201);
+  return (await response.json()) as { id: string };
+}
+
+/** Creates a product through the API as the signed-in user. */
+export async function createProduct(
+  page: Page,
+  body: {
+    name: string;
+    baseUnit: "g" | "ml" | "unit";
+    category: string;
+    conversions?: { unit: string; factor: number }[];
+  },
+): Promise<{ id: string }> {
+  const response = await page.request.post("/api/products", { data: body });
+  expect(response.status(), await response.text()).toBe(201);
+  return (await response.json()) as { id: string };
+}
+
+/** Creates a supplier product through the API as the signed-in user. */
+export async function createSupplierProduct(
+  page: Page,
+  body: {
+    supplierId: string;
+    code: string;
+    description: string;
+    productId: string;
+    pack: { quantity: string; unit: string };
+  },
+): Promise<{ id: string }> {
+  const response = await page.request.post("/api/supplier-products", {
+    data: body,
+  });
   expect(response.status(), await response.text()).toBe(201);
   return (await response.json()) as { id: string };
 }

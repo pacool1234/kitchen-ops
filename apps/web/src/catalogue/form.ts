@@ -1,5 +1,5 @@
 import { fieldErrors, type FieldErrorCode } from "@kitchen-ops/shared";
-import { computed, reactive, ref, toRaw, watch } from "vue";
+import { computed, reactive, ref, toRaw, watch, type Ref } from "vue";
 import type { z } from "zod";
 import { ApiError } from "../api";
 
@@ -9,16 +9,39 @@ import { ApiError } from "../api";
 
 export type FieldErrors = Record<string, FieldErrorCode>;
 
-/** The schema's output if the values pass, and each refused field's code either way. */
-export function checkFields<S extends z.ZodType>(
-  schema: S,
-  values: unknown,
-): { data?: z.output<S>; errors: FieldErrors } {
-  const result = schema.safeParse(values);
-  return result.success
-    ? { data: result.data, errors: {} }
-    : { errors: fieldErrors(result.error.issues, values) };
+/** How a form's values become what's checked and sent, when they aren't the same. */
+export interface FormOptions<V> {
+  /**
+   * The API's body made from the form's values: a product's sizes are typed in kilos, and sent
+   * in base units. Errors are then named by the body's paths (`conversions.1.factor`).
+   */
+  toBody?: (values: V) => unknown;
+  /** Checks a schema can't make alone, on the body: a unit named after the base unit. */
+  check?: (body: never) => FieldErrors;
 }
+
+/**
+ * The schema's output if the values pass every check, and each refused field's code either way:
+ * the schema's first, then `check`'s.
+ */
+export function checkFields<S extends z.ZodType, V>(
+  schema: S,
+  values: V,
+  options: FormOptions<V> = {},
+): { data?: z.output<S>; errors: FieldErrors } {
+  const body = options.toBody ? options.toBody(values) : values;
+  const result = schema.safeParse(body);
+  const errors = {
+    ...(options.check?.(body as never) ?? {}),
+    ...(result.success ? {} : fieldErrors(result.error.issues, body)),
+  };
+  return result.success && Object.keys(errors).length === 0
+    ? { data: result.data, errors }
+    : { errors };
+}
+
+/** A deep copy: a form's values are plain data, and lists in them mustn't be shared. */
+const copy = <T>(value: T): T => structuredClone(toRaw(value));
 
 /** The same JSON whatever the order of an object's keys. */
 function canonical(value: unknown): string {
@@ -49,28 +72,36 @@ export function apiFieldErrors(error: unknown): FieldErrors | undefined {
 export function useForm<S extends z.ZodType, V extends Record<string, unknown>>(
   schema: S,
   initial: V,
+  options: FormOptions<V> = {},
 ) {
-  const values = reactive({ ...initial }) as V;
-  const loaded = ref<V>({ ...initial });
+  const values = reactive(copy(initial)) as V;
+  const loaded = ref(copy(initial)) as Ref<V>;
   const touched = reactive(new Set<string>());
   const submitted = ref(false);
   const saving = ref(false);
   /** What the API refused, until that field changes. */
   const refused = ref<FieldErrors>({});
 
-  const checked = computed(() => checkFields(schema, values).errors);
+  const checked = computed(
+    () => checkFields(schema, values as V, options).errors,
+  );
   const dirty = computed(() => isDirty(toRaw(values), loaded.value));
 
+  // A change to a field clears what the API said about it, and about anything inside it: a
+  // change to a conversion clears `conversions.1.factor`.
   for (const field of Object.keys(initial)) {
     watch(
       () => values[field],
       () => {
-        if (field in refused.value) {
+        const about = (name: string) =>
+          name === field || name.startsWith(`${field}.`);
+        if (Object.keys(refused.value).some(about)) {
           refused.value = Object.fromEntries(
-            Object.entries(refused.value).filter(([name]) => name !== field),
+            Object.entries(refused.value).filter(([name]) => !about(name)),
           );
         }
       },
+      { deep: true },
     );
   }
 
@@ -87,8 +118,8 @@ export function useForm<S extends z.ZodType, V extends Record<string, unknown>>(
 
   /** The values become the ones loaded: after a save, or a new item to edit. */
   function reset(next: V) {
-    Object.assign(values, next);
-    loaded.value = { ...next };
+    Object.assign(values, copy(next));
+    loaded.value = copy(next);
     touched.clear();
     submitted.value = false;
     refused.value = {};
@@ -102,7 +133,7 @@ export function useForm<S extends z.ZodType, V extends Record<string, unknown>>(
     save: (data: z.output<S>) => Promise<void>,
   ): Promise<boolean> {
     submitted.value = true;
-    const { data } = checkFields(schema, values);
+    const { data } = checkFields(schema, values as V, options);
     if (data === undefined) return false;
     saving.value = true;
     try {

@@ -1,7 +1,7 @@
 # 0027. The catalogue's screens: one place in the navigation, forms checked by the shared schemas, lists kept in the URL
 
 - Status: Accepted
-- Date: 2026-10-19
+- Date: 2026-10-19; extended the same day with products and supplier products (#89, part 2)
 
 ## Context
 
@@ -33,7 +33,19 @@ M5's catalogue (#89) is the app's first set of screens that people fill in: stor
 - Typing searches once it pauses for 250 ms.
 - A late answer to an older search never replaces a newer one.
 
-**On phones, lists are cards.** `UiDataTable` takes a `card` slot and shows it below 768 px instead of the table. Only one layout shows at a time, so a screen reader meets one. An empty list or an error shows once.
+**On phones, lists are cards.** `UiDataTable` takes a `card` slot and, below 768 px, renders the cards instead of the table: only the layout that shows is in the page (the width is read with `matchMedia`), so a screen reader or a search for a row's text meets one copy.
+
+**A purchase unit's size is typed in kilos, litres or units,** not in base units: a box of tomatoes is "6 kg", not 6000 g, and a tray of eggs "30 uds.", not 30 000 thousandths.
+- Each is 1000 base units, worked out exactly on the decimal text (`apps/web/src/catalogue/units.ts`).
+- The form's values become the API's body before they're checked (`useForm`'s `toBody`), so errors still land on the right row (`conversions.1.factor`).
+- Each row shows a live example, "1 caja = 6 kg". The web app can't use `packages/ledger`; the example is a preview, and what's saved is the API's.
+- A product's base unit is chosen once, and shown as text afterwards.
+
+**Supplier products are managed on the supplier's page,** in a dialog.
+- Our product is found by typing: `UiCombobox` in `remote` mode lets the page search the API and show up to 20 matches, so 400 products never load at once.
+- The pack's unit is one of that product's units, and the dialog shows its example.
+- Deactivating is an "Activo" box saved with the rest, not a second dialog on top of the first. Closing the dialog with changes asks first.
+- A product's page lists the supplier products that sell it, for every role.
 
 **After saving,** a new item's page opens and an edited item stays, each with a notice. **Deactivating asks first;** reactivating doesn't, since it hides nothing.
 
