@@ -282,6 +282,17 @@ describe("comparisonMarkdown: across runs (#68)", () => {
     expect(section).toContain("- y: correct 1, silent-error 1.");
   });
 
+  it("each run's failure modes are headed with its temperature and run number, so repeat runs can be told apart", () => {
+    const failures = comparisonMarkdown([
+      results("vendor/a", [correct("a")]),
+      repeat("vendor/a", 2, [correct("a")]),
+    ]).split("## Failure modes")[1]!;
+    expect(failures).toContain("### vendor/a, prompt v1\n");
+    expect(failures).toContain(
+      "### vendor/a, prompt v1, temperature 0, run 2\n",
+    );
+  });
+
   it("says so when no document changed between runs", () => {
     const markdown = comparisonMarkdown([
       repeat("vendor/a", 1, documentsWith(3)),
