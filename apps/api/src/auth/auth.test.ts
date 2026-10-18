@@ -4,7 +4,11 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../app";
 import { createDb } from "../db/client";
 import { users } from "../db/schema";
-import { cookieHeader, TEST_PASSWORD as PASSWORD } from "../test/auth";
+import {
+  cookieHeader,
+  enableTotp as enableTotpFor,
+  TEST_PASSWORD as PASSWORD,
+} from "../test/auth";
 import { testConfig, totpCode } from "../test/helpers";
 import { createAuth } from "./auth";
 import { createUser } from "./users";
@@ -67,23 +71,7 @@ function post(url: string, cookie: string, payload: object) {
   });
 }
 
-/** Turns on TOTP for a signed-in user, as the authenticator-app setup would. Returns the secret. */
-async function enableTotp(cookie: string) {
-  const enabled = await post("/api/auth/two-factor/enable", cookie, {
-    password: PASSWORD,
-  });
-  expect(enabled.statusCode).toBe(200);
-  const secret = new URL(
-    enabled.json<{ totpURI: string }>().totpURI,
-  ).searchParams.get("secret");
-  if (!secret) throw new Error("no secret in totpURI");
-
-  const verified = await post("/api/auth/two-factor/verify-totp", cookie, {
-    code: totpCode(secret),
-  });
-  expect(verified.statusCode).toBe(200);
-  return { secret, cookie: cookieHeader(verified) || cookie };
-}
+const enableTotp = (cookie: string) => enableTotpFor(app, auth, cookie);
 
 describe("routes are locked by default", () => {
   it("unauthenticated request → 401", async () => {
