@@ -1,4 +1,4 @@
-import { endpoint } from "@kitchen-ops/shared";
+import { endpoint, endpoints } from "@kitchen-ops/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { ApiError, call } from "./api";
@@ -77,6 +77,25 @@ describe("call: a contract endpoint, typed and validated (decision 0022)", () =>
     );
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ status: 403, code: "forbidden" });
+  });
+
+  it("is typed by the contract: what an endpoint needs is required, what it doesn't take is refused", () => {
+    // Never called: these lines are checked by the typechecker (`pnpm typecheck`), which fails
+    // if any @ts-expect-error below stops being an error.
+    const typeChecks = () => {
+      // @ts-expect-error: a path parameter is required.
+      void call(getThing);
+      // @ts-expect-error: the body is required.
+      void call(renameThing, { params: { id: "1" } });
+      // @ts-expect-error: a body's fields are typed.
+      void call(renameThing, { params: { id: "1" }, body: { name: 1 } });
+      // @ts-expect-error: /api/me takes no parameters.
+      void call(endpoints.me, { params: { id: "1" } });
+      // An endpoint with nothing to send needs no input, and its result is typed.
+      const me: Promise<{ role: string }> = call(endpoints.me);
+      void me;
+    };
+    expect(typeChecks).toBeTypeOf("function");
   });
 
   it("refuses a response that doesn't match the endpoint's schema", async () => {
