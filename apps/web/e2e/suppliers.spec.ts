@@ -1,10 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expectAccessible } from "./a11y.ts";
-import { accounts, signIn } from "./accounts.ts";
+import { accounts } from "./accounts.ts";
 import {
+  arrivedAt,
   choose,
   createSupplier,
   openCatalogue,
+  signedIn,
   syntheticCif,
   unique,
 } from "./catalogue.ts";
@@ -13,8 +15,11 @@ import {
 // in Spanish, and counter staff read them. At desktop and phone sizes, with axe on every screen.
 
 const title = (page: Page) => page.getByRole("heading", { level: 1 });
+// Reka names the notices' region with its key too: "Avisos (F8)".
 const toast = (page: Page, text: string) =>
-  page.getByRole("region", { name: "Avisos" }).getByText(text);
+  page
+    .getByRole("region", { name: /^Avisos/ })
+    .getByText(text, { exact: true });
 
 // A seeded supplier (src/db/seed-catalogue.ts in the API).
 const HUERTO = "Frutas y Verduras El Huerto, S.L.";
@@ -23,7 +28,7 @@ const HUERTO_TAX_ID = "B00100016";
 test("office creates a supplier, its tax ID checked as it's typed", async ({
   page,
 }, testInfo) => {
-  await signIn(page, accounts.office);
+  await signedIn(page, accounts.office);
   await openCatalogue(page, "Proveedores");
   await expect(page.getByRole("link", { name: HUERTO })).toBeVisible();
   await expectAccessible(page);
@@ -65,7 +70,7 @@ test("office creates a supplier, its tax ID checked as it's typed", async ({
 test("office edits a supplier; a tax ID another supplier has is refused on its field; then deactivates it", async ({
   page,
 }, testInfo) => {
-  await signIn(page, accounts.office);
+  await signedIn(page, accounts.office);
   const name = unique(testInfo, "Aceites La Almazara");
   const { id } = await createSupplier(page, { name, taxId: syntheticCif() });
   await page.goto(`/catalogue/suppliers/${id}`);
@@ -100,6 +105,7 @@ test("office edits a supplier; a tax ID another supplier has is refused on its f
     .getByRole("navigation", { name: "Estás en" })
     .getByRole("link", { name: "Proveedores" })
     .click();
+  await arrivedAt(page, "Proveedores");
   await page.getByLabel("Buscar").fill(name);
   await expect(page.getByText("Nada coincide con la búsqueda")).toBeVisible();
   await choose(page, "Estado", "Inactivos");
@@ -113,7 +119,7 @@ test("office edits a supplier; a tax ID another supplier has is refused on its f
 test("leaving a changed form asks first, and staying keeps what was typed", async ({
   page,
 }, testInfo) => {
-  await signIn(page, accounts.office);
+  await signedIn(page, accounts.office);
   const name = unique(testInfo, "Quesos Valle");
   const { id } = await createSupplier(page, { name, taxId: syntheticCif() });
   await page.goto(`/catalogue/suppliers/${id}`);
@@ -146,7 +152,7 @@ test("search as you type asks the API once typing pauses, and the URL keeps the 
   page,
   isMobile,
 }) => {
-  await signIn(page, accounts.counter);
+  await signedIn(page, accounts.counter);
   await openCatalogue(page, "Proveedores");
   await expect(page.getByRole("link", { name: HUERTO })).toBeVisible();
 
@@ -189,7 +195,7 @@ test("search as you type asks the API once typing pauses, and the URL keeps the 
 test("counter staff read the suppliers, and can't change them", async ({
   page,
 }) => {
-  await signIn(page, accounts.counter);
+  await signedIn(page, accounts.counter);
   await openCatalogue(page, "Proveedores");
   await expect(page.getByRole("link", { name: "Nuevo proveedor" })).toHaveCount(
     0,

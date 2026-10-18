@@ -1,4 +1,5 @@
 import { expect, type Page, type TestInfo } from "@playwright/test";
+import { signIn } from "./accounts.ts";
 import { mainNav } from "./shell.ts";
 
 // Using the catalogue (#89). The desktop and phone runs share one database at the same time, so
@@ -27,6 +28,30 @@ export function syntheticCif(): string {
   return `B${digits}${(10 - (sum % 10)) % 10}`;
 }
 
+/**
+ * Signs in, and waits for the home page: the session is set once it shows. Signing in hashes
+ * the password, which is slow while many tests sign in at once, so it's given longer.
+ */
+export async function signedIn(
+  page: Page,
+  account: { email: string; password: string },
+): Promise<void> {
+  await signIn(page, account);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Inicio", {
+    timeout: 15_000,
+  });
+}
+
+/**
+ * Waits until the page titled `title` has arrived: after each navigation the app moves focus
+ * to the title, which would close a select a test had already opened.
+ */
+export async function arrivedAt(page: Page, title: string): Promise<void> {
+  const heading = page.getByRole("heading", { level: 1 });
+  await expect(heading).toHaveText(title);
+  await expect(heading).toBeFocused();
+}
+
 export type CatalogueSection = "Productos" | "Proveedores" | "Almacenes";
 
 /** Opens the catalogue from the main navigation, then one of its sections. */
@@ -39,7 +64,7 @@ export async function openCatalogue(
     .getByRole("navigation", { name: "Secciones del catálogo" })
     .getByRole("link", { name: section })
     .click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(section);
+  await arrivedAt(page, section);
 }
 
 /** Picks an option of a select, by the field's label and the option's text. */

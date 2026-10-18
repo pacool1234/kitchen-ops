@@ -10,7 +10,8 @@ const title = (page: Page) => page.getByRole("heading", { level: 1 });
 
 async function signedIn(page: Page) {
   await signIn(page, accounts.counter);
-  await expect(title(page)).toHaveText("Inicio");
+  // Signing in hashes the password: slow while many tests sign in at once.
+  await expect(title(page)).toHaveText("Inicio", { timeout: 15_000 });
 }
 
 test("a desktop has the sidebar and a phone the bottom bar, never both", async ({
