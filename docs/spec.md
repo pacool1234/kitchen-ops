@@ -65,9 +65,9 @@ kitchen-ops/
 | API | Node + TypeScript, Fastify (built-in structured logging via pino) | Decided |
 | Database | PostgreSQL on Render, EU region, point-in-time recovery | Decided |
 | Schema and migrations | Drizzle (schema in TypeScript, generated migrations reviewed in each PR) | Decided |
-| Validation and shared types | Zod schemas in `packages/shared`, wired into Fastify through a Zod type provider | Proposed |
-| Tests | Vitest + fast-check for property-based tests | Proposed |
-| Monorepo | pnpm workspaces | Proposed |
+| Validation and shared types | Zod schemas in `packages/shared`, wired into Fastify through a Zod type provider | Decided: in use since M1 (`apps/api/src/app.ts`) |
+| Tests | Vitest + fast-check for property-based tests | Decided: in use since M0 (`pnpm-workspace.yaml` catalog) |
+| Monorepo | pnpm workspaces | Decided: in use since M0 (`pnpm-workspace.yaml`) |
 | Auth | Better Auth, with roles and 2FA | Decided |
 | Hosting | Render, all services in one EU region | Decided |
 | Object storage | Scaleway Object Storage, EU region, versioning on | Decided |
