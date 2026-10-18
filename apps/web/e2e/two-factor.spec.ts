@@ -14,23 +14,25 @@ test("an owner without 2FA is sent to set it up, and gets in once it's on", asyn
 }) => {
   await signIn(page, accounts.owner);
   await expect(
-    page.getByRole("heading", { name: "Set up two-factor authentication" }),
+    page.getByRole("heading", { name: "Activar la verificación en dos pasos" }),
   ).toBeVisible();
   await expectAccessible(page);
 
   // Even typed by hand, the products stay closed until 2FA is on.
   await page.goto("/products");
   await expect(
-    page.getByRole("heading", { name: "Set up two-factor authentication" }),
+    page.getByRole("heading", { name: "Activar la verificación en dos pasos" }),
   ).toBeVisible();
 
-  await page.getByLabel("Password").fill(accounts.owner.password);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Contraseña").fill(accounts.owner.password);
+  await page.getByRole("button", { name: "Continuar" }).click();
   const key = await page.locator("code.key").textContent();
   expect(key).toMatch(/^[A-Z2-7]+=*$/);
   await expectAccessible(page);
 
-  await page.getByLabel("Code from the app").fill(totpCode(key!));
-  await page.getByRole("button", { name: "Turn on 2FA" }).click();
-  await expect(page.getByRole("heading", { name: "Products" })).toBeVisible();
+  await page.getByLabel("Código de la app").fill(totpCode(key!));
+  await page
+    .getByRole("button", { name: "Activar la verificación", exact: true })
+    .click();
+  await expect(page.getByRole("heading", { name: "Productos" })).toBeVisible();
 });

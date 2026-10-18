@@ -6,7 +6,7 @@ test("the product list shows the seed's active products, not the inactive one", 
   page,
 }) => {
   await signIn(page, accounts.counter);
-  await expect(page.getByRole("heading", { name: "Products" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Productos" })).toBeVisible();
   const list = page.getByRole("list");
   for (const name of ["Tomato", "Olive oil", "Eggs"]) {
     await expect(list.getByText(name, { exact: true })).toBeVisible();
@@ -18,5 +18,7 @@ test("the product list shows the seed's active products, not the inactive one", 
 
 test("signed out, the product list sends you to sign in", async ({ page }) => {
   await page.goto("/products");
-  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Iniciar sesión" }),
+  ).toBeVisible();
 });

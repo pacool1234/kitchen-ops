@@ -6,6 +6,8 @@ export const accounts = {
   counter: { email: "counter@example.test", password: "local-only-counter" }, // gitleaks:allow
   office: { email: "office@example.test", password: "local-only-office" }, // gitleaks:allow
   owner: { email: "owner@example.test", password: "local-only-owner" }, // gitleaks:allow
+  // Only the language test signs in with it: it changes the user's saved language.
+  staff: { email: "staff@example.test", password: "local-only-staff" }, // gitleaks:allow
 };
 
 export async function signIn(
@@ -13,11 +15,34 @@ export async function signIn(
   { email, password }: { email: string; password: string },
 ): Promise<void> {
   await page.goto("/login");
-  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await submitSignIn(page, { email, password });
 }
+
+/** Fills in and sends the sign-in form on the page as it is, in Spanish (the default). */
+export async function submitSignIn(
+  page: Page,
+  { email, password }: { email: string; password: string },
+  text = SPANISH_SIGN_IN,
+): Promise<void> {
+  await expect(page.getByRole("heading", { name: text.title })).toBeVisible();
+  await page.getByLabel(text.email).fill(email);
+  await page.getByLabel(text.password, { exact: true }).fill(password);
+  await page.getByRole("button", { name: text.submit }).click();
+}
+
+export const SPANISH_SIGN_IN = {
+  title: "Iniciar sesión",
+  email: "Correo electrónico",
+  password: "Contraseña",
+  submit: "Entrar",
+};
+
+export const ENGLISH_SIGN_IN = {
+  title: "Sign in",
+  email: "Email",
+  password: "Password",
+  submit: "Sign in",
+};
 
 function base32Decode(text: string): Buffer {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
