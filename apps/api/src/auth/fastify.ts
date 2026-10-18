@@ -1,4 +1,4 @@
-import type { Role } from "@kitchen-ops/shared";
+import type { Locale, Role } from "@kitchen-ops/shared";
 import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyInstance } from "fastify";
 import { tagUser } from "../sentry";
@@ -9,6 +9,7 @@ export interface CurrentUser {
   email: string;
   name: string;
   role: Role;
+  locale: Locale;
 }
 
 declare module "fastify" {
@@ -43,7 +44,7 @@ export function registerAuth(app: FastifyInstance, auth: Auth) {
       return reply.code(401).send({ error: "unauthorized" });
     }
 
-    const { id, email, name, role, twoFactorEnabled } = session.user;
+    const { id, email, name, role, locale, twoFactorEnabled } = session.user;
     // Spec: 2FA is required for owners. Until it is on, they can only set it up (/api/auth/*).
     if (role === "owner" && !twoFactorEnabled) {
       return reply.code(403).send({ error: "two_factor_required" });
@@ -51,7 +52,7 @@ export function registerAuth(app: FastifyInstance, auth: Auth) {
     if (config.roles && !config.roles.includes(role)) {
       return reply.code(403).send({ error: "forbidden" });
     }
-    request.user = { id, email, name, role };
+    request.user = { id, email, name, role, locale };
     tagUser(id);
   });
 

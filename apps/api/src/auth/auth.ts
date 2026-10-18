@@ -1,4 +1,4 @@
-import { ROLES } from "@kitchen-ops/shared";
+import { DEFAULT_LOCALE, LOCALES, ROLES } from "@kitchen-ops/shared";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { twoFactor } from "better-auth/plugins";
@@ -43,6 +43,13 @@ export function createAuth(
           type: [...ROLES],
           required: true,
           defaultValue: "counter",
+          input: false,
+        },
+        // Changed only through PATCH /api/me, which validates it with the contract's schema.
+        locale: {
+          type: [...LOCALES],
+          required: true,
+          defaultValue: DEFAULT_LOCALE,
           input: false,
         },
       },
