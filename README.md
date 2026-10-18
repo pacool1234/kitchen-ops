@@ -67,13 +67,16 @@ pnpm --filter @kitchen-ops/api db:seed  # synthetic products and users; each ski
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-The seed creates one **local-only** login per role. The passwords are deliberately fake; never use them anywhere real.
+The seed creates one **local-only** login per role, and a second counter. The passwords are deliberately fake; never use them anywhere real.
 
 | Email                  | Password             | Role    |
 | ---------------------- | -------------------- | ------- |
 | `counter@example.test` | `local-only-counter` | counter |
 | `office@example.test`  | `local-only-office`  | office  |
 | `owner@example.test`   | `local-only-owner`   | owner   |
+| `staff@example.test`   | `local-only-staff`   | counter |
+
+The second counter is for trying what changes a user's own settings, such as their language, without changing the others'. The browser tests use it that way.
 
 Owners must use 2FA: until the owner sets up an authenticator app (`POST /api/auth/two-factor/enable`, then `/two-factor/verify-totp`), every protected route answers `403 two_factor_required`.
 
