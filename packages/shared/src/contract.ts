@@ -3,7 +3,13 @@ import { AuditLogPage, AuditLogQuery } from "./audit";
 import { MeResponse, UpdateMe, type Role } from "./auth";
 import { HealthResponse } from "./health";
 import { IdParams } from "./lists";
-import { ProductList } from "./products";
+import {
+  NewProduct,
+  Product,
+  ProductChanges,
+  ProductPage,
+  ProductQuery,
+} from "./products";
 import {
   NewStoreroom,
   Storeroom,
@@ -11,6 +17,13 @@ import {
   StoreroomPage,
   StoreroomQuery,
 } from "./storerooms";
+import {
+  NewSupplierProduct,
+  SupplierProduct,
+  SupplierProductChanges,
+  SupplierProductPage,
+  SupplierProductQuery,
+} from "./supplier-products";
 import {
   NewSupplier,
   Supplier,
@@ -92,13 +105,6 @@ export const endpoints = {
     access: "signed-in",
     body: UpdateMe,
     response: MeResponse,
-  }),
-  listProducts: endpoint({
-    method: "GET",
-    path: "/api/products",
-    summary: "The active products",
-    access: "signed-in",
-    response: ProductList,
   }),
   listAuditLog: endpoint({
     method: "GET",
@@ -182,6 +188,81 @@ export const endpoints = {
     params: IdParams,
     body: SupplierChanges,
     response: Supplier,
+    conflict: true,
+  }),
+  listProducts: endpoint({
+    method: "GET",
+    path: "/api/products",
+    summary:
+      "Products, by name, with their conversions: searched, by category, storeroom and status, a page at a time",
+    access: "signed-in",
+    query: ProductQuery,
+    response: ProductPage,
+  }),
+  getProduct: endpoint({
+    method: "GET",
+    path: "/api/products/:id",
+    summary: "One product, with its conversions",
+    access: "signed-in",
+    params: IdParams,
+    response: Product,
+  }),
+  createProduct: endpoint({
+    method: "POST",
+    path: "/api/products",
+    summary: "Add a product, with its unit conversions",
+    access: CATALOGUE_WRITERS,
+    body: NewProduct,
+    status: 201,
+    response: Product,
+    conflict: true,
+  }),
+  updateProduct: endpoint({
+    method: "PATCH",
+    path: "/api/products/:id",
+    summary:
+      "Change a product or its conversions, or deactivate it; its base unit never changes",
+    access: CATALOGUE_WRITERS,
+    params: IdParams,
+    body: ProductChanges,
+    response: Product,
+    conflict: true,
+  }),
+  listSupplierProducts: endpoint({
+    method: "GET",
+    path: "/api/supplier-products",
+    summary:
+      "Supplier products, by description: searched by code or description, by supplier, product and status, a page at a time",
+    access: "signed-in",
+    query: SupplierProductQuery,
+    response: SupplierProductPage,
+  }),
+  getSupplierProduct: endpoint({
+    method: "GET",
+    path: "/api/supplier-products/:id",
+    summary: "One supplier product, with its pack in base units",
+    access: "signed-in",
+    params: IdParams,
+    response: SupplierProduct,
+  }),
+  createSupplierProduct: endpoint({
+    method: "POST",
+    path: "/api/supplier-products",
+    summary: "Add how a supplier names and packs one of our products",
+    access: CATALOGUE_WRITERS,
+    body: NewSupplierProduct,
+    status: 201,
+    response: SupplierProduct,
+    conflict: true,
+  }),
+  updateSupplierProduct: endpoint({
+    method: "PATCH",
+    path: "/api/supplier-products/:id",
+    summary: "Change a supplier product, or deactivate it",
+    access: CATALOGUE_WRITERS,
+    params: IdParams,
+    body: SupplierProductChanges,
+    response: SupplierProduct,
     conflict: true,
   }),
 } as const;

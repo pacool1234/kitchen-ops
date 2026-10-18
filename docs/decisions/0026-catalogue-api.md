@@ -1,7 +1,7 @@
-# 0026. The catalogue's API: field-level errors, search, lists and tax IDs
+# 0026. The catalogue's API: field-level errors, search, lists, tax IDs, conversions and packs
 
 - Status: Accepted
-- Date: 2026-10-18
+- Date: 2026-10-18; extended 2026-10-19 with conversions and packs (#88, part 2)
 
 ## Context
 
@@ -40,10 +40,29 @@ They answer `{ items, total, page, pageSize }`, where `total` counts every row t
 - A tax ID is stored in one form: upper case, without spaces, dots, hyphens or slashes, and without the `ES` prefix. So "es-b00.123.455" and "B00123455" are the same supplier.
 - Only Spanish tax IDs (NIF, NIE and CIF) can be checked, so only they are taken for now.
 
+**A product's base unit is set when it's created, and never changes.** Stock will be counted in it (M7): changing it would silently rescale every quantity.
+
+**Unit conversions belong to their product.**
+- They're sent and answered with it, and a change replaces the list. The audit entry shows `conversions` before and after.
+- A factor is a whole number of base units, at most 2³¹ − 1, as `packages/ledger` takes it (decision 0010).
+- A unit appears once per product, whatever its case.
+- The base unit's own conversion is never stored: the API adds it (1 for g and ml, 1000 for unit), so its name is `reserved`.
+
+**A supplier product's pack is a quantity in one of the product's units:** "6 kg", "0.5 caja", "12 unit".
+- The quantity has up to 6 decimals and is at most 100 000, so a pack's base units always fit a safe integer.
+- Its base units (`packBaseUnits`) are worked out by the ledger's `toBaseUnits` each time it's read, from the product's current conversions. The catalogue converts exactly as posting will.
+- A pack the ledger can't convert to a whole number of base units is refused: `not_whole_base_units`.
+- So a product change can't break a pack: removing a conversion a pack uses, or a factor that leaves a pack a fraction of a base unit, answers 409 `in_use`. The product's row is locked while its conversions or a pack change, so the two can't cross.
+
+**A reference to a row that doesn't exist answers 400,** naming the field with `not_found`. Foreign keys catch it, as unique indexes catch duplicates (`FOREIGN_KEY_FIELDS`, next to the schema).
+
 ## Alternatives considered
 
 - **Errors as text,** such as Fastify's default `message`: the web app couldn't translate them or place them next to a field.
 - **The API calling `extract` for the tax ID check:** within the dependency rules, but the web app, which may only use `shared`, couldn't check before sending.
 - **An accent-free copy of each name,** kept by the API, instead of `unaccent`: no extension, but one more column every write must remember to keep in step.
 - **`pg_trgm` for fuzzy search:** it finds typos too, but adds ranking to explain and tune. "Contains, ignoring case and accents" is enough for a catalogue of hundreds.
+- **Conversions with their own routes** (`/api/products/:id/conversions`): more endpoints to call and to test, for something always edited with its product.
+- **A pack as its base units alone** ("6000 g"): simpler, but a change to a box's factor wouldn't carry through, and "6 kg" is what the supplier prints.
+- **A free-text or table of categories:** free text splits one category into spelling variants, and a table would be one more thing to manage. A fixed list is translated in the app.
 - **Foreign suppliers' VAT numbers,** checked through the EU's VIES service: a network call that can fail. Left for when a foreign supplier appears.

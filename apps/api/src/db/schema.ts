@@ -1,13 +1,17 @@
 import {
   AUDIT_ACTIONS,
   BASE_UNITS,
+  PRODUCT_CATEGORIES,
   STOREROOM_TYPES,
 } from "@kitchen-ops/shared";
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
+  integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   text,
@@ -25,14 +29,6 @@ export * from "./auth-schema";
 
 /** The unit a product's stock is counted in (spec section 3); values come from packages/shared. */
 export const baseUnit = pgEnum("base_unit", BASE_UNITS);
-
-export const products = pgTable("products", {
-  id: primaryId(),
-  name: text("name").notNull(),
-  baseUnit: baseUnit("base_unit").notNull(),
-  active: boolean("active").notNull().default(true),
-  createdAt: createdAt(),
-});
 
 /** A storeroom's kind (spec section 3); values come from packages/shared. */
 export const storeroomType = pgEnum("storeroom_type", STOREROOM_TYPES);
@@ -71,6 +67,97 @@ export const suppliers = pgTable(
   (table) => [uniqueIndex("suppliers_tax_id_unique").on(table.taxId)],
 );
 
+/** What a product is (#88); values come from packages/shared. */
+export const productCategory = pgEnum("product_category", PRODUCT_CATEGORIES);
+
+/**
+ * What is bought, counted and cooked (spec section 3, #88). Deactivated rather than deleted. The
+ * base unit is set when it's created and never changes: stock is counted in it.
+ */
+export const products = pgTable(
+  "products",
+  {
+    id: primaryId(),
+    name: text("name").notNull(),
+    baseUnit: baseUnit("base_unit").notNull(),
+    // The default only fills the rows that existed before categories (migration 0007).
+    category: productCategory("category").notNull().default("other"),
+    defaultStoreroomId: uuid("default_storeroom_id").references(
+      () => storerooms.id,
+    ),
+    active: boolean("active").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("products_name_unique").on(sql`lower(${table.name})`),
+    index("products_default_storeroom_idx").on(table.defaultStoreroomId),
+  ],
+);
+
+/**
+ * How many base units one of a product's purchase units holds: a box of tomatoes, 6000 g
+ * (spec section 3; packages/ledger's UnitConversion). The base unit's own isn't stored: the API
+ * adds it. Replaced with its product's list when that changes.
+ */
+export const unitConversions = pgTable(
+  "unit_conversions",
+  {
+    id: primaryId(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    unit: text("unit").notNull(),
+    factor: integer("factor").notNull(),
+  },
+  (table) => [
+    uniqueIndex("unit_conversions_product_unit_unique").on(
+      table.productId,
+      sql`lower(${table.unit})`,
+    ),
+    check("unit_conversions_factor_positive", sql`${table.factor} > 0`),
+  ],
+);
+
+/**
+ * How a supplier names and packs one of our products (spec section 3, #88): its code, unique per
+ * supplier, and a pack of a quantity in one of the product's units. Deactivated, not deleted.
+ */
+export const supplierProducts = pgTable(
+  "supplier_products",
+  {
+    id: primaryId(),
+    supplierId: uuid("supplier_id")
+      .notNull()
+      .references(() => suppliers.id),
+    code: text("code").notNull(),
+    description: text("description").notNull(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    // A decimal with up to 6 places, read and written as text: never a JavaScript number.
+    packQuantity: numeric("pack_quantity", {
+      precision: 18,
+      scale: 6,
+    }).notNull(),
+    packUnit: text("pack_unit").notNull(),
+    active: boolean("active").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("supplier_products_supplier_code_unique").on(
+      table.supplierId,
+      table.code,
+    ),
+    index("supplier_products_product_idx").on(table.productId),
+    check(
+      "supplier_products_pack_quantity_positive",
+      sql`${table.packQuantity} > 0`,
+    ),
+  ],
+);
+
 /**
  * The request field each unique index guards: a duplicate answers 409 naming it
  * (src/errors.ts).
@@ -78,6 +165,19 @@ export const suppliers = pgTable(
 export const UNIQUE_FIELDS: Readonly<Record<string, string>> = {
   storerooms_name_unique: "name",
   suppliers_tax_id_unique: "taxId",
+  products_name_unique: "name",
+  unit_conversions_product_unit_unique: "conversions",
+  supplier_products_supplier_code_unique: "code",
+};
+
+/**
+ * The request field each foreign key comes from: a reference to a row that doesn't exist
+ * answers 400, naming it with `not_found` (src/errors.ts).
+ */
+export const FOREIGN_KEY_FIELDS: Readonly<Record<string, string>> = {
+  products_default_storeroom_id_storerooms_id_fk: "defaultStoreroomId",
+  supplier_products_supplier_id_suppliers_id_fk: "supplierId",
+  supplier_products_product_id_products_id_fk: "productId",
 };
 
 /** What a write did (spec section 6); values come from packages/shared. */

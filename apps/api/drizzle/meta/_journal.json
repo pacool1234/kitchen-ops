@@ -50,6 +50,13 @@
       "when": 1792355168199,
       "tag": "0006_search_unaccent",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792361057582,
+      "tag": "0007_products_catalogue",
+      "breakpoints": true
     }
   ]
 }

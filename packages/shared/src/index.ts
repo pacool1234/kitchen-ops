@@ -7,6 +7,7 @@ export * from "./lists";
 export * from "./locale";
 export * from "./products";
 export * from "./storerooms";
+export * from "./supplier-products";
 export * from "./suppliers";
 export * from "./tax-id";
 export * from "./extraction";
