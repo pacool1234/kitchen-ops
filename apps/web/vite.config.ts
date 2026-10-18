@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import tailwindcss from "@tailwindcss/vite";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
@@ -22,6 +23,7 @@ export default defineConfig({
   },
   plugins: [
     vue(),
+    tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: [
@@ -60,6 +62,10 @@ export default defineConfig({
   server: { port: 5173, strictPort: true, proxy: api },
   // `vite preview` (the built app, with the service worker) uses the same origin and proxy.
   preview: { port: 5173, strictPort: true, proxy: api },
-  // Browser tests are Playwright's (e2e/), not Vitest's.
-  test: { exclude: ["e2e/**", "node_modules/**", "dist/**"] },
+  test: {
+    // Browser tests are Playwright's (e2e/), not Vitest's.
+    exclude: ["e2e/**", "node_modules/**", "dist/**"],
+    // Vitest empties CSS imports; the token tests read tokens.css as text (?raw).
+    css: { include: [/tokens\.css/] },
+  },
 });
