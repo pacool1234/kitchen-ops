@@ -289,6 +289,12 @@ describe("evalCommand: refusals, before any call", () => {
       evalCommand(args("--model", "vendor/model-a"), d),
     ).rejects.toThrow("--model vendor/model-a is given more than once");
     expect(readdirSync(d.results)).toEqual([]);
+    await expect(
+      evalCommand(
+        args("--model", "vendor/model-b", "--model", "vendor/model-b"),
+        d,
+      ),
+    ).rejects.toThrow("--model vendor/model-b is given more than once");
   });
 
   it("any list of models: refused exactly when one repeats, and a refused command calls no model and writes nothing (#71)", async () => {
