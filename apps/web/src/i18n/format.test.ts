@@ -10,7 +10,7 @@ import {
 } from "./format";
 
 // A no-break space (U+00A0) goes before "€", "kg" and "%", so a line never wraps between them.
-const NBSP = " ";
+const NBSP = "\u00a0";
 
 /** Whole cents read back from "-1.234,56 €": every digit, and the sign. Inverse of formatMoney. */
 function centsFromSpanish(text: string): bigint {

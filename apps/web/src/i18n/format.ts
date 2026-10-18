@@ -11,7 +11,7 @@ const INTL_LOCALE: Record<Locale, string> = { es: "es-ES", en: "en-GB" };
 export const RESTAURANT_TIME_ZONE = "Europe/Madrid";
 
 /** Between an amount and its unit, as Intl writes it: "2,5 kg", "18,50 €". */
-const NBSP = " ";
+const NBSP = "\u00a0";
 
 const DECIMAL = /^-?\d+(?:\.(\d+))?$/;
 
