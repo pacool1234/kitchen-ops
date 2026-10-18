@@ -5,6 +5,7 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
+import { auditRoutes } from "./audit/routes";
 import { createAuth } from "./auth/auth";
 import { registerAuth } from "./auth/fastify";
 import { meRoutes } from "./auth/routes";
@@ -54,6 +55,7 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   app.register(healthRoutes, { version: config.APP_VERSION });
   app.register(meRoutes, { db });
   app.register(productRoutes, { db });
+  app.register(auditRoutes, { db });
 
   return app;
 }

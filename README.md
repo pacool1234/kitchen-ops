@@ -108,6 +108,15 @@ To try the installable version (service worker included): `pnpm --filter @kitche
 
 The icons in `apps/web/public/` are generated from `icon.svg`, a placeholder until there is a real design: `pnpm --filter @kitchen-ops/web generate-pwa-assets`.
 
+### Writing to the database
+
+Every write is recorded in the audit log, in the same transaction (decision 0025). A route that changes data:
+1. **Writes through `audited(db, auditContext(request), async (tx) => …)`** (`apps/api/src/audit/audited.ts`), using `tx`, never `db`. Lint refuses `db.insert`, `db.update` and `db.delete` in the API's features.
+2. **Returns what it changed:** for each entity, its action, type, ID, and its values before and after. The helper records the changed fields, redacting secrets.
+3. **Adds a case to `WRITE_CASES`** in `apps/api/src/audit/writes-audited.test.ts`. The test fails until every write endpoint has one.
+
+The log can't be changed: the database refuses updates and deletes to it. The owner reads it at `GET /api/audit-log`.
+
 ### Adding an API endpoint
 
 Every endpoint is declared once, in `packages/shared/src/contract.ts`, with its method, path, schemas and who may call it (decision 0022).
