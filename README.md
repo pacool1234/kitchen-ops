@@ -12,6 +12,15 @@ Reusable building blocks for restaurant purchasing and stock control: a deployed
 | `packages/extract` | Supplier documents → structured lines       |
 | `packages/shared`  | Zod schemas and types shared by web and api |
 
+## What exists so far
+
+- **Deployed:** the web app and the API, with sign-in, roles, owner 2FA and a list of products.
+- **The stock ledger:** complete as a library, tested against every invariant in the spec. The API doesn't use it yet.
+- **The extraction pipeline:** it routes, extracts and validates supplier documents, and an eval harness measures it. Matching to products, review and posting aren't built, and the API doesn't call it yet.
+- **Infrastructure:** backups, monitoring and production releases are live.
+
+`docs/architecture.md` has the details: what each part does today and what isn't built yet.
+
 ## Getting started
 
 Node 24 (see `.node-version`) and pnpm 10 (`corepack enable` picks the pinned version).
@@ -79,6 +88,71 @@ pnpm --filter @kitchen-ops/web dev   # open http://localhost:5173
 To try the installable version (service worker included): `pnpm --filter @kitchen-ops/web build`, then `pnpm --filter @kitchen-ops/web preview` (same address). The service worker caches only the app itself, never `/api` responses.
 
 The icons in `apps/web/public/` are generated from `icon.svg`, a placeholder until there is a real design: `pnpm --filter @kitchen-ops/web generate-pwa-assets`.
+
+## Stock ledger
+
+`packages/ledger` holds the rules of spec section 4: movements and stock on hand, unit conversions, posting and reversing documents, weighted-average cost, yields and variance.
+- **Pure TypeScript:** no I/O and no runtime dependencies, so it is tested without a database.
+- **Movements are append-only:** a correction is a reversing movement.
+- **Money is never a JavaScript `number`:** totals are `bigint` cents and unit costs are `bigint` millionths (decision 0015).
+
+```sh
+pnpm --filter @kitchen-ops/ledger test            # includes a property test for each invariant
+pnpm --filter @kitchen-ops/ledger test:coverage
+```
+
+Its modules, and which test covers each invariant, are listed in [`packages/ledger/README.md`](packages/ledger/README.md). A test fails if that list falls out of date.
+
+## Extraction and eval
+
+`packages/extract` turns a supplier document into checked JSON:
+- **Facturae XML** is read directly;
+- **text PDFs** go to a model as text;
+- **scans and photos** go to a model as images.
+
+Every model reply is checked against the schema in `packages/shared`, then by the validation checks: values present, line totals and their sum, VAT, the total, the tax ID's checksum, the date, and a duplicate number. Models are called through OpenRouter (decision 0007).
+
+**Setup:** put your OpenRouter key in `packages/extract/.env`, as `OPENROUTER_API_KEY` (see `packages/extract/.env.example`). The eval loads it from there. Unit tests never call a model.
+
+### Running an eval
+
+An eval runs one prompt with one or more models over a set of documents. It reports the silent error rate first (documents that pass validation but are wrong), then the review rate, field accuracy, cost and latency.
+
+```sh
+pnpm --filter @kitchen-ops/extract eval -- --set gold --model google/gemini-3.8-flash --prompt v2
+pnpm --filter @kitchen-ops/extract eval -- --set gold --model openai/gpt-6-luna --model google/gemini-3.8-flash --prompt v2 --max-usd 0.50
+```
+
+- **Calls cost money.** A run stops at its spending cap: `--max-usd`, or $1.00 from `packages/extract/config/eval.json`. Agree each paid run, and its expected cost, with the repo owner first.
+- **Models** must be listed in `packages/extract/config/models.json`, which also sets each one's structured output and temperature. Its `default` is the model and prompt the pipeline uses: Gemini 3.8 Flash with prompt v2 (decision 0018).
+- **Prompts** are versioned files in `packages/extract/prompts/` (`v1.md`, `v2.md`). A new prompt is a new file, so runs stay comparable.
+- **Results** go to `eval/results/<date>-<model>-<prompt>.json`, with a Markdown summary next to it. They are committed and never overwritten. Running the same model and prompt again the same day writes `-run2`, `-run3`, and so on.
+
+To compare runs side by side, including the spread across repeated runs:
+
+```sh
+pnpm --filter @kitchen-ops/extract eval:compare -- eval/results/<file>.json eval/results/<file>.json
+```
+
+### The gold set
+
+`eval/gold/` holds the committed test documents: own, public or synthetic, never a client's. [`eval/gold/README.md`](eval/gold/README.md) lists them and what makes each one hard. Each folder has three files:
+- **`source.*`:** the document (PDF, JPEG, PNG or XML);
+- **`expected.json`:** the right answer, written or checked by a person, never copied from a model;
+- **`meta.json`:** its origin, its kind, for a synthetic text PDF how it was made, notes, and who checked it and when.
+
+To add a document:
+1. **Create its folder** with those three files.
+2. **Remove any metadata from photos** first, such as location or camera. The repo is public, and a test refuses images that carry metadata.
+3. **For a synthetic PDF marked `"made": "rendered"`,** run `pnpm --filter @kitchen-ops/extract gold:render` to write its `source.pdf` from `expected.json`.
+4. **Rewrite the list:** `pnpm --filter @kitchen-ops/extract gold:readme`. A test fails if it's out of date.
+
+### The private set
+
+Client documents are never committed. They stay in a folder outside the repository (or a git-ignored one), named by `EVAL_PRIVATE_DIR` in `packages/extract/.env`, with the same layout as the gold set.
+- **Only the repo owner runs them,** with `--set private`.
+- **Calls are restricted** to providers that neither train on nor keep the data.
+- **Results go to a `results` folder inside the private set,** never to the repo. They keep no value read, and name documents by hash.
 
 ## Deploying
 
@@ -156,3 +230,5 @@ How to restore from either, the retention rules, the one-time setup and the reco
 - `docs/architecture.md`: what's built so far, and what isn't yet
 - `docs/decisions/`: decision records, with the reasons
 - `docs/runbooks/`: step-by-step procedures (restoring the database)
+- `packages/ledger/README.md`: the ledger's modules and invariant tests
+- `eval/gold/README.md`: the gold set's documents
