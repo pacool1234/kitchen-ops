@@ -32,6 +32,12 @@ const pnpm = (args: string[]) =>
 for (const script of ["db:reset", "db:migrate", "db:seed"]) {
   const { command, args } = pnpm(["--filter", "@kitchen-ops/api", script]);
   const result = spawnSync(command, args, { env, stdio: "inherit" });
+  if (result.error) {
+    console.error(
+      `Couldn't run pnpm for ${script} (${result.error.message}): start the tests with \`pnpm --filter @kitchen-ops/web e2e\`.`,
+    );
+    process.exit(1);
+  }
   if (result.status !== 0) {
     console.error(`${script} failed: is Postgres up (docker compose up -d)?`);
     process.exit(result.status ?? 1);
