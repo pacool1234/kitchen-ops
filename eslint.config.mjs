@@ -133,6 +133,12 @@ export default defineConfigWithVueTs(
     files: ["apps/web/src/**/*.vue"],
     rules: { "vue/no-bare-strings-in-template": "error" },
   },
+  {
+    // With typed props (defineProps<{ hint?: string }>()), an optional prop is undefined until
+    // it's passed, which is what's meant: no default needed.
+    files: ["apps/web/src/**/*.vue"],
+    rules: { "vue/require-default-prop": "off" },
+  },
 
   // Last, so Prettier owns formatting and ESLint only reports problems.
   eslintConfigPrettier,
