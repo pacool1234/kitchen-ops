@@ -266,6 +266,18 @@ describe("the JSON Schema given to models for structured output", () => {
     }
   });
 
+  it("asks for the supplier's legal name, printed with its tax ID, never a trade name (#63)", () => {
+    const schema = extractedDocumentJsonSchema() as {
+      properties: {
+        supplier: { properties: { name: { description?: string } } };
+      };
+    };
+    const description = schema.properties.supplier.properties.name.description;
+    expect(description).toMatch(/legal name/);
+    expect(description).toMatch(/tax ID/);
+    expect(description).toMatch(/never a brand, logo or trade name/);
+  });
+
   it("only changes on purpose: compared with a committed snapshot", () => {
     expect(extractedDocumentJsonSchema()).toMatchSnapshot();
   });

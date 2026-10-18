@@ -77,11 +77,23 @@ describe("loadModels: model IDs come from config/models.json, never from code", 
   });
 });
 
+/** The one rule prompt v2 adds to v1, in rule 4 (#63). */
+const LEGAL_NAME_RULE =
+  " Its name is the legal name printed with its tax ID: the company name, with S.L., S.A. or similar as printed, or for a self-employed supplier the person's full name. Never a brand, logo or trade name, even when it is printed larger.";
+
 describe("loadPrompt: prompts are versioned files", () => {
   it("v1 exists and asks for nulls instead of guesses", () => {
     const prompt = loadPrompt("v1");
     expect(prompt.version).toBe("v1");
     expect(prompt.text).toMatch(/null/);
+  });
+
+  it("v2 is exactly v1 plus the rule on the supplier's legal name, so a comparison isolates it (#63)", () => {
+    const v1 = loadPrompt("v1").text;
+    const v2 = loadPrompt("v2");
+    expect(v2.version).toBe("v2");
+    expect(v2.text).toContain(LEGAL_NAME_RULE);
+    expect(v2.text.replace(LEGAL_NAME_RULE, "")).toBe(v1);
   });
 
   it("an unknown version fails, naming it", () => {
