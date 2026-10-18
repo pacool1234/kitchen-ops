@@ -272,7 +272,7 @@ function failureSection(run: ResultsFile): string[] {
   ];
   return [
     "",
-    `### ${run.model.id}, prompt ${run.prompt}`,
+    `### ${run.model.id}, prompt ${run.prompt}${run.model.temperature === undefined ? "" : `, temperature ${run.model.temperature}`}${run.run === 1 ? "" : `, run ${run.run}`}`,
     "",
     ...(lines.length > 0 ? lines : ["None."]),
   ];
