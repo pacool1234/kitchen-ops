@@ -82,6 +82,26 @@ describe("call: a contract endpoint, typed and validated (decision 0022)", () =>
     expect(error).toMatchObject({ status: 403, code: "forbidden" });
   });
 
+  it("a refused field comes with its code: the API's fields, kept on the ApiError (#89)", async () => {
+    fakeFetch(409, { error: "conflict", fields: { taxId: "taken" } });
+    const error = await call(getThing, { params: { id: "1" } }).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toMatchObject({
+      status: 409,
+      code: "conflict",
+      fields: { taxId: "taken" },
+    });
+  });
+
+  it("fields that aren't the API's codes are left out, not trusted", async () => {
+    fakeFetch(400, { error: "invalid_input", fields: { taxId: "made_up" } });
+    const error = await call(getThing, { params: { id: "1" } }).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toMatchObject({ code: "invalid_input", fields: undefined });
+  });
+
   it("is typed by the contract: what an endpoint needs is required, what it doesn't take is refused", () => {
     // Never called: these lines are checked by the typechecker (`pnpm typecheck`), which fails
     // if any @ts-expect-error below stops being an error.

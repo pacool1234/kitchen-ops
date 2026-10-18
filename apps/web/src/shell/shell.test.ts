@@ -5,26 +5,24 @@ import { breadcrumbTrail, initials } from "./layout";
 import { NAV, visibleNav, type NavItem } from "./nav";
 
 describe("visibleNav: the navigation shows only what the user's role can do (spec section 6)", () => {
-  it("today, every role sees Inicio and Productos", () => {
+  it("today, every role sees Inicio and the catalogue (#89): counter reads it, office and owner edit it", () => {
     for (const role of ROLES) {
       expect(visibleNav(NAV, role).map((item) => item.name)).toEqual([
         "home",
-        "products",
+        "catalogue",
       ]);
     }
   });
 
-  it("an item for office and owner, like the catalogue to come (#89), is hidden from a counter", () => {
+  it("an item for office and owner only, like the reports to come, is hidden from a counter", () => {
     const items = [
       ...NAV,
-      { ...NAV[1]!, name: "catalogue", roles: ["office", "owner"] },
+      { ...NAV[1]!, name: "reports", roles: ["office", "owner"] },
     ] satisfies NavItem[];
     expect(visibleNav(items, "counter").map((i) => i.name)).not.toContain(
-      "catalogue",
+      "reports",
     );
-    expect(visibleNav(items, "office").map((i) => i.name)).toContain(
-      "catalogue",
-    );
+    expect(visibleNav(items, "office").map((i) => i.name)).toContain("reports");
   });
 
   it("any items and role: an item is shown exactly when its roles include the user's, in order", () => {

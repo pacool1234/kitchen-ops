@@ -159,6 +159,18 @@ Every signed-in page sits in the app's frame (`apps/web/src/shell/AppShell.vue`)
 2. **Put it in the navigation,** if it belongs there: add it to `apps/web/src/shell/nav.ts` with the roles that may see it (spec section 6). The home page shows a shortcut to every item with a `description`.
 3. **Build the view from the components** in `apps/web/src/components/ui/`. The frame already gives the page its `h1`.
 
+### Building a list or a form
+
+The catalogue's screens (decision 0027) are the pattern for every list and form:
+- **A list:** `useCatalogueList(endpoint, filterNames, loadFailed)` (`apps/web/src/catalogue/list-query.ts`).
+  - It keeps the search, the filters and the page in the URL, and asks the API once typing pauses.
+  - Give `UiDataTable` a `card` slot for phones.
+- **A form:** `useForm(schema, emptyValues)` (`apps/web/src/catalogue/form.ts`), with the endpoint's schema from `packages/shared`.
+  - Show `error(field)` by each field, with `t(fieldMessageKey(code))`. Call `touch(field)` when it's left.
+  - `submit(save)` checks everything, then saves; the API's field errors land on their fields.
+  - An item's page can use `useCatalogueItem`, which loads, saves, deactivates and warns about unsaved changes.
+- **Who sees what:** `mayCall(endpoints.yourEndpoint, role)`, the rule the API enforces.
+
 ## Stock ledger
 
 `packages/ledger` holds the rules of spec section 4: movements and stock on hand, unit conversions, posting and reversing documents, weighted-average cost, yields and variance.

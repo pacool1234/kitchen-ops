@@ -44,3 +44,74 @@ export type ErrorBody = z.infer<typeof ErrorBody>;
 export function fieldError(code: FieldErrorCode) {
   return { params: { code } };
 }
+
+/** One of Zod's issues, as far as its field code needs it. */
+export interface FieldIssue {
+  readonly code: string;
+  readonly path: readonly PropertyKey[];
+  /** What was checked, for too_small and too_big: "string", "number", "array"… */
+  readonly origin?: unknown;
+  readonly minimum?: unknown;
+  /** For unrecognized_keys: the fields the schema doesn't take. */
+  readonly keys?: readonly string[];
+  /** For a refinement: `{ code }`, from `fieldError(...)`. */
+  readonly params?: unknown;
+}
+
+function valueAt(input: unknown, path: readonly PropertyKey[]): unknown {
+  return path.reduce<unknown>(
+    (value, key) =>
+      value !== null && typeof value === "object"
+        ? (value as Record<PropertyKey, unknown>)[key]
+        : undefined,
+    input,
+  );
+}
+
+const isFieldErrorCode = (code: unknown): code is FieldErrorCode =>
+  (FIELD_ERROR_CODES as readonly unknown[]).includes(code);
+
+/** Why Zod refused a field, as one of the codes the web app has a message for. */
+function fieldCode(issue: FieldIssue, value: unknown): FieldErrorCode {
+  // Not sent at all, whatever Zod expected there (a string, one of an enum's values…).
+  if (value === undefined) return "required";
+  switch (issue.code) {
+    case "too_small":
+      if (issue.origin !== "string") return "too_small";
+      // Blank once trimmed counts as missing.
+      return Number(issue.minimum) <= 1 ? "required" : "too_short";
+    case "too_big":
+      return issue.origin === "string" ? "too_long" : "too_big";
+    case "custom": {
+      // A refinement's own code: `fieldError("invalid_tax_id")`.
+      const code = (issue.params as { code?: unknown } | undefined)?.code;
+      return isFieldErrorCode(code) ? code : "invalid";
+    }
+    default:
+      return "invalid";
+  }
+}
+
+/**
+ * Each refused field's path (`lines.1.quantity`) and code, from Zod's issues and the input they
+ * were about; the first issue per field wins. The API answers with these (#88), and the web
+ * app's forms check with them (#89), so both say the same about the same input.
+ */
+export function fieldErrors(
+  issues: readonly FieldIssue[],
+  input: unknown,
+): Record<string, FieldErrorCode> {
+  const fields: Record<string, FieldErrorCode> = {};
+  const add = (path: readonly PropertyKey[], code: FieldErrorCode) => {
+    fields[path.map(String).join(".")] ??= code;
+  };
+  for (const issue of issues) {
+    if (issue.code === "unrecognized_keys") {
+      for (const key of issue.keys ?? [])
+        add([...issue.path, key], "unknown_field");
+    } else {
+      add(issue.path, fieldCode(issue, valueAt(input, issue.path)));
+    }
+  }
+  return fields;
+}

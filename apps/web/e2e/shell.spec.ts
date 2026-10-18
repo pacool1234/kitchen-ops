@@ -10,7 +10,8 @@ const title = (page: Page) => page.getByRole("heading", { level: 1 });
 
 async function signedIn(page: Page) {
   await signIn(page, accounts.counter);
-  await expect(title(page)).toHaveText("Inicio");
+  // Signing in hashes the password: slow while many tests sign in at once.
+  await expect(title(page)).toHaveText("Inicio", { timeout: 15_000 });
 }
 
 test("a desktop has the sidebar and a phone the bottom bar, never both", async ({
@@ -31,11 +32,12 @@ test("navigating moves focus to the new page's title, and names the page everywh
   await signedIn(page);
   await expect(page).toHaveTitle("Inicio · kitchen-ops");
 
-  const products = mainNav(page).getByRole("link", { name: "Productos" });
-  await products.click();
+  // The catalogue opens on its products; its item stays marked on every page inside it.
+  const catalogue = mainNav(page).getByRole("link", { name: "Catálogo" });
+  await catalogue.click();
   await expect(title(page)).toHaveText("Productos");
   await expect(title(page)).toBeFocused();
-  await expect(products).toHaveAttribute("aria-current", "page");
+  await expect(catalogue).toHaveAttribute("aria-current", "true");
   await expect(page).toHaveTitle("Productos · kitchen-ops");
 
   // The breadcrumb leads back up.
@@ -44,6 +46,9 @@ test("navigating moves focus to the new page's title, and names the page everywh
     "aria-current",
     "page",
   );
+  await expect(
+    breadcrumb.getByRole("link", { name: "Catálogo" }),
+  ).toBeVisible();
   await breadcrumb.getByRole("link", { name: "Inicio" }).click();
   await expect(title(page)).toHaveText("Inicio");
   await expect(title(page)).toBeFocused();
@@ -55,7 +60,7 @@ test("the home page has a shortcut to each place the user can go", async ({
   await signedIn(page);
   await page
     .getByRole("main")
-    .getByRole("link", { name: /Productos.*Consulta los productos/ })
+    .getByRole("link", { name: /Catálogo.*Productos, proveedores y almacenes/ })
     .click();
   await expect(title(page)).toHaveText("Productos");
 });
@@ -111,7 +116,7 @@ test("on a phone, the bottom bar never covers the end of the page", async ({
   // A short screen, so the page is longer than it and its end has to scroll up past the bar.
   await page.setViewportSize({ width: 412, height: 480 });
   await signedIn(page);
-  await mainNav(page).getByRole("link", { name: "Productos" }).click();
+  await mainNav(page).getByRole("link", { name: "Catálogo" }).click();
   // A full page of the seed's products: the header row and 20.
   const table = page.getByRole("table", { name: "Productos activos" });
   await expect(table.getByRole("row")).toHaveCount(21);
@@ -133,8 +138,10 @@ test("every page of the frame passes axe, in light and in dark", async ({
     await page.goto("/");
     await expect(title(page)).toHaveText("Inicio");
     await expectAccessible(page);
+    // The old address of the product list still leads to it.
     await page.goto("/products");
-    await expect(page.getByRole("table")).toBeVisible();
+    await expect(title(page)).toHaveText("Productos");
+    await expect(page.getByText("Aceite de oliva virgen extra")).toBeVisible();
     await expectAccessible(page);
     await openUserMenu(page);
     await expectAccessible(page);

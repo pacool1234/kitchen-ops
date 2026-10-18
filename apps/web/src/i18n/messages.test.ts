@@ -1,4 +1,4 @@
-import { LOCALES } from "@kitchen-ops/shared";
+import { FIELD_ERROR_CODES, LOCALES } from "@kitchen-ops/shared";
 import { describe, expect, it } from "vitest";
 import { createI18n } from "vue-i18n";
 import { useT } from "./index";
@@ -28,6 +28,15 @@ describe("the message files (#86)", () => {
         .map(([key]) => key)
         .sort();
     expect(keys(en)).toEqual(keys(es));
+  });
+
+  it("every field error code from packages/shared has a message, in both languages (#89)", () => {
+    for (const locale of LOCALES) {
+      expect(
+        Object.keys(messages[locale].errors.fields).sort(),
+        locale,
+      ).toEqual([...FIELD_ERROR_CODES].sort());
+    }
   });
 
   it("no message is empty", () => {

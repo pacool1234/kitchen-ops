@@ -21,3 +21,26 @@ export const option = [
 /** The floating list of a select or combobox. */
 export const popover =
   "z-50 overflow-hidden rounded-md border border-line bg-surface p-1 text-fg shadow-md";
+
+/** A button's look, by variant and size: for UiButton, and for a link that looks like one. */
+export const buttonVariants = {
+  primary: "bg-primary text-on-primary hover:bg-primary-hover",
+  secondary:
+    "border border-primary bg-surface text-primary hover:bg-primary-soft",
+  ghost: "text-primary hover:bg-primary-soft",
+  danger: "bg-danger text-on-danger hover:bg-danger-hover",
+};
+// 44px and 36px tall: both well above WCAG 2.5.8's 24px target.
+export const buttonSizes = {
+  md: "min-h-11 px-4 text-base",
+  sm: "min-h-9 px-3 text-sm",
+};
+export const buttonBase =
+  "inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-colors";
+
+export function buttonClasses(
+  variant: keyof typeof buttonVariants = "primary",
+  size: keyof typeof buttonSizes = "md",
+): string {
+  return [buttonBase, buttonVariants[variant], buttonSizes[size]].join(" ");
+}
