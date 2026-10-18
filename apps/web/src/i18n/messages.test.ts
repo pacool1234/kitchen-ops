@@ -1,6 +1,7 @@
 import { LOCALES } from "@kitchen-ops/shared";
 import { describe, expect, it } from "vitest";
 import { createI18n } from "vue-i18n";
+import { useT } from "./index";
 import { en } from "./messages/en";
 import { es, type Messages } from "./messages/es";
 
@@ -76,8 +77,8 @@ describe("the message files (#86)", () => {
   });
 
   it("is typed by the Spanish file: English can't miss a key or add one", () => {
-    // Never called: checked by the typechecker (`pnpm typecheck`), which fails if any
-    // @ts-expect-error below stops being an error.
+    // Never called: checked by the typechecker (`pnpm typecheck`), which fails if an
+    // expected error below stops being one.
     const typeChecks = () => {
       const missing: Messages = {
         ...en,
@@ -86,10 +87,25 @@ describe("the message files (#86)", () => {
       };
       const extra: Messages = {
         ...en,
-        // @ts-expect-error: a key the Spanish file doesn't have.
-        products: { ...en.products, notInSpanish: "Extra" },
+        app: {
+          name: "kitchen-ops",
+          // @ts-expect-error: a key the Spanish file doesn't have.
+          notInSpanish: "Extra",
+        },
       };
       return [missing, extra];
+    };
+    expect(typeChecks).toBeTypeOf("function");
+  });
+
+  it("is typed for the app: t() refuses a key that doesn't exist", () => {
+    const typeChecks = () => {
+      const t = useT();
+      // @ts-expect-error: no such key.
+      t("signIn.noSuchKey");
+      // A real one is fine, and so is one built from a type with only real keys.
+      t("signIn.title");
+      t(`roles.${"office" as "counter" | "office" | "owner"}`);
     };
     expect(typeChecks).toBeTypeOf("function");
   });
