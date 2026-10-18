@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import {
+  acrossRuns,
   comparisonMarkdown,
   failureModes,
   fieldName,
@@ -61,7 +62,7 @@ function results(
 /** The comparison table's rows, without the header and separator. */
 const rows = (markdown: string) =>
   markdown
-    .split("## Failure modes")[0]!
+    .split("\n## ")[0]!
     .split("\n")
     .filter((line) => line.startsWith("|"))
     .slice(2);
@@ -133,8 +134,8 @@ describe("comparisonMarkdown: the runs side by side", () => {
       30_000,
     );
     expect(rows(comparisonMarkdown([good, poor]))).toEqual([
-      "| vendor/good | v1 | 20 of 20 | 0 of 20 (0.0%) ✓ | 0 of 20 (0.0%) ✓ | 20 | $2.000000 | $0.100000 |",
-      "| vendor/poor | v1 | 20 of 20 | 1 of 20 (5.0%) ✗ | 4 of 20 (20.0%) ✗ | 15 | $0.030000 | $0.002000 |",
+      "| vendor/good | v1 | default | 1 | 20 of 20 | 0 of 20 (0.0%) ✓ | 0 of 20 (0.0%) ✓ | 20 | $2.000000 | $0.100000 |",
+      "| vendor/poor | v1 | default | 1 | 20 of 20 | 1 of 20 (5.0%) ✗ | 4 of 20 (20.0%) ✗ | 15 | $0.030000 | $0.002000 |",
     ]);
   });
 
@@ -152,7 +153,7 @@ describe("comparisonMarkdown: the runs side by side", () => {
       { stoppedBecause: "spending-cap", notRun: ["b", "c"] },
     );
     expect(rows(comparisonMarkdown([stopped]))).toEqual([
-      "| vendor/a | v1 | 1 of 3 (stopped: spending-cap) | 0 of 1 (0.0%) ✓ | 1 of 1 (100.0%) ✗ | 0 | $0.005000 | none correct |",
+      "| vendor/a | v1 | default | 1 | 1 of 3 (stopped: spending-cap) | 0 of 1 (0.0%) ✓ | 1 of 1 (100.0%) ✗ | 0 | $0.005000 | none correct |",
     ]);
   });
 
@@ -172,6 +173,142 @@ describe("comparisonMarkdown: the runs side by side", () => {
     expect(failures).toContain("- Fields wrong: lines.*.quantity 2.");
     expect(failures).toContain("### vendor/b, prompt v1");
     expect(failures).toContain("None.");
+  });
+});
+
+/** `n` correct documents, then the given ones. */
+const documentsWith = (n: number, ...others: Document[]) => [
+  ...others,
+  ...Array.from({ length: n }, (_, i) => correct(`d${i}`)),
+];
+const wrong = (id: string): Document => ({
+  ...correct(id),
+  outcome: "silent-error",
+  differences: ["number"],
+});
+const toReview = (id: string): Document => ({
+  ...correct(id),
+  outcome: "review",
+  reviewBecause: "validation",
+  validationFailures: ["line-total"],
+});
+/** A run of `model` at temperature 0, run number `run`. */
+const repeat = (model: string, run: number, documents: Document[]) =>
+  results(model, documents, 10_000, {
+    run,
+    model: { id: model, temperature: 0 },
+  });
+
+describe("acrossRuns: each model, prompt and temperature over its runs (#68)", () => {
+  it("totals over the runs, and the lowest and highest of a single run", () => {
+    const [luna] = acrossRuns([
+      repeat("vendor/a", 1, documentsWith(19, toReview("x"))),
+      repeat("vendor/a", 2, documentsWith(18, wrong("y"), toReview("x"))),
+      repeat(
+        "vendor/a",
+        3,
+        documentsWith(17, wrong("y"), wrong("z"), toReview("x")),
+      ),
+    ]);
+    expect(luna).toMatchObject({
+      model: "vendor/a",
+      prompt: "v1",
+      temperature: 0,
+      runs: [1, 2, 3],
+      silentErrors: { total: { part: 3, whole: 60 }, lowest: 0, highest: 2 },
+      review: { total: { part: 3, whole: 60 }, lowest: 1, highest: 1 },
+      correct: { total: { part: 54, whole: 60 }, lowest: 17, highest: 19 },
+      totalMicroUsd: 30_000,
+    });
+  });
+
+  it("names the documents whose outcome changed between runs, with how often each outcome came", () => {
+    const [luna] = acrossRuns([
+      repeat("vendor/a", 1, documentsWith(2, correct("y"), toReview("x"))),
+      repeat("vendor/a", 2, documentsWith(2, wrong("y"), toReview("x"))),
+      repeat("vendor/a", 3, documentsWith(2, wrong("y"), toReview("x"))),
+    ]);
+    expect(luna!.changed).toEqual([
+      [
+        "y",
+        [
+          ["silent-error", 2],
+          ["correct", 1],
+        ],
+      ],
+    ]);
+  });
+
+  it("a different model, prompt or temperature is a different combination; old files read as run 1", () => {
+    const old = results("vendor/a", [correct("a")]);
+    expect(old.run).toBe(1);
+    const combinations = acrossRuns([
+      old,
+      repeat("vendor/a", 1, [correct("a")]),
+      repeat("vendor/a", 2, [correct("a")]),
+      { ...repeat("vendor/a", 3, [correct("a")]), prompt: "v2" },
+      repeat("vendor/b", 1, [correct("a")]),
+    ]);
+    expect(
+      combinations.map((c) => [c.model, c.prompt, c.temperature, c.runs]),
+    ).toEqual([
+      ["vendor/a", "v1", null, [1]],
+      ["vendor/a", "v1", 0, [1, 2]],
+      ["vendor/a", "v2", 0, [3]],
+      ["vendor/b", "v1", 0, [1]],
+    ]);
+  });
+});
+
+describe("comparisonMarkdown: across runs (#68)", () => {
+  it("each run's row names its temperature and run number", () => {
+    expect(
+      rows(comparisonMarkdown([repeat("vendor/a", 2, [correct("a")])]))[0],
+    ).toMatch(/^\| vendor\/a \| v1 \| 0 \| 2 \| 1 of 1 \|/);
+  });
+
+  it("a section for the combinations with more than one run: totals, ranges, and what changed", () => {
+    const markdown = comparisonMarkdown([
+      repeat("vendor/a", 1, documentsWith(19, correct("y"))),
+      repeat("vendor/a", 2, documentsWith(19, wrong("y"))),
+      repeat("vendor/b", 1, documentsWith(20)),
+    ]);
+    const section = markdown.split("## Across runs")[1]!.split("\n## ")[0]!;
+    expect(section).toContain(
+      "| vendor/a | v1 | 0 | 2 | 1 of 40 (2.5%), 0–1 per run | 0 of 40 (0.0%), 0–0 per run | 39 of 40 (97.5%), 19–20 per run | $0.020000 |",
+    );
+    expect(section).not.toContain("vendor/b");
+    expect(section).toContain("### vendor/a, prompt v1, temperature 0");
+    expect(section).toContain("- y: correct 1, silent-error 1.");
+  });
+
+  it("each run's failure modes are headed with its temperature and run number, so repeat runs can be told apart", () => {
+    const failures = comparisonMarkdown([
+      results("vendor/a", [correct("a")]),
+      repeat("vendor/a", 2, [correct("a")]),
+    ]).split("## Failure modes")[1]!;
+    expect(failures).toContain("### vendor/a, prompt v1\n");
+    expect(failures).toContain(
+      "### vendor/a, prompt v1, temperature 0, run 2\n",
+    );
+  });
+
+  it("says so when no document changed between runs", () => {
+    const markdown = comparisonMarkdown([
+      repeat("vendor/a", 1, documentsWith(3)),
+      repeat("vendor/a", 2, documentsWith(3)),
+    ]);
+    expect(markdown.split("## Across runs")[1]).toContain(
+      "No document changed outcome between runs.",
+    );
+  });
+
+  it("no section when every combination has a single run", () => {
+    const markdown = comparisonMarkdown([
+      results("vendor/a", [correct("a")]),
+      results("vendor/b", [correct("a")]),
+    ]);
+    expect(markdown).not.toContain("## Across runs");
   });
 });
 
@@ -210,6 +347,78 @@ const anyRun = fc
     fc.nat({ max: 5_000_000 }),
   )
   .map(([model, documents, cost]) => results(model, documents, cost));
+
+/** Runs of a few models, prompts and temperatures, so that some share a combination. */
+const anyRepeat = fc
+  .tuple(
+    fc.constantFrom("vendor/a", "vendor/b"),
+    fc.constantFrom("v1", "v2"),
+    fc.constantFrom(undefined, 0, 0.7),
+    fc.integer({ min: 1, max: 5 }),
+    fc.array(anyDocument, { maxLength: 25 }),
+    fc.nat({ max: 5_000_000 }),
+  )
+  .map(([model, prompt, temperature, run, documents, cost]) =>
+    results(model, documents, cost, {
+      prompt,
+      run,
+      model: {
+        id: model,
+        ...(temperature === undefined ? {} : { temperature }),
+      },
+    }),
+  );
+
+describe("acrossRuns: properties (#68)", () => {
+  it("any runs: each in exactly one combination, every total the sum of its runs, every run within its range", () => {
+    fc.assert(
+      fc.property(fc.array(anyRepeat, { maxLength: 10 }), (runs) => {
+        const combinations = acrossRuns(runs);
+        expect(combinations.reduce((n, c) => n + c.runs.length, 0)).toBe(
+          runs.length,
+        );
+        const keys = combinations.map(
+          (c) => `${c.model} ${c.prompt} ${c.temperature}`,
+        );
+        expect(new Set(keys).size).toBe(keys.length);
+        for (const c of combinations) {
+          const own = runs.filter(
+            (r) =>
+              r.model.id === c.model &&
+              r.prompt === c.prompt &&
+              (r.model.temperature ?? null) === c.temperature,
+          );
+          expect(own.map((r) => r.run)).toEqual(c.runs);
+          const check = (
+            stat: {
+              total: { part: number; whole: number };
+              lowest: number;
+              highest: number;
+            },
+            count: (r: Results) => number,
+          ) => {
+            expect(stat.total.part).toBe(own.reduce((n, r) => n + count(r), 0));
+            expect(stat.total.whole).toBe(
+              own.reduce((n, r) => n + r.summary.documents, 0),
+            );
+            for (const r of own) {
+              expect(count(r)).toBeGreaterThanOrEqual(stat.lowest);
+              expect(count(r)).toBeLessThanOrEqual(stat.highest);
+            }
+            expect(own.map(count)).toContain(stat.lowest);
+            expect(own.map(count)).toContain(stat.highest);
+          };
+          check(c.silentErrors, (r) => r.summary.outcomes["silent-error"]);
+          check(c.review, (r) => r.summary.outcomes.review);
+          check(c.correct, (r) => r.summary.outcomes.correct);
+          expect(c.totalMicroUsd).toBe(
+            own.reduce((n, r) => n + r.summary.cost.totalMicroUsd, 0),
+          );
+        }
+      }),
+    );
+  });
+});
 
 describe("comparison: properties", () => {
   it("any runs: one row each, in the order given", () => {

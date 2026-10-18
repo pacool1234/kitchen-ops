@@ -10,6 +10,8 @@ export const ModelConfig = z.strictObject({
   structuredOutput: z.boolean(),
   /** Whether the model reads images. Photos and scans only go to models that do. */
   vision: z.boolean(),
+  /** Sent with every call when set (#68); otherwise the provider's default applies. */
+  temperature: z.number().min(0).max(2).optional(),
   /** Why it's on the list, or anything worth knowing about it. */
   note: z.string().optional(),
 });

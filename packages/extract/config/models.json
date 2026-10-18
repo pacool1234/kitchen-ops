@@ -4,19 +4,20 @@
       "id": "google/gemini-3.8-flash",
       "structuredOutput": true,
       "vision": true,
+      "temperature": 0,
       "note": "0.75/3.75"
     },
     {
       "id": "openai/gpt-6-luna",
       "structuredOutput": true,
       "vision": true,
-      "note": "0.1/0.5"
+      "note": "0.1/0.5. Temperature not set: with temperature 0, OpenRouter found no endpoint that accepts it (404 No endpoints found that can handle the requested parameters, 2026-10-18)."
     },
     {
       "id": "anthropic/claude-opus-5.5",
       "structuredOutput": false,
       "vision": true,
-      "note": "4/20. Structured output off: Anthropic accepts at most 16 nullable fields in a schema, and ours has 18 (400 invalid_request_error, 2026-10-18)."
+      "note": "4/20. Structured output off: Anthropic accepts at most 16 nullable fields in a schema, and ours has 18 (400 invalid_request_error, 2026-10-18). Temperature not set: not yet tried at 0."
     }
   ]
 }

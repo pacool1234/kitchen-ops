@@ -14,6 +14,8 @@ export interface RunInfo {
   readonly set: SetName;
   readonly prompt: string;
   readonly maxMicroUsd: number;
+  /** 1 for a model and prompt's first run that day, then 2, 3… (#68). */
+  readonly runNumber: number;
 }
 
 /** The summary's sections, in the order the spec and #50 give. */
@@ -28,13 +30,17 @@ export const SUMMARY_SECTIONS = [
   "Structured-output failure rate",
 ] as const;
 
-/** `<date>-<model>-<prompt>`, the model ID in lower case with punctuation as hyphens. */
+/**
+ * `<date>-<model>-<prompt>`, the model ID in lower case with punctuation as hyphens. Runs after
+ * the first add `-run2`, `-run3`…, so the first run keeps the name results files always had.
+ */
 export function resultsFileName(info: RunInfo, model: ModelConfig): string {
   const slug = model.id
     .toLowerCase()
     .replace(/[^a-z0-9._]+/g, "-")
     .replace(/^-|-$/g, "");
-  return `${info.date}-${slug}-${info.prompt}`;
+  const run = info.runNumber === 1 ? "" : `-run${info.runNumber}`;
+  return `${info.date}-${slug}-${info.prompt}${run}`;
 }
 
 /** Dollars from millionths, exactly: no rounding. */
@@ -169,7 +175,7 @@ export function summaryMarkdown(run: ModelRun, info: RunInfo): string {
   };
 
   return [
-    `# Eval: ${run.model.id}, prompt ${info.prompt}, ${info.set} set, ${info.date}`,
+    `# Eval: ${run.model.id}, prompt ${info.prompt}, ${info.set} set, ${info.date}${info.runNumber === 1 ? "" : `, run ${info.runNumber}`}`,
     "",
     stopNotice(run, info),
     ...SUMMARY_SECTIONS.flatMap((section) => [
@@ -187,6 +193,7 @@ export function resultsJson(run: ModelRun, info: RunInfo) {
     date: info.date,
     set: info.set,
     prompt: info.prompt,
+    run: info.runNumber,
     model: run.model,
     spendingCapMicroUsd: info.maxMicroUsd,
     stoppedBecause: run.stoppedBecause,
