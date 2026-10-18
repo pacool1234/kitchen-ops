@@ -155,6 +155,14 @@ export function formatQuantity(
     : `${number.format(BigInt(quantity))}${NBSP}${small}`;
 }
 
+/** How many of something, such as rows in a table: `1.234`, grouped like money. */
+export function formatCount(count: number, locale: Locale): string {
+  if (!Number.isSafeInteger(count)) {
+    throw new RangeError(`a count must be a whole number, got ${count}`);
+  }
+  return numberFormat(locale, {}).format(count);
+}
+
 /** A calendar date, "2026-10-18", as `18/10/2026`. It never moves a day with the time zone. */
 export function formatDate(date: string, locale: Locale): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
