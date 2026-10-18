@@ -61,6 +61,41 @@ export const es = {
       "No se han podido cargar los productos. Comprueba la conexión y recarga la página.",
     signOut: "Cerrar sesión",
   },
+  // The components' own text (src/components/ui).
+  ui: {
+    optional: "opcional",
+    loading: "Cargando…",
+    close: "Cerrar",
+    select: {
+      placeholder: "Elige una opción",
+    },
+    combobox: {
+      placeholder: "Escribe para buscar",
+      empty: "No hay resultados.",
+      toggle: "Mostrar las opciones",
+    },
+    number: {
+      invalid: "Escribe un número, como 2,5.",
+      tooManyDecimals: "Escribe como mucho {max} decimales.",
+      negative: "No puede ser negativo.",
+    },
+    table: {
+      pagination: "Páginas",
+      page: "Página {page} de {pages}",
+      showing: "{first}–{last} de {total}",
+      previous: "Página anterior",
+      next: "Página siguiente",
+      empty: "Todavía no hay nada aquí.",
+    },
+    error: {
+      title: "Algo ha fallado",
+      retry: "Reintentar",
+    },
+    toast: {
+      region: "Avisos",
+      close: "Cerrar el aviso",
+    },
+  },
   // The API answers errors with a code (`{ error: "forbidden" }`); these are what the user reads.
   errors: {
     unauthorized: "Tu sesión ha terminado. Vuelve a iniciar sesión.",

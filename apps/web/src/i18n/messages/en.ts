@@ -57,6 +57,40 @@ export const en: Messages = {
     loadFailed: "Could not load products. Check your connection and reload.",
     signOut: "Sign out",
   },
+  ui: {
+    optional: "optional",
+    loading: "Loading…",
+    close: "Close",
+    select: {
+      placeholder: "Choose an option",
+    },
+    combobox: {
+      placeholder: "Type to search",
+      empty: "No results.",
+      toggle: "Show the options",
+    },
+    number: {
+      invalid: "Enter a number, such as 2.5.",
+      tooManyDecimals: "Enter at most {max} decimals.",
+      negative: "It can't be negative.",
+    },
+    table: {
+      pagination: "Pages",
+      page: "Page {page} of {pages}",
+      showing: "{first}–{last} of {total}",
+      previous: "Previous page",
+      next: "Next page",
+      empty: "Nothing here yet.",
+    },
+    error: {
+      title: "Something went wrong",
+      retry: "Try again",
+    },
+    toast: {
+      region: "Notifications",
+      close: "Close the notification",
+    },
+  },
   errors: {
     unauthorized: "Your session has ended. Sign in again.",
     forbidden: "Your role can't do this.",
