@@ -105,6 +105,20 @@ To try the installable version (service worker included): `pnpm --filter @kitche
 
 The icons in `apps/web/public/` are generated from `icon.svg`, a placeholder until there is a real design: `pnpm --filter @kitchen-ops/web generate-pwa-assets`.
 
+### Adding an API endpoint
+
+Every endpoint is declared once, in `packages/shared/src/contract.ts`, with its method, path, schemas and who may call it (decision 0022).
+1. **Declare it there.**
+2. **Register it in the API** with `app.route({ ...routeFor(endpoints.yourEndpoint), handler })`. A test fails on any route that isn't in the contract.
+3. **Call it from the web app** with `call(endpoints.yourEndpoint, { params, query, body })`. Its input is typed, and its response is validated.
+4. **Rewrite the OpenAPI document,** and commit it with the change:
+
+   ```sh
+   pnpm --filter @kitchen-ops/api openapi:write
+   ```
+
+   A test fails while it's out of date. The API also serves it at `/api/openapi.json`.
+
 ## Stock ledger
 
 `packages/ledger` holds the rules of spec section 4: movements and stock on hand, unit conversions, posting and reversing documents, weighted-average cost, yields and variance.
