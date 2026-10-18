@@ -86,3 +86,36 @@ export async function createSupplier(
   expect(response.status(), await response.text()).toBe(201);
   return (await response.json()) as { id: string };
 }
+
+/** Creates a product through the API as the signed-in user. */
+export async function createProduct(
+  page: Page,
+  body: {
+    name: string;
+    baseUnit: "g" | "ml" | "unit";
+    category: string;
+    conversions?: { unit: string; factor: number }[];
+  },
+): Promise<{ id: string }> {
+  const response = await page.request.post("/api/products", { data: body });
+  expect(response.status(), await response.text()).toBe(201);
+  return (await response.json()) as { id: string };
+}
+
+/** Creates a supplier product through the API as the signed-in user. */
+export async function createSupplierProduct(
+  page: Page,
+  body: {
+    supplierId: string;
+    code: string;
+    description: string;
+    productId: string;
+    pack: { quantity: string; unit: string };
+  },
+): Promise<{ id: string }> {
+  const response = await page.request.post("/api/supplier-products", {
+    data: body,
+  });
+  expect(response.status(), await response.text()).toBe(201);
+  return (await response.json()) as { id: string };
+}
