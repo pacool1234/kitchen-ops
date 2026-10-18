@@ -30,6 +30,7 @@ const info: RunInfo = {
   set: "gold",
   prompt: "v1",
   maxMicroUsd: 1_000_000,
+  runNumber: 1,
 };
 
 async function run(
@@ -60,6 +61,32 @@ describe("resultsFileName: <date>-<model>-<prompt>", () => {
     expect(
       resultsFileName(info, { ...model, id: "Vendor/Model_2.5:free" }),
     ).toBe("2026-10-18-vendor-model_2.5-free-v1");
+  });
+});
+
+describe("repeat runs: a run number after the first (#68)", () => {
+  it("run 1 keeps the name it always had; later runs add -run2, -run3", () => {
+    expect(resultsFileName({ ...info, runNumber: 1 }, model)).toBe(
+      "2026-10-18-vendor-model-name-v1",
+    );
+    expect(resultsFileName({ ...info, runNumber: 2 }, model)).toBe(
+      "2026-10-18-vendor-model-name-v1-run2",
+    );
+    expect(resultsFileName({ ...info, runNumber: 13 }, model)).toBe(
+      "2026-10-18-vendor-model-name-v1-run13",
+    );
+  });
+
+  it("the summary's title names the run after the first; the results file always records it", async () => {
+    const result = await run();
+    expect(summaryMarkdown(result, info).split("\n")[0]).toBe(
+      "# Eval: vendor/model-name, prompt v1, gold set, 2026-10-18",
+    );
+    expect(
+      summaryMarkdown(result, { ...info, runNumber: 2 }).split("\n")[0],
+    ).toBe("# Eval: vendor/model-name, prompt v1, gold set, 2026-10-18, run 2");
+    expect(resultsJson(result, info).run).toBe(1);
+    expect(resultsJson(result, { ...info, runNumber: 3 }).run).toBe(3);
   });
 });
 

@@ -9,6 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { GOLD_DIRECTORY } from "../gold/gold-set";
 import { CLIENT_ROUTING } from "../llm/extract";
@@ -155,6 +156,95 @@ describe("evalCommand: one run, a results file and a summary per model", () => {
   });
 });
 
+/** Every file in a folder, with its contents. */
+const contents = (directory: string) =>
+  Object.fromEntries(
+    readdirSync(directory)
+      .sort()
+      .map((file) => [file, readFileSync(join(directory, file), "utf8")]),
+  );
+
+describe("evalCommand: repeat runs, each in its own files (#68)", () => {
+  it("the first run keeps the name it always had; a second writes -run2, a third -run3", async () => {
+    const d = deps();
+    for (let i = 0; i < 3; i++) await evalCommand(args(), d);
+    expect(readdirSync(d.results).sort()).toEqual([
+      "2026-10-18-vendor-model-a-v1-run2.json",
+      "2026-10-18-vendor-model-a-v1-run2.md",
+      "2026-10-18-vendor-model-a-v1-run3.json",
+      "2026-10-18-vendor-model-a-v1-run3.md",
+      "2026-10-18-vendor-model-a-v1.json",
+      "2026-10-18-vendor-model-a-v1.md",
+    ]);
+    const run = (name: string) =>
+      JSON.parse(readFileSync(join(d.results, name), "utf8")).run;
+    expect(run("2026-10-18-vendor-model-a-v1.json")).toBe(1);
+    expect(run("2026-10-18-vendor-model-a-v1-run3.json")).toBe(3);
+    expect(
+      readFileSync(
+        join(d.results, "2026-10-18-vendor-model-a-v1-run2.md"),
+        "utf8",
+      ),
+    ).toMatch(
+      /^# Eval: vendor\/model-a, prompt v1, gold set, 2026-10-18, run 2\n/,
+    );
+  });
+
+  it("a results file already there is never changed: even one file alone takes its run's number", async () => {
+    const d = deps();
+    writeFileSync(join(d.results, "2026-10-18-vendor-model-a-v1.md"), "old");
+    await evalCommand(args(), d);
+    expect(readdirSync(d.results).sort()).toEqual([
+      "2026-10-18-vendor-model-a-v1-run2.json",
+      "2026-10-18-vendor-model-a-v1-run2.md",
+      "2026-10-18-vendor-model-a-v1.md",
+    ]);
+    expect(
+      readFileSync(join(d.results, "2026-10-18-vendor-model-a-v1.md"), "utf8"),
+    ).toBe("old");
+  });
+
+  it("each model is numbered on its own", async () => {
+    const d = deps();
+    await evalCommand(args(), d);
+    await evalCommand(args("--model", "vendor/model-b"), d);
+    expect(readdirSync(d.results).sort()).toEqual([
+      "2026-10-18-vendor-model-a-v1-run2.json",
+      "2026-10-18-vendor-model-a-v1-run2.md",
+      "2026-10-18-vendor-model-a-v1.json",
+      "2026-10-18-vendor-model-a-v1.md",
+      "2026-10-18-vendor-model-b-v1.json",
+      "2026-10-18-vendor-model-b-v1.md",
+    ]);
+  });
+
+  it("with any number of earlier runs, the next is one more, and no file already there changes", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 0, max: 5 }), async (earlier) => {
+        const d = deps();
+        for (let n = 1; n <= earlier; n++) {
+          const name = `2026-10-18-vendor-model-a-v1${n === 1 ? "" : `-run${n}`}`;
+          writeFileSync(join(d.results, `${name}.json`), `run ${n}`);
+          writeFileSync(join(d.results, `${name}.md`), `run ${n}`);
+        }
+        const before = contents(d.results);
+        await evalCommand(args(), d);
+        const after = contents(d.results);
+        const next = earlier + 1;
+        const name = `2026-10-18-vendor-model-a-v1${next === 1 ? "" : `-run${next}`}`;
+        expect(Object.keys(after).sort()).toEqual(
+          [...Object.keys(before), `${name}.json`, `${name}.md`].sort(),
+        );
+        for (const [file, text] of Object.entries(before)) {
+          expect(after[file]).toBe(text);
+        }
+        expect(JSON.parse(after[`${name}.json`]!).run).toBe(next);
+      }),
+      { numRuns: 12 },
+    );
+  });
+});
+
 describe("evalCommand: refusals, before any call", () => {
   it.each([
     [["--model", "vendor/model-a", "--prompt", "v1"], "--set"],
@@ -174,17 +264,6 @@ describe("evalCommand: refusals, before any call", () => {
         deps({ client: noCalls }),
       ),
     ).rejects.toThrow("vendor/other isn't in config/models.json");
-  });
-
-  it("a results file that already exists: results are history, never overwritten", async () => {
-    const d = deps({ client: noCalls });
-    writeFileSync(join(d.results, "2026-10-18-vendor-model-a-v1.md"), "old");
-    await expect(evalCommand(args(), d)).rejects.toThrow(
-      "2026-10-18-vendor-model-a-v1.md already exists",
-    );
-    expect(
-      readFileSync(join(d.results, "2026-10-18-vendor-model-a-v1.md"), "utf8"),
-    ).toBe("old");
   });
 
   it("the private set without its environment variable", async () => {
