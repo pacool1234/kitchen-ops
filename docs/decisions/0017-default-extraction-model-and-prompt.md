@@ -37,3 +37,30 @@ The pipeline's default is **`openai/gpt-6-luna` with prompt `v1`**, using struct
 - **Opus as the default:** perfect on this set, but 55 times the cost. That would use most of the OpenRouter budget at a restaurant's volume, for no difference here that validation didn't already catch.
 - **Gemini 3.8 Flash:** 12 times Luna's cost, slower, and the only model with a silent error.
 - **Sending only documents that go to review on to Opus:** may be worth it once client documents show what Luna gets wrong. Not needed on this evidence.
+
+## Revisited: prompt v2 (#63), 2026-10-18
+
+Prompt v2 is v1 plus one rule: the supplier's name is the legal name printed with its tax ID, never a brand, logo or trade name. The schema's `supplier.name` description now says the same. The schema is shared by every prompt, so a v1 run from now on would get the new description too: the v1 runs above used the old one.
+
+The two cheap models ran v2 over the same 20 gold documents. Results are in `eval/results/2026-10-18-*-v2.*`.
+
+| Model | Prompt | Silent errors | Review | Correct | Supplier name right | Cost | Latency p50 / p95 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `openai/gpt-6-luna` | v1 | 0 of 20 | 1 of 20 | 19 | 19 of 20 | $0.018 | 7.2 s / 24.7 s |
+| `openai/gpt-6-luna` | v2 | 2 of 20 | 1 of 20 | 17 | 20 of 20 | $0.019 | 7.6 s / 22.4 s |
+| `google/gemini-3.8-flash` | v1 | 1 of 20 | 0 of 20 | 19 | 19 of 20 | $0.207 | 11.8 s / 43.9 s |
+| `google/gemini-3.8-flash` | v2 | 0 of 20 | 0 of 20 | 20 | 20 of 20 | $0.219 | 9.8 s / 29.8 s |
+
+- **The rule works:** both models now read the legal name on the three-page scan. Gemini's one silent error with v1 is gone, and so is Luna's.
+- **Luna made two new silent errors with v2, in fields the rule doesn't touch.**
+  - On the sideways photo, it wrote a discount of "0" where the column is blank, instead of null.
+  - On another photo, it misread one word of a product description.
+
+  With v1, Luna read both of these right.
+
+The rule agreed before the runs: v2 becomes the default if it is no worse on any accuracy metric for the default model. Those metrics are silent errors, review, correct documents, field accuracy, line precision and recall, and structured-output failures. Cost and latency may be up to 10% worse. For Luna, v2 has more silent errors, so **the default stays `openai/gpt-6-luna` with prompt `v1`.** It isn't changed after the fact, even though the new errors look like chance:
+- they are in fields unrelated to the new rule;
+- we don't set a temperature, so the same model and prompt can read a photo differently from one run to the next;
+- a single run of 20 documents can't separate the prompt from that variation.
+
+**Next:** measure how much a run varies before choosing between prompts, or between Luna and Gemini, on a difference of one or two documents. That means running the same model and prompt several times, and perhaps setting the temperature to 0. Gemini with v2 was perfect on this set, at 12 times Luna's cost; that comparison is worth repeating once the variation is known.
