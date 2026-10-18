@@ -11,8 +11,7 @@
       "id": "openai/gpt-6-luna",
       "structuredOutput": true,
       "vision": true,
-      "temperature": 0,
-      "note": "0.1/0.5"
+      "note": "0.1/0.5. Temperature not set: with temperature 0, OpenRouter found no endpoint that accepts it (404 No endpoints found that can handle the requested parameters, 2026-10-18)."
     },
     {
       "id": "anthropic/claude-opus-5.5",
