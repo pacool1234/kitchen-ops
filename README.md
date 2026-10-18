@@ -129,6 +129,13 @@ Every string the interface shows goes through i18n (decision 0023). Spanish is t
 2. **Show it with `t("section.key")`,** from `const t = useT()`. A key that doesn't exist doesn't compile, and lint refuses raw text in templates.
 3. **Format amounts with `apps/web/src/i18n/format.ts`:** `formatMoney`, `formatUnitCost`, `formatQuantity`, `formatDate`, `formatDateTime` and `formatPercent`. They take cents as `bigint` or decimal strings, never a `number`, and refuse what they would otherwise round.
 
+### The design system and the gallery
+
+The interface is built from the components in `apps/web/src/components/ui/` (decision 0024): buttons, form fields, a select and a searchable combobox, checkboxes and switches, cards, dialogs, toasts, tabs, badges, a sortable data table with pages, and empty, loading and error states. Their colours, type, spacing, radius and shadows come from the tokens in `apps/web/src/design/tokens.css`, in light and dark.
+- **Colours:** use the tokens' classes (`bg-surface`, `text-fg-muted`, `border-line-strong`), never a colour of your own. Tailwind's palette is switched off, and a test checks every pair the components use against WCAG 2.2 AA.
+- **Quantities and prices:** use `UiNumberField`. It holds a decimal string, never a JavaScript `number`.
+- **The gallery:** run the dev server and open `/gallery` to see every component in every state, with switches for light, dark and English. It's left out of staging and production builds.
+
 ## Stock ledger
 
 `packages/ledger` holds the rules of spec section 4: movements and stock on hand, unit conversions, posting and reversing documents, weighted-average cost, yields and variance.
