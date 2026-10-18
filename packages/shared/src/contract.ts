@@ -267,6 +267,20 @@ export const endpoints = {
   }),
 } as const;
 
+/**
+ * Whether someone may call an endpoint: `null` is signed out. The API's auth hook enforces the
+ * same rule; the web app uses this to show only what a role can do (#89).
+ */
+export function mayCall(
+  endpoint: Pick<Endpoint, "access">,
+  role: Role | null,
+): boolean {
+  const { access } = endpoint;
+  if (access === "public") return true;
+  if (role === null) return false;
+  return access === "signed-in" || access.roles.includes(role);
+}
+
 /** The path with its `:name` parameters filled in, each encoded so it can't change the route. */
 export function buildPath(
   path: string,

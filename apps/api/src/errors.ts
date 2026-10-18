@@ -1,7 +1,8 @@
 import {
-  FIELD_ERROR_CODES,
+  fieldErrors,
   type ErrorBody,
   type FieldErrorCode,
+  type FieldIssue,
 } from "@kitchen-ops/shared";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { hasZodFastifySchemaValidationErrors } from "fastify-type-provider-zod";
@@ -24,69 +25,24 @@ export class HttpError extends Error {
 
 export const notFound = () => new HttpError(404, "not_found");
 
-/** One Zod issue, as fastify-type-provider-zod hands it on. */
-interface Issue {
+/** One Zod issue, as fastify-type-provider-zod hands it on: its code, where, and the rest. */
+interface ValidationEntry {
   keyword: string;
   instancePath: string;
   params: Record<string, unknown>;
 }
 
-function valueAt(input: unknown, path: readonly string[]): unknown {
-  return path.reduce<unknown>(
-    (value, key) =>
-      value !== null && typeof value === "object"
-        ? (value as Record<string, unknown>)[key]
-        : undefined,
-    input,
-  );
-}
-
-const isFieldErrorCode = (code: unknown): code is FieldErrorCode =>
-  (FIELD_ERROR_CODES as readonly unknown[]).includes(code);
-
-/** Why Zod refused a field, as one of the codes the web app has a message for. */
-function fieldCode(issue: Issue, value: unknown): FieldErrorCode {
-  const { keyword, params } = issue;
-  // Not sent at all, whatever Zod expected there (a string, one of an enum's values…).
-  if (value === undefined) return "required";
-  switch (keyword) {
-    case "too_small":
-      if (params.origin !== "string") return "too_small";
-      // Blank once trimmed counts as missing.
-      return Number(params.minimum) <= 1 ? "required" : "too_short";
-    case "too_big":
-      return params.origin === "string" ? "too_long" : "too_big";
-    case "custom": {
-      // A refinement's own code: `fieldError("invalid_tax_id")` in packages/shared.
-      const code = (params.params as { code?: unknown } | undefined)?.code;
-      return isFieldErrorCode(code) ? code : "invalid";
-    }
-    default:
-      return "invalid";
-  }
-}
-
-/** Each refused field's path (`lines.1.quantity`) and code; the first issue per field wins. */
-export function fieldErrors(
-  issues: readonly Issue[],
-  input: unknown,
-): Record<string, FieldErrorCode> {
-  const fields: Record<string, FieldErrorCode> = {};
-  const add = (path: readonly string[], code: FieldErrorCode) => {
-    fields[path.join(".")] ??= code;
+/** Back to Zod's own shape, for `fieldErrors` in packages/shared. */
+function asIssue({
+  keyword,
+  instancePath,
+  params,
+}: ValidationEntry): FieldIssue {
+  return {
+    ...params,
+    code: keyword,
+    path: instancePath === "/" ? [] : instancePath.split("/").slice(1),
   };
-  for (const issue of issues) {
-    const path =
-      issue.instancePath === "/" ? [] : issue.instancePath.split("/").slice(1);
-    if (issue.keyword === "unrecognized_keys") {
-      for (const key of issue.params.keys as string[]) {
-        add([...path, key], "unknown_field");
-      }
-    } else {
-      add(path, fieldCode(issue, valueAt(input, path)));
-    }
-  }
-  return fields;
 }
 
 /** What the request sent for the part that failed validation: its body, query or path. */
@@ -128,7 +84,10 @@ export function registerErrors(app: FastifyInstance) {
       const input = validatedInput(request, error.validationContext);
       return send(400, {
         error: "invalid_input",
-        fields: fieldErrors(error.validation as unknown as Issue[], input),
+        fields: fieldErrors(
+          (error.validation as unknown as ValidationEntry[]).map(asIssue),
+          input,
+        ),
       });
     }
     if (error instanceof HttpError) {
