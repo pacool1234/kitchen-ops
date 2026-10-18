@@ -11,10 +11,14 @@ const api = {
   "/api": { target: "http://127.0.0.1:3000" },
 };
 
-export default defineConfig({
-  // The commit being built, tagged on errors sent to Sentry. Render sets RENDER_GIT_COMMIT.
+export default defineConfig(({ command, mode }) => ({
   define: {
+    // The commit being built, tagged on errors sent to Sentry. Render sets RENDER_GIT_COMMIT.
     __APP_VERSION__: JSON.stringify(process.env.RENDER_GIT_COMMIT ?? "dev"),
+    // The component gallery (/gallery) is in the dev server and the browser tests' build
+    // (`vite build --mode e2e`) only; staging and production builds leave it out entirely
+    // (decision 0024).
+    __GALLERY__: command === "serve" || mode === "e2e",
     // vue-i18n's build flags: the Composition API only, so its legacy API is left out of the
     // bundle, and no devtools hooks in production.
     __VUE_I18N_FULL_INSTALL__: true,
@@ -68,4 +72,4 @@ export default defineConfig({
     // Vitest empties CSS imports; the token tests read tokens.css as text (?raw).
     css: { include: [/tokens\.css/] },
   },
-});
+}));

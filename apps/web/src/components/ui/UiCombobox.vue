@@ -60,7 +60,9 @@ function onOpen(open: boolean) {
       :required="!optional"
       @update:open="onOpen"
     >
+      <!-- The focus ring goes round the whole field; data-focus-frame tells the tests. -->
       <ComboboxAnchor
+        data-focus-frame
         :class="[
           control,
           'flex items-center gap-2 pe-1',

@@ -8,3 +8,6 @@ interface ImportMetaEnv {
 
 /** The commit being built (Render's RENDER_GIT_COMMIT), or "dev". */
 declare const __APP_VERSION__: string;
+
+/** Whether this build has the component gallery: dev server and browser tests only. */
+declare const __GALLERY__: boolean;
