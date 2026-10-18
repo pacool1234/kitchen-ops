@@ -1,4 +1,9 @@
+import { buildPath, type Endpoint } from "@kitchen-ops/shared";
 import type { z } from "zod";
+
+// Calls to our API, through the contract in packages/shared (decision 0022): the path, its
+// parameters, the query and the body are typed by the endpoint, and every response is validated
+// with the endpoint's schema, so the web app never trusts data that doesn't match its types.
 
 /** An API call that did not return the expected data. `code` is the API's `error` field. */
 export class ApiError extends Error {
@@ -12,26 +17,60 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * GET from our API and validate the response with the shared Zod schema, so the web app never
- * trusts a response that does not match the types it was written against.
- */
-export async function apiGet<T extends z.ZodType>(
-  path: string,
-  schema: T,
-): Promise<z.infer<T>> {
-  const response = await fetch(path, { credentials: "same-origin" });
+/** What a call to `E` takes: its path parameters, query and body, each only if it has them. */
+export type CallInput<E extends Endpoint> = (E extends {
+  params: infer P extends z.ZodType;
+}
+  ? { params: z.input<P> }
+  : { params?: undefined }) &
+  (E extends { query: infer Q extends z.ZodType }
+    ? { query?: z.input<Q> }
+    : { query?: undefined }) &
+  (E extends { body: infer B extends z.ZodType }
+    ? { body: z.input<B> }
+    : { body?: undefined });
+
+/** Calls an endpoint of the contract and returns its validated response. Throws `ApiError`. */
+export async function call<E extends Endpoint>(
+  endpoint: E,
+  ...[input]: object extends CallInput<E>
+    ? [input?: CallInput<E>]
+    : [input: CallInput<E>]
+): Promise<z.output<E["response"]>> {
+  const { params, query, body } = (input ?? {}) as {
+    params?: Record<string, string>;
+    query?: Record<string, unknown>;
+    body?: unknown;
+  };
+
+  const search = new URLSearchParams();
+  for (const [name, value] of Object.entries(query ?? {})) {
+    if (value !== undefined) search.append(name, String(value));
+  }
+  const path = buildPath(endpoint.path, params ?? {});
+  const url = search.size > 0 ? `${path}?${search}` : path;
+
+  const response = await fetch(url, {
+    method: endpoint.method,
+    credentials: "same-origin",
+    ...(body === undefined
+      ? {}
+      : {
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        }),
+  });
   if (!response.ok) {
-    const body: unknown = await response.json().catch(() => null);
+    const errorBody: unknown = await response.json().catch(() => null);
     const code =
-      body && typeof body === "object" && "error" in body
-        ? String(body.error)
+      errorBody && typeof errorBody === "object" && "error" in errorBody
+        ? String(errorBody.error)
         : response.statusText;
     throw new ApiError(response.status, code);
   }
-  const parsed = schema.safeParse(await response.json());
+  const parsed = endpoint.response.safeParse(await response.json());
   if (!parsed.success) {
     throw new ApiError(response.status, "unexpected_response");
   }
-  return parsed.data;
+  return parsed.data as z.output<E["response"]>;
 }
