@@ -1,5 +1,7 @@
-// Spanish tax IDs and their control characters (spec section 5, stage 4: "supplier tax ID passes
-// its checksum"). Input is as `ExtractedDocument` holds it: upper case, no spaces, dots or hyphens.
+// Spanish tax IDs and their control characters. Checked on every supplier the catalogue saves
+// (#88), and on every extracted document (spec section 5, stage 4: "supplier tax ID passes its
+// checksum"). Here in packages/shared so the web app can check one before sending it. Input is
+// upper case, without spaces, dots or hyphens, as `ExtractedDocument` holds it.
 
 export type TaxIdCheck =
   | { readonly valid: true; readonly kind: "NIF" | "NIE" | "CIF" }
