@@ -3,7 +3,6 @@ import { expectAccessible } from "./a11y.ts";
 import { accounts } from "./accounts.ts";
 import {
   arrivedAt,
-  choose,
   createSupplier,
   loadedAt,
   signedIn,
@@ -46,7 +45,10 @@ test("office maps a supplier's product to ours through the picker, then edits an
     .getByRole("combobox", { name: "Nuestro producto" })
     .fill("tomate p");
   await page.getByRole("option", { name: "Tomate pera", exact: true }).click();
-  await choose(page, "Unidad del envase", "caja");
+  // The product's units: its base unit first, then its purchase units, smallest first.
+  await page.getByRole("combobox", { name: "Unidad del envase" }).click();
+  await expect(page.getByRole("option")).toHaveText(["g", "kg", "caja"]);
+  await page.getByRole("option", { name: "caja", exact: true }).click();
   await dialog.getByLabel("Cantidad").fill("1");
   await expect(dialog.getByText("1 caja = 6 kg")).toBeVisible();
   await expectAccessible(page);
