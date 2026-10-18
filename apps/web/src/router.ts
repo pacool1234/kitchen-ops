@@ -5,10 +5,7 @@ import { adoptUserLocale, type MessageKey } from "./i18n";
 import { setCurrentUser } from "./session";
 import AppShell from "./shell/AppShell.vue";
 import AuthLayout from "./shell/AuthLayout.vue";
-import HomeView from "./views/HomeView.vue";
 import LoginView from "./views/LoginView.vue";
-import ProductsView from "./views/ProductsView.vue";
-import TwoFactorSetupView from "./views/TwoFactorSetupView.vue";
 
 declare module "vue-router" {
   interface RouteMeta {
@@ -21,6 +18,8 @@ declare module "vue-router" {
   }
 }
 
+// Each page's code loads when it's first visited, so the first load carries only the frame and
+// the sign-in page. The 2FA setup, with its QR code library, loads only for owners setting up.
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -46,7 +45,7 @@ export const router = createRouter({
         {
           path: "",
           name: "setup-2fa",
-          component: TwoFactorSetupView,
+          component: () => import("./views/TwoFactorSetupView.vue"),
           meta: { title: "twoFactor.title" },
         },
       ],
@@ -59,13 +58,13 @@ export const router = createRouter({
         {
           path: "",
           name: "home",
-          component: HomeView,
+          component: () => import("./views/HomeView.vue"),
           meta: { title: "home.title" },
         },
         {
           path: "products",
           name: "products",
-          component: ProductsView,
+          component: () => import("./views/ProductsView.vue"),
           meta: { title: "products.title", parent: "home" },
         },
       ],
