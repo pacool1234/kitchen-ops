@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
+  formatCount,
   formatDate,
   formatDateTime,
   formatMoney,
@@ -231,5 +232,17 @@ describe("dates, times and percentages", () => {
 
   it("refuses a percentage with more than 2 decimals", () => {
     expect(() => formatPercent("5.555", "es")).toThrow(RangeError);
+  });
+});
+
+describe("formatCount: how many of something, grouped like money", () => {
+  it("1.234 in Spanish and 1,234 in English, four digits included", () => {
+    expect(formatCount(1234, "es")).toBe("1.234");
+    expect(formatCount(1234, "en")).toBe("1,234");
+    expect(formatCount(0, "es")).toBe("0");
+  });
+
+  it("refuses anything but a whole number", () => {
+    expect(() => formatCount(2.5, "es")).toThrow(RangeError);
   });
 });
