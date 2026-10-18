@@ -11,7 +11,7 @@
 1 of 20 (5.0%): sent to a person.
 By reason: validation 1.
 
-Correct:17 of 20 (85.0%).
+Correct: 17 of 20 (85.0%).
 
 ## Header field accuracy
 

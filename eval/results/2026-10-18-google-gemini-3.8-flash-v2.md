@@ -10,7 +10,7 @@
 
 0 of 20 (0.0%): sent to a person.
 
-Correct:20 of 20 (100.0%).
+Correct: 20 of 20 (100.0%).
 
 ## Header field accuracy
 
