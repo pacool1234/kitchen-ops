@@ -2,18 +2,22 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { authClient } from "../auth";
+import LanguageSwitch from "../components/LanguageSwitch.vue";
+import { type MessageKey, useT } from "../i18n";
 
+const t = useT();
 const router = useRouter();
 const email = ref("");
 const password = ref("");
 const code = ref("");
 // Owners with 2FA get a second step after the password.
 const step = ref<"password" | "code">("password");
-const error = ref("");
+// A key, not the text, so it changes language with the page.
+const error = ref<MessageKey>();
 const busy = ref(false);
 
 async function signIn() {
-  error.value = "";
+  error.value = undefined;
   busy.value = true;
   const result = await authClient.signIn.email({
     email: email.value,
@@ -23,8 +27,8 @@ async function signIn() {
   if (result.error) {
     error.value =
       result.error.status === 429
-        ? "Too many attempts. Wait a few minutes and try again."
-        : "Wrong email or password.";
+        ? "signIn.tooManyAttempts"
+        : "signIn.wrongPassword";
     return;
   }
   if (result.data && "twoFactorRedirect" in result.data) {
@@ -35,13 +39,12 @@ async function signIn() {
 }
 
 async function verifyCode() {
-  error.value = "";
+  error.value = undefined;
   busy.value = true;
   const result = await authClient.twoFactor.verifyTotp({ code: code.value });
   busy.value = false;
   if (result.error) {
-    error.value =
-      "That code is not valid. Enter the current one from your app.";
+    error.value = "signIn.invalidCode";
     return;
   }
   await router.push("/products");
@@ -49,15 +52,16 @@ async function verifyCode() {
 </script>
 
 <template>
-  <h1>Sign in</h1>
+  <LanguageSwitch :signed-in="false" />
+  <h1>{{ t("signIn.title") }}</h1>
 
   <form v-if="step === 'password'" @submit.prevent="signIn">
     <label>
-      Email
+      {{ t("signIn.email") }}
       <input v-model="email" type="email" autocomplete="username" required />
     </label>
     <label>
-      Password
+      {{ t("signIn.password") }}
       <input
         v-model="password"
         type="password"
@@ -65,13 +69,15 @@ async function verifyCode() {
         required
       />
     </label>
-    <button type="submit" :disabled="busy">Sign in</button>
+    <button type="submit" :disabled="busy">
+      {{ t("signIn.submit") }}
+    </button>
   </form>
 
   <form v-else @submit.prevent="verifyCode">
-    <p>Enter the 6-digit code from your authenticator app.</p>
+    <p>{{ t("signIn.codePrompt") }}</p>
     <label>
-      Code
+      {{ t("signIn.code") }}
       <input
         v-model="code"
         inputmode="numeric"
@@ -81,8 +87,8 @@ async function verifyCode() {
         required
       />
     </label>
-    <button type="submit" :disabled="busy">Verify</button>
+    <button type="submit" :disabled="busy">{{ t("signIn.verify") }}</button>
   </form>
 
-  <p v-if="error" class="error" role="alert">{{ error }}</p>
+  <p v-if="error" class="error" role="alert">{{ t(error) }}</p>
 </template>

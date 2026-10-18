@@ -2,20 +2,18 @@
 import { endpoints, type Product } from "@kitchen-ops/shared";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { call } from "../api";
+import { ApiError, call } from "../api";
 import { authClient, type Me } from "../auth";
+import LanguageSwitch from "../components/LanguageSwitch.vue";
+import { type MessageKey, useT } from "../i18n";
+import { errorMessageKey } from "../i18n/errors";
 
+const t = useT();
 const router = useRouter();
 const me = ref<Me>();
 const products = ref<Product[]>([]);
-const error = ref("");
+const error = ref<MessageKey>();
 const loading = ref(true);
-
-const unitLabel: Record<Product["baseUnit"], string> = {
-  g: "grams",
-  ml: "millilitres",
-  unit: "units",
-};
 
 onMounted(async () => {
   try {
@@ -25,8 +23,12 @@ onMounted(async () => {
     ]);
     me.value = user;
     products.value = list.products;
-  } catch {
-    error.value = "Could not load products. Check your connection and reload.";
+  } catch (caught) {
+    // The API's answer if it gave one, else most likely the connection.
+    error.value =
+      caught instanceof ApiError
+        ? errorMessageKey(caught)
+        : "products.loadFailed";
   } finally {
     loading.value = false;
   }
@@ -40,18 +42,21 @@ async function signOut() {
 
 <template>
   <div class="toolbar">
-    <span v-if="me">{{ me.name }} · {{ me.role }}</span>
-    <button type="button" class="secondary" @click="signOut">Sign out</button>
+    <span v-if="me">{{ me.name }} · {{ t(`roles.${me.role}`) }}</span>
+    <LanguageSwitch :signed-in="true" />
+    <button type="button" class="secondary" @click="signOut">
+      {{ t("products.signOut") }}
+    </button>
   </div>
 
-  <h1>Products</h1>
-  <p v-if="loading">Loading…</p>
-  <p v-else-if="error" class="error" role="alert">{{ error }}</p>
-  <p v-else-if="products.length === 0">No products yet.</p>
+  <h1>{{ t("products.title") }}</h1>
+  <p v-if="loading">{{ t("products.loading") }}</p>
+  <p v-else-if="error" class="error" role="alert">{{ t(error) }}</p>
+  <p v-else-if="products.length === 0">{{ t("products.empty") }}</p>
   <ul v-else class="list">
     <li v-for="product in products" :key="product.id">
       <span>{{ product.name }}</span>
-      <span class="muted">{{ unitLabel[product.baseUnit] }}</span>
+      <span class="muted">{{ t(`units.${product.baseUnit}`) }}</span>
     </li>
   </ul>
 </template>
