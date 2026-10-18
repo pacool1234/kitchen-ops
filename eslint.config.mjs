@@ -142,6 +142,29 @@ export default defineConfigWithVueTs(
     rules: { "vue/require-default-prop": "off" },
   },
 
+  {
+    // Every write is in the audit log (#87, decision 0025): the API's features write through
+    // the transaction audited() hands them, never straight through `db`. The seed, the
+    // database scripts and the tests set data up directly.
+    files: ["apps/api/src/**/*.ts"],
+    ignores: [
+      "apps/api/src/**/*.test.ts",
+      "apps/api/src/test/**",
+      "apps/api/src/db/**",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression > MemberExpression.callee[object.name='db'][property.name=/^(insert|update|delete)$/]",
+          message:
+            "Write through audited() (src/audit/audited.ts), so the change is in the audit log.",
+        },
+      ],
+    },
+  },
+
   // Last, so Prettier owns formatting and ESLint only reports problems.
   eslintConfigPrettier,
 );
