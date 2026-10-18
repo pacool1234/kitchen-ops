@@ -5,7 +5,7 @@ import {
 } from "@kitchen-ops/shared";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { hasZodFastifySchemaValidationErrors } from "fastify-type-provider-zod";
-import { UNIQUE_FIELDS } from "./db/schema";
+import { FOREIGN_KEY_FIELDS, UNIQUE_FIELDS } from "./db/schema";
 
 // Every refusal answers an ErrorBody (#88, decision 0026): a code, and for invalid input a code
 // per field, keyed by its path, so the web app can show each message next to its field.
@@ -96,8 +96,13 @@ function validatedInput(request: FastifyRequest, context: string | undefined) {
   return request.body;
 }
 
-/** The unique index Postgres refused a duplicate on (23505), if that is what this error is. */
-function uniqueViolation(error: unknown): string | undefined {
+/**
+ * The constraint Postgres refused a write on, if that's what this error is: a duplicate (23505)
+ * or a reference to a row that doesn't exist (23503).
+ */
+function refusedBy(
+  error: unknown,
+): { kind: "unique" | "foreign_key"; constraint: string } | undefined {
   // Drizzle wraps Postgres's error: look along the causes.
   for (let e = error, depth = 0; e && depth < 5; depth++) {
     const { code, constraint, cause } = e as {
@@ -105,8 +110,9 @@ function uniqueViolation(error: unknown): string | undefined {
       constraint?: unknown;
       cause?: unknown;
     };
-    if (code === "23505")
-      return typeof constraint === "string" ? constraint : "";
+    const name = typeof constraint === "string" ? constraint : "";
+    if (code === "23505") return { kind: "unique", constraint: name };
+    if (code === "23503") return { kind: "foreign_key", constraint: name };
     e = cause;
   }
   return undefined;
@@ -131,12 +137,19 @@ export function registerErrors(app: FastifyInstance) {
         ...(error.fields ? { fields: { ...error.fields } } : {}),
       });
     }
-    const constraint = uniqueViolation(error);
-    if (constraint !== undefined) {
-      const field = UNIQUE_FIELDS[constraint];
+    const refused = refusedBy(error);
+    if (refused?.kind === "unique") {
+      const field = UNIQUE_FIELDS[refused.constraint];
       return send(409, {
         error: "conflict",
         ...(field ? { fields: { [field]: "taken" } } : {}),
+      });
+    }
+    if (refused?.kind === "foreign_key") {
+      const field = FOREIGN_KEY_FIELDS[refused.constraint];
+      return send(400, {
+        error: "invalid_input",
+        ...(field ? { fields: { [field]: "not_found" } } : {}),
       });
     }
     // Fastify's own refusals of a body it can't read: not JSON, for example.
