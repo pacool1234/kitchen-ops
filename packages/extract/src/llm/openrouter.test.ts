@@ -263,7 +263,13 @@ describe("createOpenRouterClient: the provider's own error (#64)", () => {
       "OpenRouter answered 400: Provider returned error. The provider said: ";
     await fc.assert(
       fc.asyncProperty(
-        fc.integer({ min: 1, max: 1000 }).map((n) => "x".repeat(n)),
+        fc
+          .oneof(
+            fc.integer({ min: 1, max: 1000 }),
+            // A whole message of exactly 500 and 501 characters, either side of the cut.
+            fc.constantFrom(500 - start.length, 501 - start.length),
+          )
+          .map((n) => "x".repeat(n)),
         async (raw) => {
           const message = await errorMessage(400, {
             error: { message: "Provider returned error", metadata: { raw } },
