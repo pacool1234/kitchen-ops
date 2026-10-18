@@ -1,0 +1,46 @@
+/* The page itself, and what every element shares (#85). */
+@layer base {
+  :root {
+    /* Light or dark, following the system setting. data-theme forces one (the gallery's switch). */
+    color-scheme: light dark;
+    background: var(--color-canvas);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  /*
+   * One focus ring for everything a keyboard can reach: 2px, offset from the element, in a blue
+   * no other state uses (WCAG 2.4.7 and 2.4.13). Only for keyboard focus, not a mouse click.
+   */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  /* Amounts line up in columns. */
+  table,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* No movement for people who asked their system for less (WCAG 2.3.3). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

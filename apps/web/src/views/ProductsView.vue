@@ -41,22 +41,24 @@ async function signOut() {
 </script>
 
 <template>
-  <div class="toolbar">
-    <span v-if="me">{{ me.name }} · {{ t(`roles.${me.role}`) }}</span>
-    <LanguageSwitch :signed-in="true" />
-    <button type="button" class="secondary" @click="signOut">
-      {{ t("products.signOut") }}
-    </button>
-  </div>
+  <div class="legacy">
+    <div class="toolbar">
+      <span v-if="me">{{ me.name }} · {{ t(`roles.${me.role}`) }}</span>
+      <LanguageSwitch :signed-in="true" />
+      <button type="button" class="secondary" @click="signOut">
+        {{ t("products.signOut") }}
+      </button>
+    </div>
 
-  <h1>{{ t("products.title") }}</h1>
-  <p v-if="loading">{{ t("products.loading") }}</p>
-  <p v-else-if="error" class="error" role="alert">{{ t(error) }}</p>
-  <p v-else-if="products.length === 0">{{ t("products.empty") }}</p>
-  <ul v-else class="list">
-    <li v-for="product in products" :key="product.id">
-      <span>{{ product.name }}</span>
-      <span class="muted">{{ t(`units.${product.baseUnit}`) }}</span>
-    </li>
-  </ul>
+    <h1>{{ t("products.title") }}</h1>
+    <p v-if="loading">{{ t("products.loading") }}</p>
+    <p v-else-if="error" class="error" role="alert">{{ t(error) }}</p>
+    <p v-else-if="products.length === 0">{{ t("products.empty") }}</p>
+    <ul v-else class="list">
+      <li v-for="product in products" :key="product.id">
+        <span>{{ product.name }}</span>
+        <span class="muted">{{ t(`units.${product.baseUnit}`) }}</span>
+      </li>
+    </ul>
+  </div>
 </template>

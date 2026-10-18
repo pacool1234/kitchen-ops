@@ -3,7 +3,7 @@ import App from "./App.vue";
 import { i18n, showLocale } from "./i18n";
 import { router } from "./router";
 import { initSentry } from "./sentry";
-import "./style.css";
+import "./design/index.css";
 
 const app = createApp(App);
 initSentry(app); // before mounting, so errors while rendering are caught too

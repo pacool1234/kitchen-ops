@@ -1,0 +1,87 @@
+/*
+ * The design tokens (#85, decision 0024): the only colours, type sizes, radii and shadows the
+ * interface uses. Tailwind turns each into utilities: --color-surface gives bg-surface,
+ * text-surface and border-surface.
+ *
+ * Each colour is light-dark(light, dark): the browser picks one from the element's
+ * color-scheme, which follows the system setting unless data-theme forces one (base.css).
+ * src/design/tokens.test.ts checks every pair the components use against WCAG 2.2 AA.
+ */
+@theme {
+  /* Only these colours: Tailwind's own palette (red-500 and the rest) is switched off. */
+  --color-*: initial;
+
+  /* Surfaces, from the page to what sits on it. */
+  --color-canvas: light-dark(#f6f4ee, #111513);
+  --color-surface: light-dark(#ffffff, #1a201d);
+  --color-surface-muted: light-dark(#eeebe2, #242c28);
+
+  /* Text. */
+  --color-fg: light-dark(#1d1d1b, #ecefea);
+  --color-fg-muted: light-dark(#5c5b55, #a6afa9);
+
+  /* Lines: `line` divides, `line-strong` outlines a control (3:1, WCAG 1.4.11). */
+  --color-line: light-dark(#dcd7ca, #323b36);
+  --color-line-strong: light-dark(#85827a, #6f7b74);
+
+  /* The brand green, for primary actions, links and selection. */
+  --color-primary: light-dark(#1f5135, #86cfa1);
+  --color-primary-hover: light-dark(#163d27, #a3dcb8);
+  --color-on-primary: light-dark(#ffffff, #0d2617);
+  --color-primary-soft: light-dark(#e1ede5, #1d3527);
+
+  /* Status: each a text colour, and a soft background for badges and banners. */
+  --color-danger: light-dark(#a3261c, #f3a198);
+  --color-danger-hover: light-dark(#86201a, #f6b8b0);
+  --color-on-danger: light-dark(#ffffff, #3a0e0a);
+  --color-danger-soft: light-dark(#fbe8e6, #3d1f1b);
+  --color-warning: light-dark(#7a4d00, #f0c56e);
+  --color-warning-soft: light-dark(#fcf1d8, #382c12);
+  --color-success: light-dark(#1e6638, #93d6a8);
+  --color-success-soft: light-dark(#e2f2e7, #1b3323);
+  --color-info: light-dark(#1b5687, #93c5f0);
+  --color-info-soft: light-dark(#e3edf7, #192b3c);
+
+  /* The focus ring: a blue that no other state uses, 3:1 against every surface. */
+  --color-focus: light-dark(#1f5fd1, #8ab4ff);
+
+  /* Behind a dialog. */
+  --color-overlay: light-dark(rgb(29 29 27 / 0.45), rgb(0 0 0 / 0.65));
+
+  /* Type: Inter, with the system font while it loads. */
+  --font-sans:
+    "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* The type scale: size, and the line height that goes with it. */
+  --text-*: initial;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.25rem;
+
+  /* Spacing: multiples of 4px (p-4 is 1rem). */
+  --spacing: 0.25rem;
+
+  /* Corners. */
+  --radius-*: initial;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* Elevation: cards, then menus, then dialogs. */
+  --shadow-*: initial;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08);
+  --shadow-md: 0 4px 6px rgb(0 0 0 / 0.07), 0 2px 4px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 12px 24px rgb(0 0 0 / 0.14), 0 4px 8px rgb(0 0 0 / 0.08);
+}

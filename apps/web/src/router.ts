@@ -9,6 +9,8 @@ declare module "vue-router" {
   interface RouteMeta {
     /** Reachable without signing in. Every other page needs a session. */
     public?: boolean;
+    /** Sets its own width, instead of the narrow column. */
+    wide?: boolean;
   }
 }
 
@@ -23,6 +25,16 @@ export const router = createRouter({
       meta: { public: true },
     },
     { path: "/products", component: ProductsView },
+    // Development and browser-test builds only: production builds drop the route and its code.
+    ...(__GALLERY__
+      ? [
+          {
+            path: "/gallery",
+            component: () => import("./gallery/GalleryView.vue"),
+            meta: { public: true, wide: true },
+          },
+        ]
+      : []),
   ],
 });
 

@@ -61,56 +61,58 @@ async function confirm() {
 </script>
 
 <template>
-  <LanguageSwitch :signed-in="false" />
-  <h1>{{ t("twoFactor.title") }}</h1>
+  <div class="legacy">
+    <LanguageSwitch :signed-in="false" />
+    <h1>{{ t("twoFactor.title") }}</h1>
 
-  <form v-if="step === 'password'" @submit.prevent="start">
-    <p>{{ t("twoFactor.intro") }}</p>
-    <label>
-      {{ t("twoFactor.password") }}
-      <input
-        v-model="password"
-        type="password"
-        autocomplete="current-password"
-        required
-      />
-    </label>
-    <button type="submit" :disabled="busy">
-      {{ t("twoFactor.continue") }}
-    </button>
-  </form>
+    <form v-if="step === 'password'" @submit.prevent="start">
+      <p>{{ t("twoFactor.intro") }}</p>
+      <label>
+        {{ t("twoFactor.password") }}
+        <input
+          v-model="password"
+          type="password"
+          autocomplete="current-password"
+          required
+        />
+      </label>
+      <button type="submit" :disabled="busy">
+        {{ t("twoFactor.continue") }}
+      </button>
+    </form>
 
-  <form v-else @submit.prevent="confirm">
-    <p>{{ t("twoFactor.scan") }}</p>
-    <img :src="qrDataUrl" :alt="t('twoFactor.qrAlt')" class="qr" />
-    <p>
-      {{ t("twoFactor.manualKey") }}
-      <code class="key">{{ manualKey }}</code>
-    </p>
-    <p>
-      <strong>{{ t("twoFactor.backupTitle") }}</strong>
-      {{ t("twoFactor.backupText") }}
-    </p>
-    <ul class="codes">
-      <li v-for="backup in backupCodes" :key="backup">
-        <code>{{ backup }}</code>
-      </li>
-    </ul>
-    <label>
-      {{ t("twoFactor.code") }}
-      <input
-        v-model="code"
-        inputmode="numeric"
-        autocomplete="one-time-code"
-        pattern="[0-9]{6}"
-        maxlength="6"
-        required
-      />
-    </label>
-    <button type="submit" :disabled="busy">
-      {{ t("twoFactor.submit") }}
-    </button>
-  </form>
+    <form v-else @submit.prevent="confirm">
+      <p>{{ t("twoFactor.scan") }}</p>
+      <img :src="qrDataUrl" :alt="t('twoFactor.qrAlt')" class="qr" />
+      <p>
+        {{ t("twoFactor.manualKey") }}
+        <code class="key">{{ manualKey }}</code>
+      </p>
+      <p>
+        <strong>{{ t("twoFactor.backupTitle") }}</strong>
+        {{ t("twoFactor.backupText") }}
+      </p>
+      <ul class="codes">
+        <li v-for="backup in backupCodes" :key="backup">
+          <code>{{ backup }}</code>
+        </li>
+      </ul>
+      <label>
+        {{ t("twoFactor.code") }}
+        <input
+          v-model="code"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          pattern="[0-9]{6}"
+          maxlength="6"
+          required
+        />
+      </label>
+      <button type="submit" :disabled="busy">
+        {{ t("twoFactor.submit") }}
+      </button>
+    </form>
 
-  <p v-if="error" class="error" role="alert">{{ t(error) }}</p>
+    <p v-if="error" class="error" role="alert">{{ t(error) }}</p>
+  </div>
 </template>

@@ -5,7 +5,7 @@ import type { BaseUnit, Locale } from "@kitchen-ops/shared";
 // becomes a JavaScript number (CLAUDE.md), so no amount loses precision, however large.
 
 /** The Intl locale behind each interface language. English is British: €1,234.56, 18/10/2026. */
-const INTL_LOCALE: Record<Locale, string> = { es: "es-ES", en: "en-GB" };
+export const INTL_LOCALE: Record<Locale, string> = { es: "es-ES", en: "en-GB" };
 
 /** The restaurant's time zone: every time is shown in it, whatever the device's (decision 0020). */
 export const RESTAURANT_TIME_ZONE = "Europe/Madrid";
@@ -153,6 +153,14 @@ export function formatQuantity(
   return Math.abs(quantity) >= 1000
     ? `${thousandths}${NBSP}${large}`
     : `${number.format(BigInt(quantity))}${NBSP}${small}`;
+}
+
+/** How many of something, such as rows in a table: `1.234`, grouped like money. */
+export function formatCount(count: number, locale: Locale): string {
+  if (!Number.isSafeInteger(count)) {
+    throw new RangeError(`a count must be a whole number, got ${count}`);
+  }
+  return numberFormat(locale, {}).format(count);
 }
 
 /** A calendar date, "2026-10-18", as `18/10/2026`. It never moves a day with the time zone. */

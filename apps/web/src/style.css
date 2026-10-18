@@ -1,27 +1,13 @@
-/* Plain on purpose: design work waits for discovery. Phone first, one column. */
+/*
+ * The views' styles from before the design system (#85). They go when the views move onto its
+ * components; the page's font, colours and background are now the tokens' (src/design).
+ */
 :root {
-  --green: #1f5135;
-  --paper: #f4f1e8;
-  --ink: #1d1d1b;
-  --muted: #6b6b66;
-  --line: #d9d4c5;
-  --error: #a3261c;
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    sans-serif;
-  color: var(--ink);
-  background: var(--paper);
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
+  --green: var(--color-primary);
+  --paper: var(--color-on-primary);
+  --muted: var(--color-fg-muted);
+  --line: var(--color-line);
+  --error: var(--color-danger);
 }
 
 .app-header {
@@ -37,25 +23,41 @@ body {
   padding: 1rem;
 }
 
-h1 {
-  font-size: 1.4rem;
+/* A page that sets its own width, such as the component gallery. */
+.app-main-wide {
+  padding: 0;
 }
 
-form {
+/*
+ * Element styles for the views that predate the design system, which wear class="legacy". Kept
+ * off everything else, so they never reach the components.
+ */
+/* Tailwind's reset takes away headings' weight and paragraphs' margins: put them back. */
+.legacy h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 1rem 0;
+}
+
+.legacy p {
+  margin: 0.75rem 0;
+}
+
+.legacy form {
   display: grid;
   gap: 1rem;
 }
 
-label {
+.legacy label {
   display: grid;
   gap: 0.35rem;
   font-weight: 500;
 }
 
 /* At least 16px, so phones do not zoom in on focus; tall enough to tap. */
-input,
-button,
-select {
+.legacy input,
+.legacy button,
+.legacy select {
   font: inherit;
   font-size: 1rem;
   min-height: 2.75rem;
@@ -63,26 +65,26 @@ select {
   border-radius: 0.5rem;
 }
 
-input,
-select {
-  border: 1px solid var(--line);
-  background: #fff;
+.legacy input,
+.legacy select {
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-surface);
 }
 
-button {
+.legacy button {
   border: none;
   background: var(--green);
   color: var(--paper);
   font-weight: 600;
 }
 
-button.secondary {
+.legacy button.secondary {
   background: transparent;
   color: var(--green);
   border: 1px solid var(--green);
 }
 
-button:disabled {
+.legacy button:disabled {
   opacity: 0.6;
 }
 

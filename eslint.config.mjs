@@ -131,7 +131,15 @@ export default defineConfigWithVueTs(
     // Every string the interface shows goes through i18n (#86): no raw text in templates, nor
     // in the attributes people read (alt, title, aria-label, placeholder and the like).
     files: ["apps/web/src/**/*.vue"],
+    // The component gallery is a developer's tool, written in Spanish and never translated.
+    ignores: ["apps/web/src/gallery/**"],
     rules: { "vue/no-bare-strings-in-template": "error" },
+  },
+  {
+    // With typed props (defineProps<{ hint?: string }>()), an optional prop is undefined until
+    // it's passed, which is what's meant: no default needed.
+    files: ["apps/web/src/**/*.vue"],
+    rules: { "vue/require-default-prop": "off" },
   },
 
   // Last, so Prettier owns formatting and ESLint only reports problems.
