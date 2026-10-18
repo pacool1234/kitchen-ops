@@ -1,0 +1,3892 @@
+{
+  "date": "2026-10-18",
+  "set": "gold",
+  "prompt": "v1",
+  "run": 4,
+  "model": {
+    "id": "openai/gpt-6-luna",
+    "structuredOutput": true,
+    "vision": true,
+    "note": "0.1/0.5. Temperature not set: with temperature 0, OpenRouter found no endpoint that accepts it (404 No endpoints found that can handle the requested parameters, 2026-10-18)."
+  },
+  "spendingCapMicroUsd": 250000,
+  "stoppedBecause": null,
+  "summary": {
+    "documents": 20,
+    "outcomes": {
+      "correct": 17,
+      "silent-error": 2,
+      "review": 1
+    },
+    "silentErrorRate": {
+      "part": 2,
+      "whole": 20
+    },
+    "reviewRate": {
+      "part": 1,
+      "whole": 20
+    },
+    "headerAccuracy": {
+      "documentType": {
+        "part": 20,
+        "whole": 20
+      },
+      "supplier.name": {
+        "part": 20,
+        "whole": 20
+      },
+      "supplier.taxId": {
+        "part": 20,
+        "whole": 20
+      },
+      "number": {
+        "part": 19,
+        "whole": 20
+      },
+      "issueDate": {
+        "part": 19,
+        "whole": 20
+      },
+      "totals.net": {
+        "part": 20,
+        "whole": 20
+      },
+      "totals.total": {
+        "part": 20,
+        "whole": 20
+      },
+      "totals.vat": {
+        "part": 20,
+        "whole": 20
+      }
+    },
+    "linePrecision": {
+      "part": 283,
+      "whole": 284
+    },
+    "lineRecall": {
+      "part": 283,
+      "whole": 284
+    },
+    "lineFieldAccuracy": {
+      "supplierCode": {
+        "part": 283,
+        "whole": 283
+      },
+      "description": {
+        "part": 283,
+        "whole": 283
+      },
+      "quantity": {
+        "part": 282,
+        "whole": 283
+      },
+      "unit": {
+        "part": 282,
+        "whole": 283
+      },
+      "unitPrice": {
+        "part": 283,
+        "whole": 283
+      },
+      "discountPercent": {
+        "part": 282,
+        "whole": 283
+      },
+      "vatRate": {
+        "part": 281,
+        "whole": 283
+      },
+      "lineTotal": {
+        "part": 283,
+        "whole": 283
+      }
+    },
+    "cost": {
+      "totalMicroUsd": 13234,
+      "perDocumentMicroUsd": 778,
+      "documentsCounted": 17,
+      "documentsWithUnknownCost": 0,
+      "documentsWithoutCall": 3
+    },
+    "latencyMs": {
+      "p50": 12931,
+      "p95": 28705,
+      "documentsCounted": 17
+    }
+  },
+  "structuredOutput": {
+    "part": 0,
+    "whole": 17
+  },
+  "documents": [
+    {
+      "id": "syn-001-delivery-note-no-prices",
+      "sha256": "bcdf7fe52e9bded37534c94b0b569e8a08816ae97b428c4fe2674eb3b09571be",
+      "route": "pdf-text",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 1742,
+        "completionTokens": 342,
+        "costMicroUsd": 189,
+        "latencyMs": 4321,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "delivery-note",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Huerta La Ejemplar S.L.",
+          "taxId": "B00123455"
+        },
+        "number": "ALB-2026-0418",
+        "issueDate": "2026-10-14",
+        "totals": null,
+        "lines": [
+          {
+            "supplierCode": "HT-001",
+            "description": "Tomate pera",
+            "quantity": "2",
+            "unit": "caja",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "HT-014",
+            "description": "Lechuga romana",
+            "quantity": "12",
+            "unit": "ud",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "HT-022",
+            "description": "Cebolla dulce",
+            "quantity": "5.5",
+            "unit": "kg",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "HT-030",
+            "description": "Pimiento rojo",
+            "quantity": "3",
+            "unit": "kg",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "HT-041",
+            "description": "Perejil",
+            "quantity": "4",
+            "unit": "manojo",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-002-invoice-discounts-two-vat",
+      "sha256": "2872fe909084a5bba4daf0205f7bd81248e0126cc2df7d349f8fb1f3e2566182",
+      "route": "pdf-text",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 1896,
+        "completionTokens": 615,
+        "costMicroUsd": 327,
+        "latencyMs": 5228,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Distribuciones Ficticias del Norte S.A.",
+          "taxId": "A00987651"
+        },
+        "number": "F-2026/00315",
+        "issueDate": "2026-10-15",
+        "totals": {
+          "net": "185.17",
+          "vat": [
+            {
+              "rate": "10",
+              "base": "122.03",
+              "amount": "12.20"
+            },
+            {
+              "rate": "21",
+              "base": "63.14",
+              "amount": "13.26"
+            }
+          ],
+          "total": "210.63"
+        },
+        "lines": [
+          {
+            "supplierCode": "DF-1001",
+            "description": "Aceite de oliva virgen extra 5 L",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": "38.50",
+            "discountPercent": "5",
+            "vatRate": "10",
+            "lineTotal": "73.15"
+          },
+          {
+            "supplierCode": "DF-2040",
+            "description": "Arroz bomba 1 kg",
+            "quantity": "10",
+            "unit": "ud",
+            "unitPrice": "3.20",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "32.00"
+          },
+          {
+            "supplierCode": "DF-3105",
+            "description": "Harina de trigo 25 kg",
+            "quantity": "1",
+            "unit": "saco",
+            "unitPrice": "18.75",
+            "discountPercent": "10",
+            "vatRate": "10",
+            "lineTotal": "16.88"
+          },
+          {
+            "supplierCode": "DF-8020",
+            "description": "Lavavajillas industrial 10 L",
+            "quantity": "3",
+            "unit": "ud",
+            "unitPrice": "12.40",
+            "discountPercent": "5",
+            "vatRate": "21",
+            "lineTotal": "35.34"
+          },
+          {
+            "supplierCode": "DF-8031",
+            "description": "Papel de cocina (pack 6)",
+            "quantity": "4",
+            "unit": "pack",
+            "unitPrice": "6.95",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "27.80"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-003-invoice-multi-page",
+      "sha256": "a47215fce538b1cd7a41d33df1e308e8d57dbbfd14e42ee8e79a1b3c567c5a8d",
+      "route": "pdf-text",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 3202,
+        "completionTokens": 2714,
+        "costMicroUsd": 1389,
+        "latencyMs": 21921,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Pescados Imaginarios S.L.",
+          "taxId": "B00555011"
+        },
+        "number": "FV-2026-1187",
+        "issueDate": "2026-10-13",
+        "totals": {
+          "net": "1568.13",
+          "vat": [
+            {
+              "rate": "10",
+              "base": "1560.13",
+              "amount": "156.01"
+            },
+            {
+              "rate": "21",
+              "base": "8.00",
+              "amount": "1.68"
+            }
+          ],
+          "total": "1725.82"
+        },
+        "lines": [
+          {
+            "supplierCode": "PI-101",
+            "description": "Merluza de pincho",
+            "quantity": "4.250",
+            "unit": "kg",
+            "unitPrice": "14.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "63.33"
+          },
+          {
+            "supplierCode": "PI-102",
+            "description": "Lubina de ración",
+            "quantity": "3.100",
+            "unit": "kg",
+            "unitPrice": "11.75",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "36.43"
+          },
+          {
+            "supplierCode": "PI-103",
+            "description": "Dorada de ración",
+            "quantity": "2.840",
+            "unit": "kg",
+            "unitPrice": "10.95",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "31.10"
+          },
+          {
+            "supplierCode": "PI-104",
+            "description": "Rape limpio",
+            "quantity": "1.960",
+            "unit": "kg",
+            "unitPrice": "24.50",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "48.02"
+          },
+          {
+            "supplierCode": "PI-105",
+            "description": "Bacalao desalado lomo",
+            "quantity": "2.500",
+            "unit": "kg",
+            "unitPrice": "19.80",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "49.50"
+          },
+          {
+            "supplierCode": "PI-106",
+            "description": "Salmón noruego lomo",
+            "quantity": "3.320",
+            "unit": "kg",
+            "unitPrice": "16.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "54.45"
+          },
+          {
+            "supplierCode": "PI-107",
+            "description": "Atún rojo lomo",
+            "quantity": "1.150",
+            "unit": "kg",
+            "unitPrice": "42.00",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "48.30"
+          },
+          {
+            "supplierCode": "PI-108",
+            "description": "Pez espada rodajas",
+            "quantity": "2.000",
+            "unit": "kg",
+            "unitPrice": "18.60",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "37.20"
+          },
+          {
+            "supplierCode": "PI-109",
+            "description": "Gallo limpio",
+            "quantity": "1.720",
+            "unit": "kg",
+            "unitPrice": "15.30",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "26.32"
+          },
+          {
+            "supplierCode": "PI-110",
+            "description": "Lenguado",
+            "quantity": "1.380",
+            "unit": "kg",
+            "unitPrice": "26.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "37.12"
+          },
+          {
+            "supplierCode": "PI-111",
+            "description": "Rodaballo",
+            "quantity": "2.640",
+            "unit": "kg",
+            "unitPrice": "21.75",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "57.42"
+          },
+          {
+            "supplierCode": "PI-112",
+            "description": "Sardina",
+            "quantity": "3.000",
+            "unit": "kg",
+            "unitPrice": "5.80",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "17.40"
+          },
+          {
+            "supplierCode": "PI-113",
+            "description": "Boquerón",
+            "quantity": "2.500",
+            "unit": "kg",
+            "unitPrice": "7.20",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "18.00"
+          },
+          {
+            "supplierCode": "PI-114",
+            "description": "Caballa",
+            "quantity": "2.200",
+            "unit": "kg",
+            "unitPrice": "6.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "14.08"
+          },
+          {
+            "supplierCode": "PI-115",
+            "description": "Jurel",
+            "quantity": "1.800",
+            "unit": "kg",
+            "unitPrice": "4.95",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "8.91"
+          },
+          {
+            "supplierCode": "PI-201",
+            "description": "Calamar limpio",
+            "quantity": "2.450",
+            "unit": "kg",
+            "unitPrice": "13.60",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "33.32"
+          },
+          {
+            "supplierCode": "PI-202",
+            "description": "Sepia limpia",
+            "quantity": "1.900",
+            "unit": "kg",
+            "unitPrice": "12.20",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "23.18"
+          },
+          {
+            "supplierCode": "PI-203",
+            "description": "Pulpo cocido",
+            "quantity": "2.300",
+            "unit": "kg",
+            "unitPrice": "27.50",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "63.25"
+          },
+          {
+            "supplierCode": "PI-204",
+            "description": "Chipirón",
+            "quantity": "1.250",
+            "unit": "kg",
+            "unitPrice": "17.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "22.38"
+          },
+          {
+            "supplierCode": "PI-301",
+            "description": "Gamba blanca",
+            "quantity": "1.000",
+            "unit": "kg",
+            "unitPrice": "32.00",
+            "discountPercent": "3",
+            "vatRate": "10",
+            "lineTotal": "31.04"
+          },
+          {
+            "supplierCode": "PI-302",
+            "description": "Langostino tigre",
+            "quantity": "2.000",
+            "unit": "kg",
+            "unitPrice": "23.40",
+            "discountPercent": "3",
+            "vatRate": "10",
+            "lineTotal": "45.40"
+          },
+          {
+            "supplierCode": "PI-303",
+            "description": "Cigala",
+            "quantity": "0.850",
+            "unit": "kg",
+            "unitPrice": "48.00",
+            "discountPercent": "3",
+            "vatRate": "10",
+            "lineTotal": "39.58"
+          },
+          {
+            "supplierCode": "PI-304",
+            "description": "Carabinero",
+            "quantity": "0.600",
+            "unit": "kg",
+            "unitPrice": "65.00",
+            "discountPercent": "3",
+            "vatRate": "10",
+            "lineTotal": "37.83"
+          },
+          {
+            "supplierCode": "PI-305",
+            "description": "Bogavante vivo",
+            "quantity": "1.400",
+            "unit": "kg",
+            "unitPrice": "39.50",
+            "discountPercent": "3",
+            "vatRate": "10",
+            "lineTotal": "53.64"
+          },
+          {
+            "supplierCode": "PI-306",
+            "description": "Mejillón gallego",
+            "quantity": "5.000",
+            "unit": "kg",
+            "unitPrice": "2.80",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "14.00"
+          },
+          {
+            "supplierCode": "PI-307",
+            "description": "Almeja fina",
+            "quantity": "1.500",
+            "unit": "kg",
+            "unitPrice": "24.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "37.35"
+          },
+          {
+            "supplierCode": "PI-308",
+            "description": "Berberecho",
+            "quantity": "1.000",
+            "unit": "kg",
+            "unitPrice": "14.50",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "14.50"
+          },
+          {
+            "supplierCode": "PI-309",
+            "description": "Navaja",
+            "quantity": "1.200",
+            "unit": "kg",
+            "unitPrice": "19.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "23.88"
+          },
+          {
+            "supplierCode": "PI-310",
+            "description": "Vieira con concha",
+            "quantity": "12",
+            "unit": "ud",
+            "unitPrice": "2.35",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "28.20"
+          },
+          {
+            "supplierCode": "PI-311",
+            "description": "Ostra n.º 3",
+            "quantity": "24",
+            "unit": "ud",
+            "unitPrice": "1.65",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "39.60"
+          },
+          {
+            "supplierCode": "PI-401",
+            "description": "Huevas de merluza",
+            "quantity": "0.900",
+            "unit": "kg",
+            "unitPrice": "9.80",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "8.82"
+          },
+          {
+            "supplierCode": "PI-402",
+            "description": "Anchoa en salazón, lata",
+            "quantity": "6",
+            "unit": "ud",
+            "unitPrice": "7.45",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "44.70"
+          },
+          {
+            "supplierCode": "PI-403",
+            "description": "Bacalao salado entero",
+            "quantity": "3.500",
+            "unit": "kg",
+            "unitPrice": "12.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "45.15"
+          },
+          {
+            "supplierCode": "PI-404",
+            "description": "Caldo de pescado 1 L",
+            "quantity": "8",
+            "unit": "ud",
+            "unitPrice": "3.10",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "24.80"
+          },
+          {
+            "supplierCode": "PI-405",
+            "description": "Fumet concentrado",
+            "quantity": "4",
+            "unit": "ud",
+            "unitPrice": "5.60",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "22.40"
+          },
+          {
+            "supplierCode": "PI-406",
+            "description": "Hielo en escamas, saco",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": "4.00",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "8.00"
+          },
+          {
+            "supplierCode": "PI-501",
+            "description": "Langostino congelado 2 kg",
+            "quantity": "2",
+            "unit": "caja",
+            "unitPrice": "18.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "37.80"
+          },
+          {
+            "supplierCode": "PI-502",
+            "description": "Calamar congelado en anillas",
+            "quantity": "3",
+            "unit": "bolsa",
+            "unitPrice": "6.75",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "20.25"
+          },
+          {
+            "supplierCode": "PI-503",
+            "description": "Filete de merluza congelado 5 kg",
+            "quantity": "1",
+            "unit": "caja",
+            "unitPrice": "37.50",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "37.50"
+          },
+          {
+            "supplierCode": "PI-504",
+            "description": "Gamba pelada congelada",
+            "quantity": "4",
+            "unit": "bolsa",
+            "unitPrice": "8.95",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "35.80"
+          },
+          {
+            "supplierCode": "PI-505",
+            "description": "Mejillón media concha",
+            "quantity": "2",
+            "unit": "bolsa",
+            "unitPrice": "5.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "10.80"
+          },
+          {
+            "supplierCode": "PI-506",
+            "description": "Pulpo congelado",
+            "quantity": "2.800",
+            "unit": "kg",
+            "unitPrice": "15.20",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "42.56"
+          },
+          {
+            "supplierCode": "PI-507",
+            "description": "Lomo de bacalao congelado",
+            "quantity": "2",
+            "unit": "caja",
+            "unitPrice": "44.00",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "88.00"
+          },
+          {
+            "supplierCode": "PI-508",
+            "description": "Sepia congelada",
+            "quantity": "1.600",
+            "unit": "kg",
+            "unitPrice": "8.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "13.44"
+          },
+          {
+            "supplierCode": "PI-509",
+            "description": "Cola de rape congelada",
+            "quantity": "2.100",
+            "unit": "kg",
+            "unitPrice": "16.80",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "35.28"
+          },
+          {
+            "supplierCode": "PI-510",
+            "description": "Surimi en barra",
+            "quantity": "5",
+            "unit": "ud",
+            "unitPrice": "2.25",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "11.25"
+          },
+          {
+            "supplierCode": "PI-511",
+            "description": "Palitos de mar",
+            "quantity": "3",
+            "unit": "ud",
+            "unitPrice": "1.95",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "5.85"
+          },
+          {
+            "supplierCode": "PI-512",
+            "description": "Salmón ahumado",
+            "quantity": "0.750",
+            "unit": "kg",
+            "unitPrice": "28.00",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "21.00"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-004-delivery-note-mixed-units",
+      "sha256": "d20d3ee4c32542cebaf0dc5f562b0a15a09435bf63d13f7f8deecb264ab12d05",
+      "route": "pdf-text",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 1867,
+        "completionTokens": 444,
+        "costMicroUsd": 241,
+        "latencyMs": 5447,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "delivery-note",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Carnes Ficticias de Ejemplo S.L.",
+          "taxId": "B00777029"
+        },
+        "number": "AV-2026-2210",
+        "issueDate": "2026-10-16",
+        "totals": {
+          "net": "205.34",
+          "vat": [
+            {
+              "rate": "10",
+              "base": "205.34",
+              "amount": "20.53"
+            }
+          ],
+          "total": "225.87"
+        },
+        "lines": [
+          {
+            "supplierCode": "CF-101",
+            "description": "Solomillo de ternera",
+            "quantity": "2.350",
+            "unit": "kg",
+            "unitPrice": "32.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "77.32"
+          },
+          {
+            "supplierCode": "CF-205",
+            "description": "Pollo entero",
+            "quantity": "4.125",
+            "unit": "kg",
+            "unitPrice": "4.85",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "20.01"
+          },
+          {
+            "supplierCode": "CF-310",
+            "description": "Hamburguesa 180 g (caja 20 ud)",
+            "quantity": "3",
+            "unit": "caja",
+            "unitPrice": "27.60",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "82.80"
+          },
+          {
+            "supplierCode": "CF-412",
+            "description": "Chorizo para cocinar",
+            "quantity": "6",
+            "unit": "ud",
+            "unitPrice": "2.15",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "12.90"
+          },
+          {
+            "supplierCode": "CF-520",
+            "description": "Panceta curada",
+            "quantity": "1.080",
+            "unit": "kg",
+            "unitPrice": "11.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "12.31"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-005-credit-note",
+      "sha256": "e82164b9159b6ef6570b515bdfdb6787a1f6f8d9cea251088bbb80861c76b648",
+      "route": "pdf-text",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 1803,
+        "completionTokens": 427,
+        "costMicroUsd": 232,
+        "latencyMs": 4172,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Distribuciones Ficticias del Norte S.A.",
+          "taxId": "A00987651"
+        },
+        "number": "R-2026/00012",
+        "issueDate": "2026-10-20",
+        "totals": {
+          "net": "-48.36",
+          "vat": [
+            {
+              "rate": "10",
+              "base": "-36.58",
+              "amount": "-3.66"
+            },
+            {
+              "rate": "21",
+              "base": "-11.78",
+              "amount": "-2.47"
+            }
+          ],
+          "total": "-54.49"
+        },
+        "lines": [
+          {
+            "supplierCode": "DF-1001",
+            "description": "Aceite de oliva virgen extra 5 L",
+            "quantity": "-1",
+            "unit": "ud",
+            "unitPrice": "38.50",
+            "discountPercent": "5",
+            "vatRate": "10",
+            "lineTotal": "-36.58"
+          },
+          {
+            "supplierCode": "DF-8020",
+            "description": "Lavavajillas industrial 10 L",
+            "quantity": "-1",
+            "unit": "ud",
+            "unitPrice": "12.40",
+            "discountPercent": "5",
+            "vatRate": "21",
+            "lineTotal": "-11.78"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-006-facturae",
+      "sha256": "19d96f20e6d49a35d1b4066af18ec4137f5704a457b6e29402802f3c6a91eb32",
+      "route": "facturae-xml",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": null,
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Lácteos Inventados S.L.",
+          "taxId": "B00444331"
+        },
+        "number": "LI260482",
+        "issueDate": "2026-10-14",
+        "totals": {
+          "net": "179.83",
+          "vat": [
+            {
+              "rate": "4.00",
+              "base": "122.28",
+              "amount": "4.89"
+            },
+            {
+              "rate": "10.00",
+              "base": "41.80",
+              "amount": "4.18"
+            },
+            {
+              "rate": "21.00",
+              "base": "15.75",
+              "amount": "3.31"
+            }
+          ],
+          "total": "192.21"
+        },
+        "lines": [
+          {
+            "supplierCode": "LI-010",
+            "description": "Leche entera 1 L, caja de 6",
+            "quantity": "12",
+            "unit": "caja",
+            "unitPrice": "6.90",
+            "discountPercent": null,
+            "vatRate": "4.00",
+            "lineTotal": "82.80"
+          },
+          {
+            "supplierCode": "LI-120",
+            "description": "Mantequilla 500 g",
+            "quantity": "10",
+            "unit": "ud",
+            "unitPrice": "4.40",
+            "discountPercent": "5.00",
+            "vatRate": "10.00",
+            "lineTotal": "41.80"
+          },
+          {
+            "supplierCode": "LI-305",
+            "description": "Queso curado, cuña",
+            "quantity": "2.35",
+            "unit": "kg",
+            "unitPrice": "16.80",
+            "discountPercent": null,
+            "vatRate": "4.00",
+            "lineTotal": "39.48"
+          },
+          {
+            "supplierCode": "LI-900",
+            "description": "Bayetas multiusos, pack de 10",
+            "quantity": "3",
+            "unit": "paquete",
+            "unitPrice": "5.25",
+            "discountPercent": null,
+            "vatRate": "21.00",
+            "lineTotal": "15.75"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-007-invoice-three-vat-rates",
+      "sha256": "9dd78a8fa3763190ce1b0b09dc4d09c94a6e44c69421a5626721ca1cb5c08937",
+      "route": "pdf-text",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 2368,
+        "completionTokens": 878,
+        "costMicroUsd": 463,
+        "latencyMs": 7244,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Distribuciones Ficticias del Sur S.L.",
+          "taxId": "B00111229"
+        },
+        "number": "F-2026/00315",
+        "issueDate": "2026-10-14",
+        "totals": {
+          "net": "464.36",
+          "vat": [
+            {
+              "rate": "4",
+              "base": "202.16",
+              "amount": "8.09"
+            },
+            {
+              "rate": "10",
+              "base": "110.42",
+              "amount": "11.04"
+            },
+            {
+              "rate": "21",
+              "base": "151.78",
+              "amount": "31.87"
+            }
+          ],
+          "total": "515.36"
+        },
+        "lines": [
+          {
+            "supplierCode": "AC-0101",
+            "description": "Aceite de oliva virgen extra garrafa 5 l",
+            "quantity": "3",
+            "unit": "ud",
+            "unitPrice": "28.45",
+            "discountPercent": "5",
+            "vatRate": "4",
+            "lineTotal": "81.08"
+          },
+          {
+            "supplierCode": "HA-0210",
+            "description": "Harina de trigo T55 saco 25 kg",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": "14.90",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "29.80"
+          },
+          {
+            "supplierCode": "LE-0330",
+            "description": "Leche entera UHT",
+            "quantity": "24",
+            "unit": "l",
+            "unitPrice": "0.89",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "21.36"
+          },
+          {
+            "supplierCode": "HU-0412",
+            "description": "Huevos camperos L (estuche 30)",
+            "quantity": "4",
+            "unit": "caja",
+            "unitPrice": "7.85",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "31.40"
+          },
+          {
+            "supplierCode": "QU-0518",
+            "description": "Queso manchego curado",
+            "quantity": "2.350",
+            "unit": "kg",
+            "unitPrice": "16.90",
+            "discountPercent": "3",
+            "vatRate": "4",
+            "lineTotal": "38.52"
+          },
+          {
+            "supplierCode": "PO-0620",
+            "description": "Pechuga de pollo fileteada",
+            "quantity": "4.875",
+            "unit": "kg",
+            "unitPrice": "6.45",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "31.44"
+          },
+          {
+            "supplierCode": "PE-0733",
+            "description": "Lomo de salmón fresco",
+            "quantity": "3.120",
+            "unit": "kg",
+            "unitPrice": "18.75",
+            "discountPercent": "5",
+            "vatRate": "10",
+            "lineTotal": "55.58"
+          },
+          {
+            "supplierCode": "AG-0801",
+            "description": "Agua mineral 1,5 l (pack 6)",
+            "quantity": "10",
+            "unit": "pack",
+            "unitPrice": "2.34",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "23.40"
+          },
+          {
+            "supplierCode": "CE-0915",
+            "description": "Cerveza botellín 33 cl (caja 24)",
+            "quantity": "3",
+            "unit": "caja",
+            "unitPrice": "15.60",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "46.80"
+          },
+          {
+            "supplierCode": "LI-1002",
+            "description": "Lavavajillas máquina industrial 20 l",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": "31.60",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "63.20"
+          },
+          {
+            "supplierCode": "LI-1017",
+            "description": "Bolsas basura 100x120 (rollo 10)",
+            "quantity": "5",
+            "unit": "pack",
+            "unitPrice": "6.95",
+            "discountPercent": "10",
+            "vatRate": "21",
+            "lineTotal": "31.28"
+          },
+          {
+            "supplierCode": "LI-1023",
+            "description": "Bayeta microfibra 40x40",
+            "quantity": "12",
+            "unit": "ud",
+            "unitPrice": "0.875",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "10.50"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-008-invoice-two-pages-totals-last",
+      "sha256": "46f2df05d407548192b3cffefce7a9d12cb91c9b4c6ecad9ea93903feeaee34f",
+      "route": "pdf-text",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 2794,
+        "completionTokens": 2596,
+        "costMicroUsd": 1326,
+        "latencyMs": 23277,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Antonio Inventado Ejemplo",
+          "taxId": "00012345V"
+        },
+        "number": "FV 487/26",
+        "issueDate": "2026-10-16",
+        "totals": {
+          "net": "366.79",
+          "vat": [
+            {
+              "rate": "4",
+              "base": "232.65",
+              "amount": "9.31"
+            },
+            {
+              "rate": "10",
+              "base": "74.59",
+              "amount": "7.46"
+            },
+            {
+              "rate": "21",
+              "base": "59.55",
+              "amount": "12.51"
+            }
+          ],
+          "total": "396.07"
+        },
+        "lines": [
+          {
+            "supplierCode": null,
+            "description": "Tomate pera",
+            "quantity": "6.420",
+            "unit": "kg",
+            "unitPrice": "1.85",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "11.88"
+          },
+          {
+            "supplierCode": null,
+            "description": "Tomate cherry rama",
+            "quantity": "2.150",
+            "unit": "kg",
+            "unitPrice": "4.20",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "9.03"
+          },
+          {
+            "supplierCode": null,
+            "description": "Lechuga romana",
+            "quantity": "12",
+            "unit": "ud",
+            "unitPrice": "0.75",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "9.00"
+          },
+          {
+            "supplierCode": null,
+            "description": "Cebolla dulce",
+            "quantity": "8.735",
+            "unit": "kg",
+            "unitPrice": "1.15",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "10.05"
+          },
+          {
+            "supplierCode": null,
+            "description": "Patata agria saco 15 kg",
+            "quantity": "2",
+            "unit": "bolsa",
+            "unitPrice": "11.40",
+            "discountPercent": "5",
+            "vatRate": "4",
+            "lineTotal": "21.66"
+          },
+          {
+            "supplierCode": null,
+            "description": "Pimiento rojo",
+            "quantity": "3.380",
+            "unit": "kg",
+            "unitPrice": "2.65",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "8.96"
+          },
+          {
+            "supplierCode": null,
+            "description": "Pimiento verde italiano",
+            "quantity": "2.960",
+            "unit": "kg",
+            "unitPrice": "2.35",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "6.96"
+          },
+          {
+            "supplierCode": null,
+            "description": "Calabacín",
+            "quantity": "4.105",
+            "unit": "kg",
+            "unitPrice": "1.55",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "6.36"
+          },
+          {
+            "supplierCode": null,
+            "description": "Berenjena",
+            "quantity": "2.840",
+            "unit": "kg",
+            "unitPrice": "1.95",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "5.54"
+          },
+          {
+            "supplierCode": null,
+            "description": "Aguacate Hass",
+            "quantity": "5.000",
+            "unit": "kg",
+            "unitPrice": "4.90",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "24.50"
+          },
+          {
+            "supplierCode": null,
+            "description": "Limón",
+            "quantity": "3.250",
+            "unit": "kg",
+            "unitPrice": "1.70",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "5.53"
+          },
+          {
+            "supplierCode": null,
+            "description": "Naranja zumo malla 10 kg",
+            "quantity": "3",
+            "unit": "bolsa",
+            "unitPrice": "8.90",
+            "discountPercent": "3",
+            "vatRate": "4",
+            "lineTotal": "25.90"
+          },
+          {
+            "supplierCode": null,
+            "description": "Fresón caja 2 kg",
+            "quantity": "4",
+            "unit": "caja",
+            "unitPrice": "6.75",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "27.00"
+          },
+          {
+            "supplierCode": null,
+            "description": "Plátano de Canarias",
+            "quantity": "4.615",
+            "unit": "kg",
+            "unitPrice": "2.10",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "9.69"
+          },
+          {
+            "supplierCode": null,
+            "description": "Manzana golden",
+            "quantity": "3.070",
+            "unit": "kg",
+            "unitPrice": "1.95",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "5.99"
+          },
+          {
+            "supplierCode": null,
+            "description": "Ajo morado (malla 1 kg)",
+            "quantity": "2",
+            "unit": "bolsa",
+            "unitPrice": "5.80",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "11.60"
+          },
+          {
+            "supplierCode": null,
+            "description": "Perejil manojo",
+            "quantity": "10",
+            "unit": "ud",
+            "unitPrice": "0.45",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "4.50"
+          },
+          {
+            "supplierCode": null,
+            "description": "Cilantro manojo",
+            "quantity": "6",
+            "unit": "ud",
+            "unitPrice": "0.55",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "3.30"
+          },
+          {
+            "supplierCode": null,
+            "description": "Champiñón laminado bandeja 500 g",
+            "quantity": "8",
+            "unit": "ud",
+            "unitPrice": "1.625",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "13.00"
+          },
+          {
+            "supplierCode": null,
+            "description": "Setas de cardo",
+            "quantity": "1.245",
+            "unit": "kg",
+            "unitPrice": "9.80",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "12.20"
+          },
+          {
+            "supplierCode": null,
+            "description": "Zumo de naranja natural 1 l",
+            "quantity": "6",
+            "unit": "botella",
+            "unitPrice": "2.95",
+            "discountPercent": "5",
+            "vatRate": "10",
+            "lineTotal": "16.82"
+          },
+          {
+            "supplierCode": null,
+            "description": "Aceitunas gordal (cubo 2 kg)",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": "13.50",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "27.00"
+          },
+          {
+            "supplierCode": null,
+            "description": "Almendra marcona tostada",
+            "quantity": "1.500",
+            "unit": "kg",
+            "unitPrice": "15.90",
+            "discountPercent": "10",
+            "vatRate": "10",
+            "lineTotal": "21.47"
+          },
+          {
+            "supplierCode": null,
+            "description": "Nueces peladas",
+            "quantity": "0.750",
+            "unit": "kg",
+            "unitPrice": "12.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "9.30"
+          },
+          {
+            "supplierCode": null,
+            "description": "Carbón vegetal saco 10 kg",
+            "quantity": "3",
+            "unit": "bolsa",
+            "unitPrice": "9.45",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "28.35"
+          },
+          {
+            "supplierCode": null,
+            "description": "Bolsas papel kraft (pack 250)",
+            "quantity": "1",
+            "unit": "pack",
+            "unitPrice": "18.70",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "18.70"
+          },
+          {
+            "supplierCode": null,
+            "description": "Cajas plástico retornables",
+            "quantity": "10",
+            "unit": "ud",
+            "unitPrice": "1.25",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "12.50"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-009-credit-note-returned-drinks",
+      "sha256": "d14d9c5c6e155121083ae2d2b8eda05fe6ad2d9c8dbc738ed12d547cc0990816",
+      "route": "pdf-text",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 2346,
+        "completionTokens": 1042,
+        "costMicroUsd": 545,
+        "latencyMs": 8946,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Bebidas Imaginarias del Levante, S.A.",
+          "taxId": "A00444554"
+        },
+        "number": "R-2026/00042",
+        "issueDate": "2026-10-15",
+        "totals": {
+          "net": "-1019.34",
+          "vat": [
+            {
+              "rate": "10",
+              "base": "-228.19",
+              "amount": "-22.82"
+            },
+            {
+              "rate": "21",
+              "base": "-791.15",
+              "amount": "-166.14"
+            }
+          ],
+          "total": "-1208.30"
+        },
+        "lines": [
+          {
+            "supplierCode": "BC-3010",
+            "description": "Barril cerveza rubia 30 l",
+            "quantity": "-4",
+            "unit": "ud",
+            "unitPrice": "92.40",
+            "discountPercent": "5",
+            "vatRate": "21",
+            "lineTotal": "-351.12"
+          },
+          {
+            "supplierCode": "VT-2201",
+            "description": "Vino tinto crianza D.O. Inventada (caja 6)",
+            "quantity": "-4",
+            "unit": "caja",
+            "unitPrice": "54.75",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "-219.00"
+          },
+          {
+            "supplierCode": "VB-2215",
+            "description": "Vino blanco verdejo (caja 6)",
+            "quantity": "-2",
+            "unit": "caja",
+            "unitPrice": "47.90",
+            "discountPercent": "3",
+            "vatRate": "21",
+            "lineTotal": "-92.93"
+          },
+          {
+            "supplierCode": "GI-4002",
+            "description": "Ginebra premium 70 cl",
+            "quantity": "-6",
+            "unit": "botella",
+            "unitPrice": "21.35",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "-128.10"
+          },
+          {
+            "supplierCode": "AG-1103",
+            "description": "Agua con gas 0,5 l (caja 24)",
+            "quantity": "-5",
+            "unit": "caja",
+            "unitPrice": "9.85",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "-49.25"
+          },
+          {
+            "supplierCode": "RF-1420",
+            "description": "Refresco cola lata 33 cl (pack 24)",
+            "quantity": "-7",
+            "unit": "pack",
+            "unitPrice": "11.25",
+            "discountPercent": "10",
+            "vatRate": "10",
+            "lineTotal": "-70.88"
+          },
+          {
+            "supplierCode": "ZU-1530",
+            "description": "Zumo melocotón 20 cl (caja 24)",
+            "quantity": "-3",
+            "unit": "caja",
+            "unitPrice": "13.62",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "-40.86"
+          },
+          {
+            "supplierCode": "TO-4110",
+            "description": "Tónica 20 cl (caja 24)",
+            "quantity": "-4",
+            "unit": "caja",
+            "unitPrice": "16.80",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "-67.20"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-010-facturae-credit-note-price-correction",
+      "sha256": "06978e4b2e4861a15e56c115a29e12b6d43ec84f62d2e4d95f5cc07af269ef45",
+      "route": "facturae-xml",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": null,
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Rosa Inventada Ejemplar",
+          "taxId": "00067890V"
+        },
+        "number": "R260007",
+        "issueDate": "2026-10-09",
+        "totals": {
+          "net": "-18.36",
+          "vat": [
+            {
+              "rate": "4.00",
+              "base": "-16.86",
+              "amount": "-0.67"
+            },
+            {
+              "rate": "10.00",
+              "base": "-1.50",
+              "amount": "-0.15"
+            }
+          ],
+          "total": "-19.18"
+        },
+        "lines": [
+          {
+            "supplierCode": "FV-101",
+            "description": "Tomate pera, diferencia de precio",
+            "quantity": "18.5",
+            "unit": "kg",
+            "unitPrice": "-0.35",
+            "discountPercent": null,
+            "vatRate": "4.00",
+            "lineTotal": "-6.48"
+          },
+          {
+            "supplierCode": "FV-114",
+            "description": "Pimiento rojo, diferencia de precio",
+            "quantity": "7.2",
+            "unit": "kg",
+            "unitPrice": "-0.40",
+            "discountPercent": null,
+            "vatRate": "4.00",
+            "lineTotal": "-2.88"
+          },
+          {
+            "supplierCode": "FV-230",
+            "description": "Aceite de oliva virgen extra 5 L, diferencia de precio",
+            "quantity": "2",
+            "unit": "garrafa",
+            "unitPrice": "-3.15",
+            "discountPercent": null,
+            "vatRate": "4.00",
+            "lineTotal": "-6.30"
+          },
+          {
+            "supplierCode": "FV-305",
+            "description": "Champiñón laminado 500 g, diferencia de precio",
+            "quantity": "10",
+            "unit": "bandeja",
+            "unitPrice": "-0.12",
+            "discountPercent": null,
+            "vatRate": "4.00",
+            "lineTotal": "-1.20"
+          },
+          {
+            "supplierCode": "FV-410",
+            "description": "Gazpacho 1 L, diferencia de precio",
+            "quantity": "6",
+            "unit": "brik",
+            "unitPrice": "-0.25",
+            "discountPercent": null,
+            "vatRate": "10.00",
+            "lineTotal": "-1.50"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-011-facturae-v3-2-no-series",
+      "sha256": "d71f132175a31a4478cca3141013ad34d3441b2eb5dc8c27b7dc3e25406ab8b6",
+      "route": "facturae-xml",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": null,
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Cárnicas Imaginarias S.L.",
+          "taxId": "B00555664"
+        },
+        "number": "C2026/1187",
+        "issueDate": "2026-10-13",
+        "totals": {
+          "net": "268.09",
+          "vat": [
+            {
+              "rate": "4.00",
+              "base": "18.00",
+              "amount": "0.72"
+            },
+            {
+              "rate": "10.00",
+              "base": "213.09",
+              "amount": "21.31"
+            },
+            {
+              "rate": "21.00",
+              "base": "37.00",
+              "amount": "7.77"
+            }
+          ],
+          "total": "297.89"
+        },
+        "lines": [
+          {
+            "supplierCode": "CI-011",
+            "description": "Solomillo de ternera",
+            "quantity": "3.275",
+            "unit": "kg",
+            "unitPrice": "28.90",
+            "discountPercent": null,
+            "vatRate": "10.00",
+            "lineTotal": "94.65"
+          },
+          {
+            "supplierCode": "CI-024",
+            "description": "Pechuga de pollo fileteada",
+            "quantity": "12.48",
+            "unit": "kg",
+            "unitPrice": "6.75",
+            "discountPercent": "3.00",
+            "vatRate": "10.00",
+            "lineTotal": "81.71"
+          },
+          {
+            "supplierCode": "CI-031",
+            "description": "Chorizo ibérico",
+            "quantity": "2.6",
+            "unit": "kg",
+            "unitPrice": "14.125",
+            "discountPercent": null,
+            "vatRate": "10.00",
+            "lineTotal": "36.73"
+          },
+          {
+            "supplierCode": "CI-047",
+            "description": "Huevos camperos L",
+            "quantity": "5",
+            "unit": "docena",
+            "unitPrice": "3.60",
+            "discountPercent": null,
+            "vatRate": "4.00",
+            "lineTotal": "18.00"
+          },
+          {
+            "supplierCode": null,
+            "description": "Carbón vegetal, saco 15 kg",
+            "quantity": "2",
+            "unit": "bolsa",
+            "unitPrice": "18.50",
+            "discountPercent": null,
+            "vatRate": "21.00",
+            "lineTotal": "37.00"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-012-delivery-note-no-prices",
+      "sha256": "469f1c39330931d51d001235351b62079636f613d5233f439587c8c63fffa180",
+      "route": "pdf-text",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 2475,
+        "completionTokens": 1430,
+        "costMicroUsd": 740,
+        "latencyMs": 12931,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "delivery-note",
+        "currency": "EUR",
+        "supplier": {
+          "name": "SUMINISTROS HOSTELEROS INVENTADOS S.L.",
+          "taxId": "B00555664"
+        },
+        "number": "ALB-26-008813",
+        "issueDate": "2026-10-16",
+        "totals": null,
+        "lines": [
+          {
+            "supplierCode": "SH-1102",
+            "description": "LEJIA CONCENTRADA 5 L",
+            "quantity": "4",
+            "unit": "ud",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "SH-1140",
+            "description": "DESENGRASANTE COCINA PROF. 5 L",
+            "quantity": "3",
+            "unit": "ud",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "SH-1188",
+            "description": "LAVAVAJILLAS MAQUINA 12 KG",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "SH-1203",
+            "description": "ABRILLANTADOR MAQUINA 5 L",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "SH-1260",
+            "description": "GEL HIDROALCOHOLICO 1 L",
+            "quantity": "6",
+            "unit": "botella",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "SH-1305",
+            "description": "PAPEL SECAMANOS ZIG-ZAG (CAJA 20)",
+            "quantity": "2",
+            "unit": "caja",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "SH-1320",
+            "description": "BOBINA INDUSTRIAL 2 CAPAS",
+            "quantity": "6",
+            "unit": "ud",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "SH-1377",
+            "description": "BOLSA BASURA 85X105 NEGRA",
+            "quantity": "10",
+            "unit": "bolsa",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "SH-1410",
+            "description": "GUANTE NITRILO T-M (CAJA 100)",
+            "quantity": "3",
+            "unit": "caja",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "SH-1455",
+            "description": "FILM TRANSPARENTE 45 CM 300 M",
+            "quantity": "0",
+            "unit": "ud",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "SH-1512",
+            "description": "PAPEL ALUMINIO 30 CM 150 M",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "AL-2021",
+            "description": "ACEITE GIRASOL ALTO OLEICO 25 L",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "AL-2050",
+            "description": "SAL MARINA FINA 1 KG (PACK 10)",
+            "quantity": "1",
+            "unit": "pack",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "AL-2077",
+            "description": "QUESO RALLADO MEZCLA",
+            "quantity": "2.500",
+            "unit": "kg",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "AL-2093",
+            "description": "NATA COCINA 18% 1 L",
+            "quantity": "12",
+            "unit": "l",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "AL-2110",
+            "description": "TOMATE TRITURADO 5 KG",
+            "quantity": "3",
+            "unit": "ud",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-013-invoice-multi-page",
+      "sha256": "f0628834b659080ef27d129f6c82019b6bd8469113f652a72d411869bf816290",
+      "route": "pdf-text",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 3503,
+        "completionTokens": 2301,
+        "costMicroUsd": 1186,
+        "latencyMs": 20183,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "CÁRNICAS Y PESCADOS FICTICIOS S.L.",
+          "taxId": "B00666776"
+        },
+        "number": "2026/A/004512",
+        "issueDate": "2026-10-13",
+        "totals": {
+          "net": "3752.15",
+          "vat": [
+            {
+              "rate": "21",
+              "base": "707.20",
+              "amount": "148.51"
+            },
+            {
+              "rate": "10",
+              "base": "1760.62",
+              "amount": "176.06"
+            },
+            {
+              "rate": "4",
+              "base": "1284.33",
+              "amount": "51.37"
+            }
+          ],
+          "total": "4128.09"
+        },
+        "lines": [
+          {
+            "supplierCode": "100245",
+            "description": "Solomillo de ternera",
+            "quantity": "8.450",
+            "unit": "kg",
+            "unitPrice": "32.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "278.01"
+          },
+          {
+            "supplierCode": "100251",
+            "description": "Entrecot de vaca madurada",
+            "quantity": "6.215",
+            "unit": "kg",
+            "unitPrice": "27.40",
+            "discountPercent": "5",
+            "vatRate": "10",
+            "lineTotal": "161.78"
+          },
+          {
+            "supplierCode": "100260",
+            "description": "Carrillera de cerdo ibérico",
+            "quantity": "4.730",
+            "unit": "kg",
+            "unitPrice": "12.85",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "60.78"
+          },
+          {
+            "supplierCode": "100277",
+            "description": "Secreto ibérico",
+            "quantity": "3.905",
+            "unit": "kg",
+            "unitPrice": "17.60",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "68.73"
+          },
+          {
+            "supplierCode": "100283",
+            "description": "Pechuga de pollo campero",
+            "quantity": "9.640",
+            "unit": "kg",
+            "unitPrice": "7.35",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "70.85"
+          },
+          {
+            "supplierCode": "100290",
+            "description": "Muslo de pollo deshuesado",
+            "quantity": "5.120",
+            "unit": "kg",
+            "unitPrice": "5.95",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "30.46"
+          },
+          {
+            "supplierCode": "100312",
+            "description": "Paletilla de cordero lechal",
+            "quantity": "2.875",
+            "unit": "kg",
+            "unitPrice": "19.80",
+            "discountPercent": "2.5",
+            "vatRate": "10",
+            "lineTotal": "55.50"
+          },
+          {
+            "supplierCode": "100330",
+            "description": "Carne picada mixta",
+            "quantity": "6.000",
+            "unit": "kg",
+            "unitPrice": "8.45",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "50.70"
+          },
+          {
+            "supplierCode": "100347",
+            "description": "Hamburguesa vacuno 180 g (caja 20)",
+            "quantity": "4",
+            "unit": "caja",
+            "unitPrice": "23.60",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "94.40"
+          },
+          {
+            "supplierCode": "100355",
+            "description": "Chorizo criollo (bandeja 1 kg)",
+            "quantity": "5",
+            "unit": "ud",
+            "unitPrice": "9.15",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "45.75"
+          },
+          {
+            "supplierCode": "200110",
+            "description": "Lubina de estero 600/800",
+            "quantity": "5.335",
+            "unit": "kg",
+            "unitPrice": "13.20",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "70.42"
+          },
+          {
+            "supplierCode": "200125",
+            "description": "Dorada de crianza 400/600",
+            "quantity": "4.180",
+            "unit": "kg",
+            "unitPrice": "9.75",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "40.76"
+          },
+          {
+            "supplierCode": "200140",
+            "description": "Merluza de pincho",
+            "quantity": "3.765",
+            "unit": "kg",
+            "unitPrice": "18.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "69.28"
+          },
+          {
+            "supplierCode": "200162",
+            "description": "Bacalao desalado lomo",
+            "quantity": "4.000",
+            "unit": "kg",
+            "unitPrice": "21.90",
+            "discountPercent": "5",
+            "vatRate": "10",
+            "lineTotal": "83.22"
+          },
+          {
+            "supplierCode": "200178",
+            "description": "Pulpo cocido pata",
+            "quantity": "2.240",
+            "unit": "kg",
+            "unitPrice": "34.50",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "77.28"
+          },
+          {
+            "supplierCode": "200190",
+            "description": "Calamar limpio congelado",
+            "quantity": "5.000",
+            "unit": "kg",
+            "unitPrice": "11.30",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "56.50"
+          },
+          {
+            "supplierCode": "200205",
+            "description": "Gamba roja (caja 1 kg)",
+            "quantity": "3",
+            "unit": "caja",
+            "unitPrice": "42.00",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "126.00"
+          },
+          {
+            "supplierCode": "200219",
+            "description": "Langostino cocido 40/60 (caja 2 kg)",
+            "quantity": "4",
+            "unit": "caja",
+            "unitPrice": "26.80",
+            "discountPercent": "3",
+            "vatRate": "10",
+            "lineTotal": "103.98"
+          },
+          {
+            "supplierCode": "200233",
+            "description": "Mejillón de roca (malla 5 kg)",
+            "quantity": "2",
+            "unit": "bolsa",
+            "unitPrice": "14.75",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "29.50"
+          },
+          {
+            "supplierCode": "200247",
+            "description": "Almeja japónica",
+            "quantity": "1.850",
+            "unit": "kg",
+            "unitPrice": "16.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "31.27"
+          },
+          {
+            "supplierCode": "200256",
+            "description": "Salmón ahumado loncheado",
+            "quantity": "1.500",
+            "unit": "kg",
+            "unitPrice": "29.80",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "44.70"
+          },
+          {
+            "supplierCode": "300011",
+            "description": "Aceite de oliva virgen extra (caja 4 x 5 l)",
+            "quantity": "12",
+            "unit": "caja",
+            "unitPrice": "89.50",
+            "discountPercent": "2.5",
+            "vatRate": "4",
+            "lineTotal": "1047.15"
+          },
+          {
+            "supplierCode": "300018",
+            "description": "Huevos camperos M (caja 180)",
+            "quantity": "2",
+            "unit": "caja",
+            "unitPrice": "38.70",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "77.40"
+          },
+          {
+            "supplierCode": "300024",
+            "description": "Leche entera fresca",
+            "quantity": "18",
+            "unit": "l",
+            "unitPrice": "1.12",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "20.16"
+          },
+          {
+            "supplierCode": "300031",
+            "description": "Queso curado de oveja (pieza)",
+            "quantity": "3.410",
+            "unit": "kg",
+            "unitPrice": "18.95",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "64.62"
+          },
+          {
+            "supplierCode": "300039",
+            "description": "Pan de cristal precocido (caja 24)",
+            "quantity": "3",
+            "unit": "caja",
+            "unitPrice": "19.20",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "57.60"
+          },
+          {
+            "supplierCode": "300047",
+            "description": "Harina de trigo floja 5 kg",
+            "quantity": "4",
+            "unit": "bolsa",
+            "unitPrice": "4.35",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "17.40"
+          },
+          {
+            "supplierCode": "300052",
+            "description": "Arroz bomba 1 kg (pack 10)",
+            "quantity": "2",
+            "unit": "pack",
+            "unitPrice": "31.50",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "63.00"
+          },
+          {
+            "supplierCode": "300066",
+            "description": "Pimentón de la Vera dulce 750 g",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": "12.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "24.80"
+          },
+          {
+            "supplierCode": "300071",
+            "description": "Sal en escamas 1,4 kg",
+            "quantity": "3",
+            "unit": "ud",
+            "unitPrice": "7.65",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "22.95"
+          },
+          {
+            "supplierCode": "400103",
+            "description": "Vino tinto Ribera ficticia 75 cl",
+            "quantity": "24",
+            "unit": "botella",
+            "unitPrice": "8.90",
+            "discountPercent": "5",
+            "vatRate": "21",
+            "lineTotal": "202.92"
+          },
+          {
+            "supplierCode": "400118",
+            "description": "Vino blanco Rueda ficticio 75 cl",
+            "quantity": "18",
+            "unit": "botella",
+            "unitPrice": "6.45",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "116.10"
+          },
+          {
+            "supplierCode": "400126",
+            "description": "Cava brut nature 75 cl",
+            "quantity": "12",
+            "unit": "botella",
+            "unitPrice": "7.80",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "93.60"
+          },
+          {
+            "supplierCode": "500210",
+            "description": "Servilleta tissue 40x40 2 capas",
+            "quantity": "2400",
+            "unit": "ud",
+            "unitPrice": "0.0185",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "44.40"
+          },
+          {
+            "supplierCode": "500224",
+            "description": "Mantel individual papel 30x40",
+            "quantity": "1500",
+            "unit": "ud",
+            "unitPrice": "0.0275",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "41.25"
+          },
+          {
+            "supplierCode": "500239",
+            "description": "Palillos enfundados",
+            "quantity": "5000",
+            "unit": "ud",
+            "unitPrice": "0.0038",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "19.00"
+          },
+          {
+            "supplierCode": "500247",
+            "description": "Detergente lavavajillas 25 kg",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": "61.35",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "122.70"
+          },
+          {
+            "supplierCode": "500256",
+            "description": "Film alimentario 45 cm 1.500 m",
+            "quantity": "3",
+            "unit": "ud",
+            "unitPrice": "24.90",
+            "discountPercent": "10",
+            "vatRate": "21",
+            "lineTotal": "67.23"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-014-picture-from-001",
+      "sha256": "2cad39750ffa8573219e3f9a221aaa2d75a5d7f8423136181e970d142ab3ed3a",
+      "route": "image",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 4273,
+        "completionTokens": 394,
+        "costMicroUsd": 240,
+        "latencyMs": 5276,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "delivery-note",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Huerta La Ejemplar S.L.",
+          "taxId": "B00123455"
+        },
+        "number": "ALB-2026-0418",
+        "issueDate": "2026-10-14",
+        "totals": null,
+        "lines": [
+          {
+            "supplierCode": "HT-001",
+            "description": "Tomate pera",
+            "quantity": "2",
+            "unit": "caja",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "HT-014",
+            "description": "Lechuga romana",
+            "quantity": "12",
+            "unit": "ud",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "HT-022",
+            "description": "Cebolla dulce",
+            "quantity": "5.5",
+            "unit": "kg",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "HT-030",
+            "description": "Pimiento rojo",
+            "quantity": "3",
+            "unit": "kg",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          },
+          {
+            "supplierCode": "HT-041",
+            "description": "Perejil",
+            "quantity": "4",
+            "unit": "manojo",
+            "unitPrice": null,
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-015-picture-from-002",
+      "sha256": "ac9e2e5ed48eea1ae58b6e331f57ab1d86b5477a38782b7225ef2aa49df89752",
+      "route": "image",
+      "outcome": "silent-error",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [
+        "number",
+        "issueDate",
+        "lines.1.unit",
+        "lines.1.discountPercent"
+      ],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 4273,
+        "completionTokens": 1088,
+        "costMicroUsd": 587,
+        "latencyMs": 13452,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Distribuciones Ficticias del Norte S.A.",
+          "taxId": "A00987651"
+        },
+        "number": "F-2026/000315",
+        "issueDate": "2026-02-15",
+        "totals": {
+          "net": "185.17",
+          "vat": [
+            {
+              "rate": "10",
+              "base": "122.03",
+              "amount": "12.20"
+            },
+            {
+              "rate": "21",
+              "base": "63.14",
+              "amount": "13.26"
+            }
+          ],
+          "total": "210.63"
+        },
+        "lines": [
+          {
+            "supplierCode": "DF-1001",
+            "description": "Aceite de oliva virgen extra 5 L",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": "38.50",
+            "discountPercent": "5",
+            "vatRate": "10",
+            "lineTotal": "73.15"
+          },
+          {
+            "supplierCode": "DF-2040",
+            "description": "Arroz bomba 1 kg",
+            "quantity": "10",
+            "unit": "Pn",
+            "unitPrice": "3.20",
+            "discountPercent": "0",
+            "vatRate": "10",
+            "lineTotal": "32.00"
+          },
+          {
+            "supplierCode": "DF-3105",
+            "description": "Harina de trigo 25 kg",
+            "quantity": "1",
+            "unit": "saco",
+            "unitPrice": "18.75",
+            "discountPercent": "10",
+            "vatRate": "10",
+            "lineTotal": "16.88"
+          },
+          {
+            "supplierCode": "DF-8020",
+            "description": "Lavavajillas industrial 10 L",
+            "quantity": "3",
+            "unit": "ud",
+            "unitPrice": "12.40",
+            "discountPercent": "5",
+            "vatRate": "21",
+            "lineTotal": "35.34"
+          },
+          {
+            "supplierCode": "DF-8031",
+            "description": "Papel de cocina (pack 6)",
+            "quantity": "4",
+            "unit": "pack",
+            "unitPrice": "6.95",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "27.80"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-016-picture-from-003",
+      "sha256": "a9d80b131f69ef981e9abe1df8fdbbbd551658f82a3befbb4bd0e41b8e4d9d2b",
+      "route": "pdf-pages",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 8960,
+        "completionTokens": 3360,
+        "costMicroUsd": 1770,
+        "latencyMs": 28705,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Pescados Imaginarios S.L.",
+          "taxId": "B00555011"
+        },
+        "number": "FV-2026-1187",
+        "issueDate": "2026-10-13",
+        "totals": {
+          "net": "1568.13",
+          "vat": [
+            {
+              "rate": "10",
+              "base": "1560.13",
+              "amount": "156.01"
+            },
+            {
+              "rate": "21",
+              "base": "8.00",
+              "amount": "1.68"
+            }
+          ],
+          "total": "1725.82"
+        },
+        "lines": [
+          {
+            "supplierCode": "PI-101",
+            "description": "Merluza de pincho",
+            "quantity": "4.250",
+            "unit": "kg",
+            "unitPrice": "14.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "63.33"
+          },
+          {
+            "supplierCode": "PI-102",
+            "description": "Lubina de ración",
+            "quantity": "3.100",
+            "unit": "kg",
+            "unitPrice": "11.75",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "36.43"
+          },
+          {
+            "supplierCode": "PI-103",
+            "description": "Dorada de ración",
+            "quantity": "2.840",
+            "unit": "kg",
+            "unitPrice": "10.95",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "31.10"
+          },
+          {
+            "supplierCode": "PI-104",
+            "description": "Rape limpio",
+            "quantity": "1.960",
+            "unit": "kg",
+            "unitPrice": "24.50",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "48.02"
+          },
+          {
+            "supplierCode": "PI-105",
+            "description": "Bacalao desalado lomo",
+            "quantity": "2.500",
+            "unit": "kg",
+            "unitPrice": "19.80",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "49.50"
+          },
+          {
+            "supplierCode": "PI-106",
+            "description": "Salmón noruego lomo",
+            "quantity": "3.320",
+            "unit": "kg",
+            "unitPrice": "16.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "54.45"
+          },
+          {
+            "supplierCode": "PI-107",
+            "description": "Atún rojo lomo",
+            "quantity": "1.150",
+            "unit": "kg",
+            "unitPrice": "42.00",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "48.30"
+          },
+          {
+            "supplierCode": "PI-108",
+            "description": "Pez espada rodajas",
+            "quantity": "2.000",
+            "unit": "kg",
+            "unitPrice": "18.60",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "37.20"
+          },
+          {
+            "supplierCode": "PI-109",
+            "description": "Gallo limpio",
+            "quantity": "1.720",
+            "unit": "kg",
+            "unitPrice": "15.30",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "26.32"
+          },
+          {
+            "supplierCode": "PI-110",
+            "description": "Lenguado",
+            "quantity": "1.380",
+            "unit": "kg",
+            "unitPrice": "26.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "37.12"
+          },
+          {
+            "supplierCode": "PI-111",
+            "description": "Rodaballo",
+            "quantity": "2.640",
+            "unit": "kg",
+            "unitPrice": "21.75",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "57.42"
+          },
+          {
+            "supplierCode": "PI-112",
+            "description": "Sardina",
+            "quantity": "3.000",
+            "unit": "kg",
+            "unitPrice": "5.80",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "17.40"
+          },
+          {
+            "supplierCode": "PI-113",
+            "description": "Boquerón",
+            "quantity": "2.500",
+            "unit": "kg",
+            "unitPrice": "7.20",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "18.00"
+          },
+          {
+            "supplierCode": "PI-114",
+            "description": "Caballa",
+            "quantity": "2.200",
+            "unit": "kg",
+            "unitPrice": "6.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "14.08"
+          },
+          {
+            "supplierCode": "PI-115",
+            "description": "Jurel",
+            "quantity": "1.800",
+            "unit": "kg",
+            "unitPrice": "4.95",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "8.91"
+          },
+          {
+            "supplierCode": "PI-201",
+            "description": "Calamar limpio",
+            "quantity": "2.450",
+            "unit": "kg",
+            "unitPrice": "13.60",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "33.32"
+          },
+          {
+            "supplierCode": "PI-202",
+            "description": "Sepia limpia",
+            "quantity": "1.900",
+            "unit": "kg",
+            "unitPrice": "12.20",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "23.18"
+          },
+          {
+            "supplierCode": "PI-203",
+            "description": "Pulpo cocido",
+            "quantity": "2.300",
+            "unit": "kg",
+            "unitPrice": "27.50",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "63.25"
+          },
+          {
+            "supplierCode": "PI-204",
+            "description": "Chipirón",
+            "quantity": "1.250",
+            "unit": "kg",
+            "unitPrice": "17.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "22.38"
+          },
+          {
+            "supplierCode": "PI-301",
+            "description": "Gamba blanca",
+            "quantity": "1.000",
+            "unit": "kg",
+            "unitPrice": "32.00",
+            "discountPercent": "3",
+            "vatRate": "10",
+            "lineTotal": "31.04"
+          },
+          {
+            "supplierCode": "PI-302",
+            "description": "Langostino tigre",
+            "quantity": "2.000",
+            "unit": "kg",
+            "unitPrice": "23.40",
+            "discountPercent": "3",
+            "vatRate": "10",
+            "lineTotal": "45.40"
+          },
+          {
+            "supplierCode": "PI-303",
+            "description": "Cigala",
+            "quantity": "0.850",
+            "unit": "kg",
+            "unitPrice": "48.00",
+            "discountPercent": "3",
+            "vatRate": "10",
+            "lineTotal": "39.58"
+          },
+          {
+            "supplierCode": "PI-304",
+            "description": "Carabinero",
+            "quantity": "0.600",
+            "unit": "kg",
+            "unitPrice": "65.00",
+            "discountPercent": "3",
+            "vatRate": "10",
+            "lineTotal": "37.83"
+          },
+          {
+            "supplierCode": "PI-305",
+            "description": "Bogavante vivo",
+            "quantity": "1.400",
+            "unit": "kg",
+            "unitPrice": "39.50",
+            "discountPercent": "3",
+            "vatRate": "10",
+            "lineTotal": "53.64"
+          },
+          {
+            "supplierCode": "PI-306",
+            "description": "Mejillón gallego",
+            "quantity": "5.000",
+            "unit": "kg",
+            "unitPrice": "2.80",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "14.00"
+          },
+          {
+            "supplierCode": "PI-307",
+            "description": "Almeja fina",
+            "quantity": "1.500",
+            "unit": "kg",
+            "unitPrice": "24.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "37.35"
+          },
+          {
+            "supplierCode": "PI-308",
+            "description": "Berberecho",
+            "quantity": "1.000",
+            "unit": "kg",
+            "unitPrice": "14.50",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "14.50"
+          },
+          {
+            "supplierCode": "PI-309",
+            "description": "Navaja",
+            "quantity": "1.200",
+            "unit": "kg",
+            "unitPrice": "19.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "23.88"
+          },
+          {
+            "supplierCode": "PI-310",
+            "description": "Vieira con concha",
+            "quantity": "12",
+            "unit": "ud",
+            "unitPrice": "2.35",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "28.20"
+          },
+          {
+            "supplierCode": "PI-311",
+            "description": "Ostra n.º 3",
+            "quantity": "24",
+            "unit": "ud",
+            "unitPrice": "1.65",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "39.60"
+          },
+          {
+            "supplierCode": "PI-401",
+            "description": "Huevas de merluza",
+            "quantity": "0.900",
+            "unit": "kg",
+            "unitPrice": "9.80",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "8.82"
+          },
+          {
+            "supplierCode": "PI-402",
+            "description": "Anchoa en salazón, lata",
+            "quantity": "6",
+            "unit": "ud",
+            "unitPrice": "7.45",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "44.70"
+          },
+          {
+            "supplierCode": "PI-403",
+            "description": "Bacalao salado entero",
+            "quantity": "3.500",
+            "unit": "kg",
+            "unitPrice": "12.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "45.15"
+          },
+          {
+            "supplierCode": "PI-404",
+            "description": "Caldo de pescado 1 L",
+            "quantity": "8",
+            "unit": "ud",
+            "unitPrice": "3.10",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "24.80"
+          },
+          {
+            "supplierCode": "PI-405",
+            "description": "Fumet concentrado",
+            "quantity": "4",
+            "unit": "ud",
+            "unitPrice": "5.60",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "22.40"
+          },
+          {
+            "supplierCode": "PI-406",
+            "description": "Hielo en escamas, saco",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": "4.00",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "8.00"
+          },
+          {
+            "supplierCode": "PI-501",
+            "description": "Langostino congelado 2 kg",
+            "quantity": "2",
+            "unit": "caja",
+            "unitPrice": "18.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "37.80"
+          },
+          {
+            "supplierCode": "PI-502",
+            "description": "Calamar congelado en anillas",
+            "quantity": "3",
+            "unit": "bolsa",
+            "unitPrice": "6.75",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "20.25"
+          },
+          {
+            "supplierCode": "PI-503",
+            "description": "Filete de merluza congelado 5 kg",
+            "quantity": "1",
+            "unit": "caja",
+            "unitPrice": "37.50",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "37.50"
+          },
+          {
+            "supplierCode": "PI-504",
+            "description": "Gamba pelada congelada",
+            "quantity": "4",
+            "unit": "bolsa",
+            "unitPrice": "8.95",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "35.80"
+          },
+          {
+            "supplierCode": "PI-505",
+            "description": "Mejillón media concha",
+            "quantity": "2",
+            "unit": "bolsa",
+            "unitPrice": "5.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "10.80"
+          },
+          {
+            "supplierCode": "PI-506",
+            "description": "Pulpo congelado",
+            "quantity": "2.800",
+            "unit": "kg",
+            "unitPrice": "15.20",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "42.56"
+          },
+          {
+            "supplierCode": "PI-507",
+            "description": "Lomo de bacalao congelado",
+            "quantity": "2",
+            "unit": "caja",
+            "unitPrice": "44.00",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "88.00"
+          },
+          {
+            "supplierCode": "PI-508",
+            "description": "Sepia congelada",
+            "quantity": "1.600",
+            "unit": "kg",
+            "unitPrice": "8.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "13.44"
+          },
+          {
+            "supplierCode": "PI-509",
+            "description": "Cola de rape congelada",
+            "quantity": "2.100",
+            "unit": "kg",
+            "unitPrice": "16.80",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "35.28"
+          },
+          {
+            "supplierCode": "PI-510",
+            "description": "Surimi en barra",
+            "quantity": "5",
+            "unit": "ud",
+            "unitPrice": "2.25",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "11.25"
+          },
+          {
+            "supplierCode": "PI-511",
+            "description": "Palitos de mar",
+            "quantity": "3",
+            "unit": "ud",
+            "unitPrice": "1.95",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "5.85"
+          },
+          {
+            "supplierCode": "PI-512",
+            "description": "Salmón ahumado",
+            "quantity": "0.750",
+            "unit": "kg",
+            "unitPrice": "28.00",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "21.00"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-017-picture-from-004",
+      "sha256": "afefd98a0e0ac03c7c8b63f3045f60126f746ccec8feb8ec11dea7d7e9488b2b",
+      "route": "image",
+      "outcome": "silent-error",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [
+        "lines.2.vatRate",
+        "lines.3.vatRate"
+      ],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 4273,
+        "completionTokens": 2133,
+        "costMicroUsd": 1110,
+        "latencyMs": 22632,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "delivery-note",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Carnes Ficticias de Ejemplo S.L.",
+          "taxId": "B00777029"
+        },
+        "number": "AV-2026-2210",
+        "issueDate": "2026-10-16",
+        "totals": {
+          "net": "205.34",
+          "vat": [
+            {
+              "rate": "10",
+              "base": "205.34",
+              "amount": "20.53"
+            }
+          ],
+          "total": "225.87"
+        },
+        "lines": [
+          {
+            "supplierCode": "CF-101",
+            "description": "Solomillo de ternera",
+            "quantity": "2.350",
+            "unit": "kg",
+            "unitPrice": "32.90",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "77.32"
+          },
+          {
+            "supplierCode": "CF-205",
+            "description": "Pollo entero",
+            "quantity": "4.125",
+            "unit": "kg",
+            "unitPrice": "4.85",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "20.01"
+          },
+          {
+            "supplierCode": "CF-310",
+            "description": "Hamburguesa 180 g (caja 20 ud)",
+            "quantity": "3",
+            "unit": "caja",
+            "unitPrice": "27.60",
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": "82.80"
+          },
+          {
+            "supplierCode": "CF-412",
+            "description": "Chorizo para cocinar",
+            "quantity": "6",
+            "unit": "ud",
+            "unitPrice": "2.15",
+            "discountPercent": null,
+            "vatRate": null,
+            "lineTotal": "12.90"
+          },
+          {
+            "supplierCode": "CF-520",
+            "description": "Panceta curada",
+            "quantity": "1.080",
+            "unit": "kg",
+            "unitPrice": "11.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "12.31"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-018-picture-from-005",
+      "sha256": "df8c36503f0032c38332f3642db51b14718800e8d8162849aa0844131108614e",
+      "route": "image",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 4273,
+        "completionTokens": 496,
+        "costMicroUsd": 291,
+        "latencyMs": 5894,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Distribuciones Ficticias del Norte S.A.",
+          "taxId": "A00987651"
+        },
+        "number": "R-2026/00012",
+        "issueDate": "2026-10-20",
+        "totals": {
+          "net": "-48.36",
+          "vat": [
+            {
+              "rate": "10",
+              "base": "-36.58",
+              "amount": "-3.66"
+            },
+            {
+              "rate": "21",
+              "base": "-11.78",
+              "amount": "-2.47"
+            }
+          ],
+          "total": "-54.49"
+        },
+        "lines": [
+          {
+            "supplierCode": "DF-1001",
+            "description": "Aceite de oliva virgen extra 5 L",
+            "quantity": "-1",
+            "unit": "ud",
+            "unitPrice": "38.50",
+            "discountPercent": "5",
+            "vatRate": "10",
+            "lineTotal": "-36.58"
+          },
+          {
+            "supplierCode": "DF-8020",
+            "description": "Lavavajillas industrial 10 L",
+            "quantity": "-1",
+            "unit": "ud",
+            "unitPrice": "12.40",
+            "discountPercent": "5",
+            "vatRate": "21",
+            "lineTotal": "-11.78"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-019-picture-from-007",
+      "sha256": "f789a3bd9edcce976a2bec2277c3315c9af280a9d5ac5787ab647428b8aa04e1",
+      "route": "image",
+      "outcome": "correct",
+      "reviewBecause": null,
+      "validationFailures": [],
+      "differences": [],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 4273,
+        "completionTokens": 1689,
+        "costMicroUsd": 888,
+        "latencyMs": 16102,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Distribuciones Ficticias del Sur S.L.",
+          "taxId": "B00111229"
+        },
+        "number": "F-2026/00315",
+        "issueDate": "2026-10-14",
+        "totals": {
+          "net": "464.36",
+          "vat": [
+            {
+              "rate": "4",
+              "base": "202.16",
+              "amount": "8.09"
+            },
+            {
+              "rate": "10",
+              "base": "110.42",
+              "amount": "11.04"
+            },
+            {
+              "rate": "21",
+              "base": "151.78",
+              "amount": "31.87"
+            }
+          ],
+          "total": "515.36"
+        },
+        "lines": [
+          {
+            "supplierCode": "AC-0101",
+            "description": "Aceite de oliva virgen extra garrafa 5 l",
+            "quantity": "3",
+            "unit": "ud",
+            "unitPrice": "28.45",
+            "discountPercent": "5",
+            "vatRate": "4",
+            "lineTotal": "81.08"
+          },
+          {
+            "supplierCode": "HA-0210",
+            "description": "Harina de trigo T55 saco 25 kg",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": "14.90",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "29.80"
+          },
+          {
+            "supplierCode": "LE-0330",
+            "description": "Leche entera UHT",
+            "quantity": "24",
+            "unit": "l",
+            "unitPrice": "0.89",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "21.36"
+          },
+          {
+            "supplierCode": "HU-0412",
+            "description": "Huevos camperos L (estuche 30)",
+            "quantity": "4",
+            "unit": "caja",
+            "unitPrice": "7.85",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "31.40"
+          },
+          {
+            "supplierCode": "QU-0518",
+            "description": "Queso manchego curado",
+            "quantity": "2.350",
+            "unit": "kg",
+            "unitPrice": "16.90",
+            "discountPercent": "3",
+            "vatRate": "4",
+            "lineTotal": "38.52"
+          },
+          {
+            "supplierCode": "PO-0620",
+            "description": "Pechuga de pollo fileteada",
+            "quantity": "4.875",
+            "unit": "kg",
+            "unitPrice": "6.45",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "31.44"
+          },
+          {
+            "supplierCode": "PE-0733",
+            "description": "Lomo de salmón fresco",
+            "quantity": "3.120",
+            "unit": "kg",
+            "unitPrice": "18.75",
+            "discountPercent": "5",
+            "vatRate": "10",
+            "lineTotal": "55.58"
+          },
+          {
+            "supplierCode": "AG-0801",
+            "description": "Agua mineral 1,5 l (pack 6)",
+            "quantity": "10",
+            "unit": "pack",
+            "unitPrice": "2.34",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "23.40"
+          },
+          {
+            "supplierCode": "CE-0915",
+            "description": "Cerveza botellín 33 cl (caja 24)",
+            "quantity": "3",
+            "unit": "caja",
+            "unitPrice": "15.60",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "46.80"
+          },
+          {
+            "supplierCode": "LI-1002",
+            "description": "Lavavajillas máquina industrial 20 l",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": "31.60",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "63.20"
+          },
+          {
+            "supplierCode": "LI-1017",
+            "description": "Bolsas basura 100x120 (rollo 10)",
+            "quantity": "5",
+            "unit": "pack",
+            "unitPrice": "6.95",
+            "discountPercent": "10",
+            "vatRate": "21",
+            "lineTotal": "31.28"
+          },
+          {
+            "supplierCode": "LI-1023",
+            "description": "Bayeta microfibra 40x40",
+            "quantity": "12",
+            "unit": "ud",
+            "unitPrice": "0.875",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "10.50"
+          }
+        ]
+      }
+    },
+    {
+      "id": "syn-020-picture-from-008",
+      "sha256": "ff186561f1230c689d190132954cf2cdfe82866084f3998ac94d2021f0e23205",
+      "route": "pdf-pages",
+      "outcome": "review",
+      "reviewBecause": "validation",
+      "validationFailures": [
+        "line-total"
+      ],
+      "differences": [
+        "lines.9.quantity",
+        "lines.7: not found",
+        "result line 7: not in the gold answer"
+      ],
+      "record": {
+        "model": "openai/gpt-6-luna",
+        "promptVersion": "v1",
+        "attempts": 1,
+        "promptTokens": 12665,
+        "completionTokens": 3167,
+        "costMicroUsd": 1710,
+        "latencyMs": 27670,
+        "structuredOutputFailed": false
+      },
+      "failure": null,
+      "document": {
+        "documentType": "invoice",
+        "currency": "EUR",
+        "supplier": {
+          "name": "Antonio Inventado Ejemplo",
+          "taxId": "00012345V"
+        },
+        "number": "FV 487/26",
+        "issueDate": "2026-10-16",
+        "totals": {
+          "net": "366.79",
+          "vat": [
+            {
+              "rate": "4",
+              "base": "232.65",
+              "amount": "9.31"
+            },
+            {
+              "rate": "10",
+              "base": "74.59",
+              "amount": "7.46"
+            },
+            {
+              "rate": "21",
+              "base": "59.55",
+              "amount": "12.51"
+            }
+          ],
+          "total": "396.07"
+        },
+        "lines": [
+          {
+            "supplierCode": null,
+            "description": "Tomate pera",
+            "quantity": "6.420",
+            "unit": "kg",
+            "unitPrice": "1.85",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "11.88"
+          },
+          {
+            "supplierCode": null,
+            "description": "Tomate cherry rama",
+            "quantity": "2.150",
+            "unit": "kg",
+            "unitPrice": "4.20",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "9.03"
+          },
+          {
+            "supplierCode": null,
+            "description": "Lechuga romana",
+            "quantity": "12",
+            "unit": "ud",
+            "unitPrice": "0.75",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "9.00"
+          },
+          {
+            "supplierCode": null,
+            "description": "Cebolla dulce",
+            "quantity": "8.735",
+            "unit": "kg",
+            "unitPrice": "1.15",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "10.05"
+          },
+          {
+            "supplierCode": null,
+            "description": "Patata agria saco 15 kg",
+            "quantity": "2",
+            "unit": "bolsa",
+            "unitPrice": "11.40",
+            "discountPercent": "5",
+            "vatRate": "4",
+            "lineTotal": "21.66"
+          },
+          {
+            "supplierCode": null,
+            "description": "Pimiento rojo",
+            "quantity": "3.380",
+            "unit": "kg",
+            "unitPrice": "2.65",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "8.96"
+          },
+          {
+            "supplierCode": null,
+            "description": "Pimiento verde italiano",
+            "quantity": "2.960",
+            "unit": "kg",
+            "unitPrice": "2.35",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "6.96"
+          },
+          {
+            "supplierCode": null,
+            "description": "Calabacin",
+            "quantity": "4.105",
+            "unit": "kg",
+            "unitPrice": "1.55",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "6.36"
+          },
+          {
+            "supplierCode": null,
+            "description": "Berenjena",
+            "quantity": "2.840",
+            "unit": "kg",
+            "unitPrice": "1.95",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "5.54"
+          },
+          {
+            "supplierCode": null,
+            "description": "Aguacate Hass",
+            "quantity": "4.2",
+            "unit": "kg",
+            "unitPrice": "4.90",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "24.50"
+          },
+          {
+            "supplierCode": null,
+            "description": "Limón",
+            "quantity": "3.250",
+            "unit": "kg",
+            "unitPrice": "1.70",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "5.53"
+          },
+          {
+            "supplierCode": null,
+            "description": "Naranja zumo malla 10 kg",
+            "quantity": "3",
+            "unit": "bolsa",
+            "unitPrice": "8.90",
+            "discountPercent": "3",
+            "vatRate": "4",
+            "lineTotal": "25.90"
+          },
+          {
+            "supplierCode": null,
+            "description": "Fresón caja 2 kg",
+            "quantity": "4",
+            "unit": "caja",
+            "unitPrice": "6.75",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "27.00"
+          },
+          {
+            "supplierCode": null,
+            "description": "Plátano de Canarias",
+            "quantity": "4.615",
+            "unit": "kg",
+            "unitPrice": "2.10",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "9.69"
+          },
+          {
+            "supplierCode": null,
+            "description": "Manzana golden",
+            "quantity": "3.070",
+            "unit": "kg",
+            "unitPrice": "1.95",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "5.99"
+          },
+          {
+            "supplierCode": null,
+            "description": "Ajo morado (malla 1 kg)",
+            "quantity": "2",
+            "unit": "bolsa",
+            "unitPrice": "5.80",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "11.60"
+          },
+          {
+            "supplierCode": null,
+            "description": "Perejil manojo",
+            "quantity": "10",
+            "unit": "ud",
+            "unitPrice": "0.45",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "4.50"
+          },
+          {
+            "supplierCode": null,
+            "description": "Cilantro manojo",
+            "quantity": "6",
+            "unit": "ud",
+            "unitPrice": "0.55",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "3.30"
+          },
+          {
+            "supplierCode": null,
+            "description": "Champiñón laminado bandeja 500 g",
+            "quantity": "8",
+            "unit": "ud",
+            "unitPrice": "1.625",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "13.00"
+          },
+          {
+            "supplierCode": null,
+            "description": "Setas de cardo",
+            "quantity": "1.245",
+            "unit": "kg",
+            "unitPrice": "9.80",
+            "discountPercent": null,
+            "vatRate": "4",
+            "lineTotal": "12.20"
+          },
+          {
+            "supplierCode": null,
+            "description": "Zumo de naranja natural 1 l",
+            "quantity": "6",
+            "unit": "botella",
+            "unitPrice": "2.95",
+            "discountPercent": "5",
+            "vatRate": "10",
+            "lineTotal": "16.82"
+          },
+          {
+            "supplierCode": null,
+            "description": "Aceitunas gordal (cubo 2 kg)",
+            "quantity": "2",
+            "unit": "ud",
+            "unitPrice": "13.50",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "27.00"
+          },
+          {
+            "supplierCode": null,
+            "description": "Almendra marcona tostada",
+            "quantity": "1.500",
+            "unit": "kg",
+            "unitPrice": "15.90",
+            "discountPercent": "10",
+            "vatRate": "10",
+            "lineTotal": "21.47"
+          },
+          {
+            "supplierCode": null,
+            "description": "Nueces peladas",
+            "quantity": "0.750",
+            "unit": "kg",
+            "unitPrice": "12.40",
+            "discountPercent": null,
+            "vatRate": "10",
+            "lineTotal": "9.30"
+          },
+          {
+            "supplierCode": null,
+            "description": "Carbón vegetal saco 10 kg",
+            "quantity": "3",
+            "unit": "bolsa",
+            "unitPrice": "9.45",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "28.35"
+          },
+          {
+            "supplierCode": null,
+            "description": "Bolsas papel kraft (pack 250)",
+            "quantity": "1",
+            "unit": "pack",
+            "unitPrice": "18.70",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "18.70"
+          },
+          {
+            "supplierCode": null,
+            "description": "Cajas plástico retornables",
+            "quantity": "10",
+            "unit": "ud",
+            "unitPrice": "1.25",
+            "discountPercent": null,
+            "vatRate": "21",
+            "lineTotal": "12.50"
+          }
+        ]
+      }
+    }
+  ],
+  "notRun": []
+}
