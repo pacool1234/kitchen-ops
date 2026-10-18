@@ -18,7 +18,9 @@ export const ResultsFile = z.object({
   date: z.iso.date(),
   set: z.enum(SET_NAMES),
   prompt: z.string(),
-  model: z.object({ id: z.string() }),
+  /** Files written before #68 have no run number: each was its combination's first run. */
+  run: z.number().int().positive().default(1),
+  model: z.object({ id: z.string(), temperature: z.number().optional() }),
   stoppedBecause: z.enum(["spending-cap", "unknown-cost"]).nullable(),
   summary: z.object({
     documents: z.number().int().nonnegative(),
@@ -104,6 +106,131 @@ export function failureModes(run: ResultsFile): FailureModes {
 const list = (counts: [string, number][]) =>
   counts.map(([name, n]) => `${name} ${n}`).join(", ");
 
+/** A count over several runs: the total, and the lowest and highest of a single run. */
+export interface Spread {
+  readonly total: { readonly part: number; readonly whole: number };
+  readonly lowest: number;
+  readonly highest: number;
+}
+
+/** One model, prompt and temperature, over all its runs given (#68). */
+export interface Combination {
+  readonly model: string;
+  readonly prompt: string;
+  /** null: no temperature was sent, so the provider's default applied. */
+  readonly temperature: number | null;
+  /** Run numbers, in the order given. */
+  readonly runs: readonly number[];
+  readonly silentErrors: Spread;
+  readonly review: Spread;
+  readonly correct: Spread;
+  readonly totalMicroUsd: number;
+  /** Documents whose outcome wasn't the same in every run, with how often each outcome came. */
+  readonly changed: readonly [string, [string, number][]][];
+}
+
+function spread(
+  runs: readonly ResultsFile[],
+  count: (run: ResultsFile) => number,
+): Spread {
+  const counts = runs.map(count);
+  return {
+    total: {
+      part: counts.reduce((sum, n) => sum + n, 0),
+      whole: runs.reduce((sum, run) => sum + run.summary.documents, 0),
+    },
+    lowest: Math.min(...counts),
+    highest: Math.max(...counts),
+  };
+}
+
+/** The runs grouped by model, prompt and temperature, in the order each combination first came. */
+export function acrossRuns(runs: readonly ResultsFile[]): Combination[] {
+  const groups = new Map<string, ResultsFile[]>();
+  for (const run of runs) {
+    const key = JSON.stringify([
+      run.model.id,
+      run.prompt,
+      run.model.temperature ?? null,
+    ]);
+    groups.set(key, [...(groups.get(key) ?? []), run]);
+  }
+  return [...groups.values()].map((group) => {
+    const [first] = group as [ResultsFile, ...ResultsFile[]];
+    const outcomes = new Map<string, string[]>();
+    for (const run of group) {
+      for (const document of run.documents) {
+        outcomes.set(document.id, [
+          ...(outcomes.get(document.id) ?? []),
+          document.outcome,
+        ]);
+      }
+    }
+    return {
+      model: first.model.id,
+      prompt: first.prompt,
+      temperature: first.model.temperature ?? null,
+      runs: group.map((run) => run.run),
+      silentErrors: spread(
+        group,
+        (run) => run.summary.outcomes["silent-error"],
+      ),
+      review: spread(group, (run) => run.summary.outcomes.review),
+      correct: spread(group, (run) => run.summary.outcomes.correct),
+      totalMicroUsd: group.reduce(
+        (sum, run) => sum + run.summary.cost.totalMicroUsd,
+        0,
+      ),
+      changed: [...outcomes]
+        .filter(([, seen]) => new Set(seen).size > 1)
+        .map(([id, seen]) => [id, counted(seen)]),
+    };
+  });
+}
+
+const temperatureText = (temperature: number | null | undefined) =>
+  temperature === null || temperature === undefined
+    ? "default"
+    : String(temperature);
+
+const spreadText = ({ total, lowest, highest }: Spread) =>
+  `${formatRatio(total)}, ${lowest}–${highest} per run`;
+
+function acrossRunsSection(runs: readonly ResultsFile[]): string[] {
+  const repeated = acrossRuns(runs).filter((c) => c.runs.length > 1);
+  if (repeated.length === 0) return [];
+  return [
+    "",
+    "## Across runs",
+    "",
+    "Each model, prompt and temperature with more than one run: the total over its runs, then the lowest and highest of a single run.",
+    "",
+    "| Model | Prompt | Temperature | Runs | Silent errors | Review | Correct | Total cost |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- |",
+    ...repeated.map(
+      (c) =>
+        `| ${[
+          c.model,
+          c.prompt,
+          temperatureText(c.temperature),
+          String(c.runs.length),
+          spreadText(c.silentErrors),
+          spreadText(c.review),
+          spreadText(c.correct),
+          formatUsd(c.totalMicroUsd),
+        ].join(" | ")} |`,
+    ),
+    ...repeated.flatMap((c) => [
+      "",
+      `### ${c.model}, prompt ${c.prompt}, temperature ${temperatureText(c.temperature)}`,
+      "",
+      ...(c.changed.length === 0
+        ? ["No document changed outcome between runs."]
+        : c.changed.map(([id, seen]) => `- ${id}: ${list(seen)}.`)),
+    ]),
+  ];
+}
+
 function row(run: ResultsFile): string {
   const { summary } = run;
   const total = run.documents.length + run.notRun.length;
@@ -119,6 +246,8 @@ function row(run: ResultsFile): string {
   return `| ${[
     run.model.id,
     run.prompt,
+    temperatureText(run.model.temperature),
+    String(run.run),
     `${run.documents.length} of ${total}${stopped}`,
     againstTarget(summary.silentErrorRate, TARGETS.silentErrors),
     againstTarget(summary.reviewRate, TARGETS.review),
@@ -155,9 +284,10 @@ export function comparisonMarkdown(runs: readonly ResultsFile[]): string {
     "",
     "Targets (spec section 5, provisional): silent errors below 1%, review below 20%. Money is in US dollars, as OpenRouter bills and the results files record it.",
     "",
-    "| Model | Prompt | Documents run | Silent errors | Review | Correct | Total cost | Cost per correct document |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- |",
+    "| Model | Prompt | Temperature | Run | Documents run | Silent errors | Review | Correct | Total cost | Cost per correct document |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ...runs.map(row),
+    ...acrossRunsSection(runs),
     "",
     "## Failure modes",
     "",
