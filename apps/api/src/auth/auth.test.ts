@@ -143,6 +143,7 @@ describe("roles per route", () => {
         email: `${role}@example.test`,
         name: `Test ${role}`,
         role,
+        locale: "es",
       });
     },
   );
