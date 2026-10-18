@@ -15,7 +15,6 @@ import { openApiRoutes, registerOpenApi } from "./contract";
 import { createDb } from "./db/client";
 import { registerErrors } from "./errors";
 import { healthRoutes } from "./health/routes";
-import { productRoutes } from "./products/routes";
 import { tagRequest } from "./sentry";
 
 export interface BuildAppOptions {
@@ -58,7 +57,6 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   app.register(openApiRoutes);
   app.register(healthRoutes, { version: config.APP_VERSION });
   app.register(meRoutes, { db });
-  app.register(productRoutes, { db });
   app.register(auditRoutes, { db });
   app.register(catalogueRoutes, { db });
 
