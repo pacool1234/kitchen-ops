@@ -175,7 +175,7 @@ exports[`the JSON Schema given to models for structured output > only changes on
               "type": "null",
             },
           ],
-          "description": "The supplier's name, as printed. null if not printed.",
+          "description": "The supplier's legal name, as printed with its tax ID: the company name or the person's full name, never a brand, logo or trade name. null if not printed.",
         },
         "taxId": {
           "anyOf": [

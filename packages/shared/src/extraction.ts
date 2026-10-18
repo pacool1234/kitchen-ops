@@ -93,7 +93,9 @@ export const ExtractedDocument = z.object({
   currency: z.literal("EUR").describe("Always EUR."),
   supplier: z
     .object({
-      name: text("The supplier's name, as printed."),
+      name: text(
+        "The supplier's legal name, as printed with its tax ID: the company name or the person's full name, never a brand, logo or trade name.",
+      ),
       taxId: z
         .string()
         .regex(
