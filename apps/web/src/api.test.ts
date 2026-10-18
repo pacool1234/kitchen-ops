@@ -52,7 +52,10 @@ describe("call: a contract endpoint, typed and validated (decision 0022)", () =>
 
   it("leaves out query values that are undefined", async () => {
     const calls = fakeFetch(200, { id: "1", name: "Tomato" });
-    await call(getThing, { params: { id: "1" }, query: {} });
+    await call(getThing, {
+      params: { id: "1" },
+      query: { include: undefined },
+    });
     expect(calls[0]!.url).toBe("/api/things/1");
   });
 
