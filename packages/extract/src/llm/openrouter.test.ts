@@ -187,6 +187,19 @@ describe("createOpenRouterClient: the provider's own error (#64)", () => {
     );
   });
 
+  it("raw JSON in another shape is used as it is", async () => {
+    expect(
+      await errorMessage(400, {
+        error: {
+          message: "Provider returned error",
+          metadata: { raw: '{"detail":"bad request"}' },
+        },
+      }),
+    ).toBe(
+      'OpenRouter answered 400: Provider returned error. The provider said: {"detail":"bad request"}',
+    );
+  });
+
   it("with no metadata, the message is OpenRouter's alone", async () => {
     expect(
       await errorMessage(429, {
