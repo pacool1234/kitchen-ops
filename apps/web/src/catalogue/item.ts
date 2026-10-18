@@ -8,7 +8,7 @@ import { useT, type MessageKey } from "../i18n";
 import { errorMessageKey } from "../i18n/errors";
 import { currentUser } from "../session";
 import { usePageTitle } from "../shell/title";
-import { useForm } from "./form";
+import { useForm, type FormOptions } from "./form";
 import { useUnsavedGuard } from "./unsaved";
 
 // One catalogue item's page (#89, decision 0027): a new one's form, an existing one's form, or,
@@ -35,6 +35,8 @@ export interface CatalogueItemOptions<
   empty: V;
   /** An item's form, from the item. */
   valuesOf: (item: Item) => V;
+  /** If the form's values aren't the API's body: how they become it, and extra checks. */
+  form?: FormOptions<V>;
   load: (id: string) => Promise<Item>;
   create: (data: z.output<S>) => Promise<Item>;
   save: (id: string, data: z.output<S> | { active: boolean }) => Promise<Item>;
@@ -63,7 +65,7 @@ export function useCatalogueItem<
     mayCall(options.update, currentUser.value?.role ?? null),
   );
 
-  const form = useForm(options.schema, options.empty);
+  const form = useForm(options.schema, options.empty, options.form);
   const guard = useUnsavedGuard(form.dirty);
   usePageTitle(() => item.value?.name);
 
