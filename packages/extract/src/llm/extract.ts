@@ -122,6 +122,9 @@ export async function extractDocument(
   const body = (messages: readonly unknown[]) => ({
     model: model.id,
     messages,
+    ...(model.temperature !== undefined
+      ? { temperature: model.temperature }
+      : {}),
     ...(model.structuredOutput
       ? {
           response_format: {
