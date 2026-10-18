@@ -1,3 +1,4 @@
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
   extractedDocumentJsonSchema,
@@ -268,6 +269,38 @@ describe("extractDocument: the request", () => {
     expect(body.messages[0]!.content).toContain(
       JSON.stringify(extractedDocumentJsonSchema()),
     );
+  });
+});
+
+describe("extractDocument: the temperature (#68)", () => {
+  it("a model with a temperature sends it, on every attempt, exactly as configured", async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.double({ min: 0, max: 2, noNaN: true }),
+        fc.constantFrom(structured, plain),
+        async (temperature, model) => {
+          const { client, requests } = fakeClient(
+            answer("not json"),
+            answer(JSON.stringify(valid)),
+          );
+          await extractDocument(
+            client,
+            request({ model: { ...model, temperature } }),
+            { now: clock() },
+          );
+          expect(requests).toHaveLength(2);
+          for (const body of requests) {
+            expect(body.temperature).toBe(temperature);
+          }
+        },
+      ),
+    );
+  });
+
+  it("a model without one sends none: the provider's default applies", async () => {
+    const { client, requests } = fakeClient(answer(JSON.stringify(valid)));
+    await extractDocument(client, request({ model: plain }), { now: clock() });
+    expect(requests[0]).not.toHaveProperty("temperature");
   });
 });
 

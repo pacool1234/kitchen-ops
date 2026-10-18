@@ -53,6 +53,23 @@ describe("loadModels: model IDs come from config/models.json, never from code", 
     ).toThrow("models.0.vision");
   });
 
+  it("a temperature is optional, from 0 to 2 (#68)", () => {
+    const models = (temperature: unknown) =>
+      fileWith(
+        JSON.stringify({
+          models: [
+            { id: "a/b", structuredOutput: true, vision: true, temperature },
+          ],
+        }),
+      );
+    expect(loadModels(models(0))[0]!.temperature).toBe(0);
+    expect(loadModels(models(2))[0]!.temperature).toBe(2);
+    expect(loadModels(models(0.7))[0]!.temperature).toBe(0.7);
+    expect(() => loadModels(models(-0.1))).toThrow("models.0.temperature");
+    expect(() => loadModels(models(2.1))).toThrow("models.0.temperature");
+    expect(() => loadModels(models("0"))).toThrow("models.0.temperature");
+  });
+
   it("rejects a model without an ID, or with an unknown key, naming the field", () => {
     expect(() =>
       loadModels(
