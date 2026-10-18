@@ -1,6 +1,6 @@
 # 0017. Default extraction model and prompt: GPT-6 Luna, prompt v1
 
-- Status: Accepted
+- Status: Superseded by 0018
 - Date: 2026-10-18
 
 ## Context
