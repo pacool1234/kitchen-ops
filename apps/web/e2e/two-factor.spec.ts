@@ -26,7 +26,7 @@ test("an owner without 2FA is sent to set it up, and gets in once it's on", asyn
 
   await page.getByLabel("Contraseña").fill(accounts.owner.password);
   await page.getByRole("button", { name: "Continuar" }).click();
-  const key = await page.locator("code.key").textContent();
+  const key = (await page.getByTestId("totp-key").textContent())?.trim();
   expect(key).toMatch(/^[A-Z2-7]+=*$/);
   await expectAccessible(page);
 
@@ -34,5 +34,5 @@ test("an owner without 2FA is sent to set it up, and gets in once it's on", asyn
   await page
     .getByRole("button", { name: "Activar la verificación", exact: true })
     .click();
-  await expect(page.getByRole("heading", { name: "Productos" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Inicio" })).toBeVisible();
 });

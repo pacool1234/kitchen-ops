@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { expectAccessible } from "./a11y.ts";
 import { accounts, signIn } from "./accounts.ts";
+import { signOut } from "./shell.ts";
 
 test("the sign-in page is accessible", async ({ page }) => {
   await page.goto("/login");
@@ -10,19 +11,18 @@ test("the sign-in page is accessible", async ({ page }) => {
   await expectAccessible(page);
 });
 
-test("a counter user signs in and reaches the product list", async ({
+test("a counter user signs in and reaches the home page, greeted by name", async ({
   page,
 }) => {
   await signIn(page, accounts.counter);
-  await expect(page.getByRole("heading", { name: "Productos" })).toBeVisible();
-  await expect(page.getByText("counter", { exact: false })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Inicio" })).toBeVisible();
+  await expect(page.getByText("Hola, Local counter")).toBeVisible();
   await expectAccessible(page);
 });
 
 test("an office user signs in too", async ({ page }) => {
   await signIn(page, accounts.office);
-  await expect(page.getByRole("heading", { name: "Productos" })).toBeVisible();
-  await expect(page.getByText("office", { exact: false })).toBeVisible();
+  await expect(page.getByText("Hola, Local office")).toBeVisible();
 });
 
 test("a wrong password stays on the sign-in page, with an error that is announced", async ({
@@ -40,8 +40,8 @@ test("signing out returns to the sign-in page, and the products are closed again
   page,
 }) => {
   await signIn(page, accounts.counter);
-  await expect(page.getByRole("heading", { name: "Productos" })).toBeVisible();
-  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await expect(page.getByRole("heading", { name: "Inicio" })).toBeVisible();
+  await signOut(page);
   await expect(
     page.getByRole("heading", { name: "Iniciar sesión" }),
   ).toBeVisible();
