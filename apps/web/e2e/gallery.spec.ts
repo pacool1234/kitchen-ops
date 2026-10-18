@@ -184,17 +184,27 @@ test("tabs move with the arrow keys, skipping a disabled one", async ({
   await expect(page.getByRole("tab", { name: "Proveedores" })).toBeFocused();
 });
 
-test("an error notice is shown and announced, and stays until it's closed", async ({
+test("an error notice stays until it's closed; a success notice goes by itself", async ({
   page,
 }) => {
+  // Time is the test's: ten seconds pass at once.
+  await page.clock.install();
   await openGallery(page);
   await page.getByRole("button", { name: "Aviso de error" }).click();
-  const notice = page.getByText("No se ha podido guardar el pedido", {
+  await page.getByRole("button", { name: "Aviso de éxito" }).click();
+  const error = page.getByText("No se ha podido guardar el pedido", {
     exact: true,
   });
-  await expect(notice.first()).toBeVisible();
+  const success = page.getByText("Pedido enviado", { exact: true });
+  await expect(error.first()).toBeVisible();
+  await expect(success.first()).toBeVisible();
+
+  await page.clock.fastForward(10_000);
+  await expect(success).toHaveCount(0);
+  await expect(error.first()).toBeVisible();
+
   await page.getByRole("button", { name: "Cerrar el aviso" }).click();
-  await expect(notice).toHaveCount(0);
+  await expect(error).toHaveCount(0);
 });
 
 test("the table sorts from its headers with the keyboard, and pages", async ({
