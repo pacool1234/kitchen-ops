@@ -10,3 +10,7 @@ coverage/
 .playwright-mcp/
 # Restore drills: a downloaded backup and the key that decrypts it (docs/runbooks/restore.md)
 .restore-drill/
+
+# Playwright: test results and reports (apps/web/e2e)
+test-results/
+playwright-report/
