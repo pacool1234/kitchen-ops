@@ -190,6 +190,47 @@ const subsetOfGold = fc
     fc.shuffledSubarray(documents, { minLength: documents.length }),
   );
 
+/** A client whose every call fails with `message`, as an OpenRouter error would. */
+function failingClient(message: string): OpenRouterClient {
+  return {
+    complete: async () => {
+      throw new Error(message);
+    },
+  };
+}
+
+const refused =
+  "OpenRouter answered 400: Provider returned error. Azure said: Schemas contains too many parameters";
+
+describe("runEval: why calls failed (#64)", () => {
+  it("a gold run keeps a failed call's message; documents that didn't fail keep none", async () => {
+    const [run] = await runEval(options({ client: failingClient(refused) }));
+    expect(
+      run!.documents.map((d) => [d.id, d.reviewBecause, d.failure]),
+    ).toEqual([
+      [textPdf.id, "failed", refused],
+      [facturae.id, null, null],
+    ]);
+  });
+
+  it("a successful call keeps no failure", async () => {
+    const [run] = await runEval(options({}));
+    expect(run!.documents.map((d) => d.failure)).toEqual([null, null]);
+  });
+
+  it("a private run keeps no failure message: a provider's error could quote the document", async () => {
+    const [run] = await runEval(
+      options({
+        set: { ...fixtures, name: "private", source: "client" },
+        client: failingClient(refused),
+      }),
+    );
+    expect(run!.documents[0]!.reviewBecause).toBe("failed");
+    expect(run!.documents.map((d) => d.failure)).toEqual([null, null]);
+    expect(JSON.stringify(run)).not.toContain("Schemas contains");
+  });
+});
+
 describe("runEval: properties", () => {
   it("any gold documents, read perfectly, are all correct, with cost the sum of the calls", async () => {
     await fc.assert(
