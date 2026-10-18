@@ -204,6 +204,22 @@ describe("evalCommand: repeat runs, each in its own files (#68)", () => {
     ).toBe("old");
   });
 
+  it("a file that appears while the run is going, say from another eval, isn't overwritten either", async () => {
+    const d = deps();
+    const md = join(d.results, "2026-10-18-vendor-model-a-v1.md");
+    const { client } = fakeClient();
+    const racing: OpenRouterClient = {
+      complete: async (body) => {
+        writeFileSync(md, "the other run's");
+        return client.complete(body);
+      },
+    };
+    await expect(evalCommand(args(), { ...d, client: racing })).rejects.toThrow(
+      "EEXIST",
+    );
+    expect(readFileSync(md, "utf8")).toBe("the other run's");
+  });
+
   it("each model is numbered on its own", async () => {
     const d = deps();
     await evalCommand(args(), d);
