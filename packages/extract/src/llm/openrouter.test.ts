@@ -240,7 +240,7 @@ describe("createOpenRouterClient: the provider's own error (#64)", () => {
     );
   });
 
-  it("is at most 500 characters, ending with an ellipsis when cut", async () => {
+  it("is at most 500 characters, whatever the provider sent", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc
@@ -251,7 +251,27 @@ describe("createOpenRouterClient: the provider's own error (#64)", () => {
             error: { message: "Provider returned error", metadata: { raw } },
           });
           expect(message.length).toBeLessThanOrEqual(500);
-          if (message.length === 500) expect(message.endsWith("…")).toBe(true);
+        },
+      ),
+    );
+  });
+
+  // With no whitespace to collapse, the whole message's length is known. (A message of exactly
+  // 500 characters isn't always a cut one: collapsing whitespace can shorten it to 500.)
+  it("comes through whole up to 500 characters; past that, cut to 499 and an ellipsis", async () => {
+    const start =
+      "OpenRouter answered 400: Provider returned error. The provider said: ";
+    await fc.assert(
+      fc.asyncProperty(
+        fc.integer({ min: 1, max: 1000 }).map((n) => "x".repeat(n)),
+        async (raw) => {
+          const message = await errorMessage(400, {
+            error: { message: "Provider returned error", metadata: { raw } },
+          });
+          const whole = `${start}${raw}`;
+          expect(message).toBe(
+            whole.length <= 500 ? whole : `${whole.slice(0, 499)}…`,
+          );
         },
       ),
     );
