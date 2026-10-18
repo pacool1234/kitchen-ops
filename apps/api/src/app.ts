@@ -9,6 +9,7 @@ import { createAuth } from "./auth/auth";
 import { registerAuth } from "./auth/fastify";
 import { meRoutes } from "./auth/routes";
 import type { Config } from "./config";
+import { openApiRoutes, registerOpenApi } from "./contract";
 import { createDb } from "./db/client";
 import { healthRoutes } from "./health/routes";
 import { productRoutes } from "./products/routes";
@@ -46,7 +47,10 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   const { db, close } = createDb(config.DATABASE_URL);
   app.addHook("onClose", close);
 
+  // Before the routes: it builds the OpenAPI document from each route as it is registered.
+  registerOpenApi(app);
   registerAuth(app, createAuth(db, config));
+  app.register(openApiRoutes);
   app.register(healthRoutes, { version: config.APP_VERSION });
   app.register(meRoutes);
   app.register(productRoutes, { db });

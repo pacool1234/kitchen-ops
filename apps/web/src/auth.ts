@@ -1,7 +1,7 @@
-import { MeResponse } from "@kitchen-ops/shared";
+import { endpoints, type MeResponse } from "@kitchen-ops/shared";
 import { twoFactorClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/vue";
-import { ApiError, apiGet } from "./api";
+import { ApiError, call } from "./api";
 
 /** Better Auth's browser client: sign-in, the TOTP step, 2FA setup, sign-out (/api/auth/*). */
 export const authClient = createAuthClient({
@@ -20,7 +20,7 @@ export async function whoAmI(): Promise<
   Me | "signed-out" | "two-factor-required"
 > {
   try {
-    return await apiGet("/api/me", MeResponse);
+    return await call(endpoints.me);
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) return "signed-out";
     if (error instanceof ApiError && error.code === "two_factor_required") {

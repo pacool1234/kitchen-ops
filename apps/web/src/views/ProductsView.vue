@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { MeResponse, type Product, ProductList } from "@kitchen-ops/shared";
+import { endpoints, type Product } from "@kitchen-ops/shared";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { apiGet } from "../api";
+import { call } from "../api";
 import { authClient, type Me } from "../auth";
 
 const router = useRouter();
@@ -20,8 +20,8 @@ const unitLabel: Record<Product["baseUnit"], string> = {
 onMounted(async () => {
   try {
     const [user, list] = await Promise.all([
-      apiGet("/api/me", MeResponse),
-      apiGet("/api/products", ProductList),
+      call(endpoints.me),
+      call(endpoints.listProducts),
     ]);
     me.value = user;
     products.value = list.products;

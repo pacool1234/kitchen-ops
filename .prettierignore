@@ -4,3 +4,5 @@ pnpm-lock.yaml
 eval/results/
 # Hand-written docs, spec and decision records keep their own formatting.
 *.md
+# Written by `pnpm --filter @kitchen-ops/api openapi:write`, never by hand.
+apps/api/openapi.json
