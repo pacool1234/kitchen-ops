@@ -1,15 +1,17 @@
 import {
   endpoints,
   MeResponse,
+  Product,
   Storeroom,
   Supplier,
+  SupplierProduct,
 } from "@kitchen-ops/shared";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../app";
 import { createAuth } from "../auth/auth";
 import { createDb } from "../db/client";
-import { auditLog, storerooms, suppliers, users } from "../db/schema";
+import { auditLog, products, storerooms, suppliers, users } from "../db/schema";
 import { signedInAs } from "../test/auth";
 import { syntheticCif } from "../test/catalogue";
 import { testConfig } from "../test/helpers";
@@ -28,7 +30,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await db.execute(
-    sql`truncate ${users}, ${storerooms}, ${suppliers}, verifications cascade`,
+    sql`truncate ${users}, ${products}, ${storerooms}, ${suppliers}, verifications cascade`,
   );
 });
 
@@ -251,7 +253,215 @@ const WRITE_CASES: Record<string, () => Promise<void>> = {
     expect((await update({ taxId: syntheticCif(1) })).statusCode).toBe(409);
     expect(await updatesOf("supplier", huerto.id)).toHaveLength(1);
   },
+
+  async createProduct() {
+    const office = await officeUser();
+    const create = (body: object) => office.send("POST", "/api/products", body);
+
+    const response = await create(TOMATE);
+    expect(response.statusCode).toBe(201);
+    const tomate = Product.parse(response.json());
+    expect(await entriesFor("product", tomate.id)).toEqual([
+      expect.objectContaining({
+        userId: office.id,
+        action: "create",
+        requestId: response.headers["x-request-id"],
+        changes: {
+          id: { before: null, after: tomate.id },
+          name: { before: null, after: "Tomate pera" },
+          baseUnit: { before: null, after: "g" },
+          category: { before: null, after: "produce" },
+          active: { before: null, after: true },
+          conversions: {
+            before: null,
+            after: [
+              { unit: "kg", factor: 1000 },
+              { unit: "caja", factor: 6000 },
+            ],
+          },
+        },
+      }),
+    ]);
+
+    expect(
+      (
+        await create({
+          ...TOMATE,
+          name: "Otro",
+          conversions: [{ unit: "g", factor: 1 }],
+        })
+      ).statusCode,
+    ).toBe(400);
+    expect((await create({ ...TOMATE, name: "tomate pera" })).statusCode).toBe(
+      409,
+    );
+    expect(await allEntries("product")).toHaveLength(1);
+  },
+
+  async updateProduct() {
+    const office = await officeUser();
+    const tomate = Product.parse(
+      (await office.send("POST", "/api/products", TOMATE)).json(),
+    );
+    const update = (body: object) =>
+      office.send("PATCH", `/api/products/${tomate.id}`, body);
+
+    const response = await update({
+      category: "produce",
+      conversions: [
+        { unit: "caja", factor: 5000 },
+        { unit: "kg", factor: 1000 },
+      ],
+    });
+    expect(response.statusCode).toBe(200);
+    expect(await updatesOf("product", tomate.id)).toEqual([
+      expect.objectContaining({
+        userId: office.id,
+        requestId: response.headers["x-request-id"],
+        // The conversions as a whole, before and after; the category didn't change.
+        changes: {
+          conversions: {
+            before: [
+              { unit: "kg", factor: 1000 },
+              { unit: "caja", factor: 6000 },
+            ],
+            after: [
+              { unit: "kg", factor: 1000 },
+              { unit: "caja", factor: 5000 },
+            ],
+          },
+        },
+      }),
+    ]);
+
+    // The same list in another order changes nothing; refused changes record nothing.
+    expect(
+      (
+        await update({
+          conversions: [
+            { unit: "kg", factor: 1000 },
+            { unit: "caja", factor: 5000 },
+          ],
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect((await update({ baseUnit: "ml" })).statusCode).toBe(400);
+    expect(
+      (await update({ conversions: [{ unit: "G", factor: 1 }] })).statusCode,
+    ).toBe(400);
+    expect(await updatesOf("product", tomate.id)).toHaveLength(1);
+  },
+
+  async createSupplierProduct() {
+    const office = await officeUser();
+    const { supplier, product } = await supplierAndProduct(office);
+    const create = (body: object) =>
+      office.send("POST", "/api/supplier-products", {
+        supplierId: supplier.id,
+        code: "TOM-6",
+        description: "Tomate pera, caja de 6 kg",
+        productId: product.id,
+        pack: { quantity: "6", unit: "kg" },
+        ...body,
+      });
+
+    const response = await create({});
+    expect(response.statusCode).toBe(201);
+    const offer = SupplierProduct.parse(response.json());
+    expect(await entriesFor("supplier_product", offer.id)).toEqual([
+      expect.objectContaining({
+        userId: office.id,
+        action: "create",
+        requestId: response.headers["x-request-id"],
+        changes: {
+          id: { before: null, after: offer.id },
+          supplierId: { before: null, after: supplier.id },
+          code: { before: null, after: "TOM-6" },
+          description: { before: null, after: "Tomate pera, caja de 6 kg" },
+          productId: { before: null, after: product.id },
+          pack: { before: null, after: { quantity: "6", unit: "kg" } },
+          active: { before: null, after: true },
+        },
+      }),
+    ]);
+
+    expect(
+      (await create({ code: "X", pack: { quantity: "6", unit: "lata" } }))
+        .statusCode,
+    ).toBe(400);
+    expect((await create({})).statusCode).toBe(409);
+    expect(await allEntries("supplier_product")).toHaveLength(1);
+  },
+
+  async updateSupplierProduct() {
+    const office = await officeUser();
+    const { supplier, product } = await supplierAndProduct(office);
+    const offer = SupplierProduct.parse(
+      (
+        await office.send("POST", "/api/supplier-products", {
+          supplierId: supplier.id,
+          code: "TOM-6",
+          description: "Tomate pera, caja de 6 kg",
+          productId: product.id,
+          pack: { quantity: "6", unit: "kg" },
+        })
+      ).json(),
+    );
+    const update = (body: object) =>
+      office.send("PATCH", `/api/supplier-products/${offer.id}`, body);
+
+    const response = await update({ pack: { quantity: "1", unit: "caja" } });
+    expect(response.statusCode).toBe(200);
+    expect(await updatesOf("supplier_product", offer.id)).toEqual([
+      expect.objectContaining({
+        userId: office.id,
+        requestId: response.headers["x-request-id"],
+        changes: {
+          pack: {
+            before: { quantity: "6", unit: "kg" },
+            after: { quantity: "1", unit: "caja" },
+          },
+        },
+      }),
+    ]);
+
+    expect(
+      (await update({ pack: { quantity: "1.000", unit: "caja" } })).statusCode,
+    ).toBe(200);
+    expect(
+      (await update({ pack: { quantity: "0.0001", unit: "kg" } })).statusCode,
+    ).toBe(400);
+    expect(await updatesOf("supplier_product", offer.id)).toHaveLength(1);
+  },
 };
+
+const TOMATE = {
+  name: "Tomate pera",
+  baseUnit: "g",
+  category: "produce",
+  conversions: [
+    { unit: "caja", factor: 6000 },
+    { unit: "kg", factor: 1000 },
+  ],
+};
+
+/** A supplier and a product to make a supplier product of, created as the office user. */
+async function supplierAndProduct(
+  office: Awaited<ReturnType<typeof officeUser>>,
+) {
+  const supplier = Supplier.parse(
+    (
+      await office.send("POST", "/api/suppliers", {
+        name: "Huerto",
+        taxId: syntheticCif(1),
+      })
+    ).json(),
+  );
+  const product = Product.parse(
+    (await office.send("POST", "/api/products", TOMATE)).json(),
+  );
+  return { supplier, product };
+}
 
 describe("every write is in the audit log (#87)", () => {
   it("every write endpoint in the contract has an audit case here", () => {

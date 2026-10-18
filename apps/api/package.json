@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@fastify/swagger": "^9.9.2",
+    "@kitchen-ops/ledger": "workspace:*",
     "@kitchen-ops/shared": "workspace:*",
     "@sentry/node": "^11.8.0",
     "better-auth": "catalog:",

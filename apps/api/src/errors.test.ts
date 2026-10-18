@@ -52,6 +52,16 @@ app.get("/duplicate/:constraint", async (request) => {
     }),
   });
 });
+// And when a row refers to one that doesn't exist.
+app.get("/dangling/:constraint", async (request) => {
+  const { constraint } = request.params as { constraint: string };
+  throw new Error("Failed query: insert into …", {
+    cause: Object.assign(new Error("violates foreign key constraint"), {
+      code: "23503",
+      constraint,
+    }),
+  });
+});
 app.get("/broken", async () => {
   throw new Error("something unexpected");
 });
@@ -141,6 +151,18 @@ describe("other refusals", () => {
     });
     expect(response.statusCode).toBe(409);
     expect(response.json()).toEqual({ error: "conflict" });
+  });
+
+  it("a reference to a row that doesn't exist: 400, naming the field with not_found", async () => {
+    const response = await app.inject({
+      method: "GET",
+      url: "/dangling/supplier_products_product_id_products_id_fk",
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      error: "invalid_input",
+      fields: { productId: "not_found" },
+    });
   });
 
   it("anything unexpected is still a 500, as before: a bug, for Sentry and the logs", async () => {

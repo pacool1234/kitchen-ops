@@ -9,7 +9,13 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../app";
 import { createAuth } from "../auth/auth";
 import { createDb } from "../db/client";
-import { storerooms, suppliers, users } from "../db/schema";
+import {
+  products,
+  storerooms,
+  supplierProducts,
+  suppliers,
+  users,
+} from "../db/schema";
 import { signedInAs, signedInAsOwner } from "../test/auth";
 import { syntheticCif } from "../test/catalogue";
 import { testConfig } from "../test/helpers";
@@ -27,11 +33,18 @@ afterAll(async () => {
   await close();
 });
 
-const CATALOGUE_PATHS = ["/api/storerooms", "/api/suppliers"];
+const CATALOGUE_PATHS = [
+  "/api/storerooms",
+  "/api/suppliers",
+  "/api/products",
+  "/api/supplier-products",
+];
 
 interface Ids {
   storeroom: string;
   supplier: string;
+  product: string;
+  supplierProduct: string;
 }
 
 // Each call needs its own name and tax ID, so a write by one role can't clash with another's.
@@ -59,6 +72,30 @@ const REQUESTS: Record<
     params: { id: ids.supplier },
     body: { taxId: syntheticCif(next()) },
   }),
+  listProducts: () => ({}),
+  getProduct: (ids) => ({ params: { id: ids.product } }),
+  createProduct: () => ({
+    body: { name: `Producto ${next()}`, baseUnit: "g", category: "other" },
+  }),
+  updateProduct: (ids) => ({
+    params: { id: ids.product },
+    body: { name: `Producto ${next()}` },
+  }),
+  listSupplierProducts: () => ({}),
+  getSupplierProduct: (ids) => ({ params: { id: ids.supplierProduct } }),
+  createSupplierProduct: (ids) => ({
+    body: {
+      supplierId: ids.supplier,
+      code: `C${next()}`,
+      description: "Tomate, kilo",
+      productId: ids.product,
+      pack: { quantity: "1", unit: "g" },
+    },
+  }),
+  updateSupplierProduct: (ids) => ({
+    params: { id: ids.supplierProduct },
+    body: { code: `C${next()}` },
+  }),
 };
 
 const catalogue = Object.entries(endpoints as Record<string, Endpoint>).filter(
@@ -78,7 +115,7 @@ const cookies: Partial<Record<Role, string>> = {};
 let ids: Ids;
 beforeAll(async () => {
   await db.execute(
-    sql`truncate ${users}, ${storerooms}, ${suppliers}, verifications cascade`,
+    sql`truncate ${users}, ${products}, ${storerooms}, ${suppliers}, verifications cascade`,
   );
   cookies.counter = await signedInAs(app, auth, "counter");
   cookies.office = await signedInAs(app, auth, "office");
@@ -91,7 +128,27 @@ beforeAll(async () => {
     .insert(suppliers)
     .values({ name: "Frutas del Huerto, S.L.", taxId: syntheticCif(0) })
     .returning();
-  ids = { storeroom: storeroom!.id, supplier: supplier!.id };
+  const [product] = await db
+    .insert(products)
+    .values({ name: "Tomate", baseUnit: "g", category: "produce" })
+    .returning();
+  const [supplierProduct] = await db
+    .insert(supplierProducts)
+    .values({
+      supplierId: supplier!.id,
+      code: "TOM",
+      description: "Tomate, gramo",
+      productId: product!.id,
+      packQuantity: "1",
+      packUnit: "g",
+    })
+    .returning();
+  ids = {
+    storeroom: storeroom!.id,
+    supplier: supplier!.id,
+    product: product!.id,
+    supplierProduct: supplierProduct!.id,
+  };
 });
 
 describe("who may call each catalogue route (#88)", () => {
