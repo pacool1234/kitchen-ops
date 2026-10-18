@@ -1,21 +1,18 @@
 <script setup lang="ts">
-import { endpoints, Locale, type Product } from "@kitchen-ops/shared";
-import { computed, onMounted, ref } from "vue";
-import { useI18n } from "vue-i18n";
+import { endpoints, type Product } from "@kitchen-ops/shared";
+import { computed, onMounted, ref, watch } from "vue";
 import { ApiError, call } from "../api";
 import UiDataTable, { type Column } from "../components/ui/UiDataTable.vue";
-import { pageRows, sortRows, type Sort } from "../components/ui/table";
 import { useT, type MessageKey } from "../i18n";
 import { errorMessageKey } from "../i18n/errors";
 
-// The active products and the unit each is counted in. The list comes whole and is sorted
-// and paged here; the catalogue (#89) will ask the API for one page at a time.
+// The active products and the unit each is counted in, a page at a time from the API, in
+// Spanish order. The catalogue's screens (#89) will add search, filters and editing.
 const t = useT();
-const { locale } = useI18n();
 const products = ref<Product[]>([]);
+const total = ref(0);
 const loading = ref(true);
 const error = ref<MessageKey>();
-const sort = ref<Sort | null>({ key: "name", direction: "asc" });
 const page = ref(1);
 const PAGE_SIZE = 20;
 
@@ -23,7 +20,11 @@ async function load() {
   loading.value = true;
   error.value = undefined;
   try {
-    products.value = (await call(endpoints.listProducts)).products;
+    const result = await call(endpoints.listProducts, {
+      query: { page: page.value, pageSize: PAGE_SIZE },
+    });
+    products.value = result.items;
+    total.value = result.total;
   } catch (caught) {
     // The API's answer if it gave one, else most likely the connection.
     error.value =
@@ -35,44 +36,30 @@ async function load() {
   }
 }
 onMounted(load);
+watch(page, load);
 
 const columns = computed<Column<Product>[]>(() => [
   {
     key: "name",
     label: t("products.name"),
-    sortable: true,
     value: (p) => p.name,
   },
   {
     key: "baseUnit",
     label: t("products.baseUnit"),
-    sortable: true,
     value: (p) => t(`units.${p.baseUnit}`),
   },
 ]);
-const rows = computed(() =>
-  pageRows(
-    sortRows(
-      products.value,
-      sort.value,
-      columns.value,
-      Locale.parse(locale.value),
-    ),
-    page.value,
-    PAGE_SIZE,
-  ),
-);
 </script>
 
 <template>
   <UiDataTable
-    v-model:sort="sort"
     v-model:page="page"
     :caption="t('products.caption')"
     :columns="columns"
-    :rows="rows"
+    :rows="products"
     :row-key="(p) => p.id"
-    :total="products.length"
+    :total="total"
     :page-size="PAGE_SIZE"
     :loading="loading"
     :error="error && t(error)"
