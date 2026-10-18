@@ -7,7 +7,7 @@
 ```
 apps/web (Vue 3 PWA) ──► apps/api (Fastify on Render) ──► Render Postgres (EU, PITR)
                                    │
-                                   ├╌╌ packages/ledger    not yet: the API doesn't post movements
+                                   ├──► packages/ledger   converts the catalogue's packs; doesn't post movements yet
                                    └╌╌ packages/extract   not yet: the API doesn't extract documents
 
 packages/extract ──► packages/ledger (line totals, unit costs: decision 0016)
@@ -16,19 +16,19 @@ packages/extract ──► packages/ledger (line totals, unit costs: decision 00
 ops/backup (Render cron, weekly) ──► Scaleway Object Storage (encrypted DB dumps)
 ```
 
-The plan's other arrows aren't built yet: the API calling `ledger` and `extract`, and photos and PDFs in object storage. The ledger and the extraction pipeline are complete libraries, used by their tests and by the eval command.
+The plan's other arrows aren't built yet: the API posting through `ledger` and calling `extract`, and photos and PDFs in object storage. The ledger and the extraction pipeline are complete libraries, used by their tests and by the eval command.
 
 ## Apps and packages
 
 | Part | What it does today | Depends on | Not yet |
 | --- | --- | --- | --- |
-| `apps/web` | Sign-in, owner 2FA setup, a home page, and the list of active products, in a frame with navigation by role (a sidebar on desktops, a bottom bar on phones), a user menu, page titles and breadcrumbs, in Spanish by default or English, chosen per user (decision 0023). Calls the API through the contract (decision 0022). A design system of tokens and components on Reka UI and Tailwind, light and dark, with a component gallery in development builds (decision 0024). Installable PWA; the service worker caches the app, never `/api`. | `shared` | Documents, review, counts, stock and reports |
-| `apps/api` | `GET /health`, Better Auth under `/api/auth/*` with roles and owner 2FA, `GET /api/me`, `PATCH /api/me` (the user's language), `GET /api/products`, the owner's `GET /api/audit-log`, and its OpenAPI document at `GET /api/openapi.json`. The catalogue's storerooms and suppliers: listed (searched ignoring case and accents, filtered, a page at a time), read, created and updated by office and owner, with suppliers' tax IDs checked (decision 0026). Every refusal answers a code, and one per field for invalid input. Every write goes through `audited()`, which records it in the append-only `audit_log` in the same transaction (decision 0025). Tables: `products`, `storerooms`, `suppliers`, `audit_log` and the auth tables, whose `users` hold each user's role and language (`apps/api/src/db/schema.ts`). | `shared` | Products' categories and unit conversions, supplier products (#88, next), documents, movements, stock: anything that uses `ledger` or `extract` |
+| `apps/web` | Sign-in, owner 2FA setup, a home page, and the list of active products (a page at a time from the API), in a frame with navigation by role (a sidebar on desktops, a bottom bar on phones), a user menu, page titles and breadcrumbs, in Spanish by default or English, chosen per user (decision 0023). Calls the API through the contract (decision 0022). A design system of tokens and components on Reka UI and Tailwind, light and dark, with a component gallery in development builds (decision 0024). Installable PWA; the service worker caches the app, never `/api`. | `shared` | Documents, review, counts, stock and reports |
+| `apps/api` | `GET /health`, Better Auth under `/api/auth/*` with roles and owner 2FA, `GET /api/me`, `PATCH /api/me` (the user's language), the owner's `GET /api/audit-log`, and its OpenAPI document at `GET /api/openapi.json`. The catalogue: storerooms, suppliers (their tax IDs checked), products with their category, default storeroom and unit conversions, and supplier products with their packs, converted to base units by `ledger`. Each is listed (searched ignoring case and accents, filtered, a page at a time), read, created and updated by office and owner (decision 0026). Every refusal answers a code, and one per field for invalid input. Every write goes through `audited()`, which records it in the append-only `audit_log` in the same transaction (decision 0025). Tables: `storerooms`, `suppliers`, `products`, `unit_conversions`, `supplier_products`, `audit_log` and the auth tables, whose `users` hold each user's role and language (`apps/api/src/db/schema.ts`). | `shared`, `ledger` | Documents, movements, stock: posting through `ledger`, anything that uses `extract` |
 | `packages/ledger` | Movements, unit conversions, posting and reversing documents, weighted-average cost, latest purchase price, yields, variance. Pure: no I/O, no runtime dependencies. | nothing | Nothing stores its results yet |
 | `packages/extract` | Routing, LLM extraction, validation, and the eval harness, with the gold set's tooling. | `ledger`, `shared` | A public API: `src/index.ts` exports nothing yet |
 | `packages/shared` | Zod schemas shared by web, API and extract: auth, health, products, storerooms, suppliers, lists, errors, the languages, the Spanish tax ID check, and the extraction schema sent to models. The API contract: every endpoint, declared once (decision 0022). | nothing | |
 
-The dependency rules (spec section 2, decision 0016) are enforced by lint, and the code keeps them: `api` and `web` import only `shared` so far.
+The dependency rules (spec section 2, decision 0016) are enforced by lint, and the code keeps them: `web` imports only `shared`, and `api` imports `shared` and `ledger`.
 
 ## The extraction pipeline
 
