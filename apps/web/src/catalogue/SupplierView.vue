@@ -17,6 +17,7 @@ import { useT } from "../i18n";
 import { fieldMessageKey } from "../i18n/errors";
 import DeactivateDialog from "./DeactivateDialog.vue";
 import { useCatalogueItem } from "./item";
+import SupplierProductsSection from "./SupplierProductsSection.vue";
 import UnsavedDialog from "./UnsavedDialog.vue";
 
 // A supplier's page (#89): a new one's form, an existing one's form for office and owner, or its
@@ -95,95 +96,99 @@ const details = computed(() =>
 <template>
   <UiLoadingState v-if="loading" />
   <UiErrorState v-else-if="loadError" :message="t(loadError)" />
-  <div v-else class="flex max-w-2xl flex-col gap-6">
-    <div v-if="item && !item.active" class="flex items-center gap-3">
-      <UiBadge tone="warning">{{ t("catalogue.inactive") }}</UiBadge>
-      <UiButton
+  <div v-else class="flex flex-col gap-8">
+    <div class="flex max-w-2xl flex-col gap-6">
+      <div v-if="item && !item.active" class="flex items-center gap-3">
+        <UiBadge tone="warning">{{ t("catalogue.inactive") }}</UiBadge>
+        <UiButton
+          v-if="canWrite"
+          variant="secondary"
+          size="sm"
+          :loading="working"
+          @click="page.setActive(true)"
+        >
+          {{ t("catalogue.reactivate") }}
+        </UiButton>
+      </div>
+
+      <form
         v-if="canWrite"
-        variant="secondary"
-        size="sm"
-        :loading="working"
-        @click="page.setActive(true)"
+        novalidate
+        class="flex flex-col gap-4"
+        @submit.prevent="page.save"
       >
-        {{ t("catalogue.reactivate") }}
-      </UiButton>
+        <UiTextField
+          v-model="values.name"
+          :label="t('suppliers.name')"
+          :error="message('name')"
+          autocomplete="organization"
+          @blur="touch('name')"
+        />
+        <UiTextField
+          v-model="values.taxId"
+          :label="t('suppliers.taxId')"
+          :hint="taxIdHint"
+          :error="message('taxId')"
+          autocomplete="off"
+          spellcheck="false"
+          @input="onTaxIdInput"
+          @blur="touch('taxId')"
+        />
+        <UiTextField
+          v-model="values.contactName"
+          :label="t('suppliers.contactName')"
+          :error="message('contactName')"
+          optional
+          autocomplete="off"
+          @blur="touch('contactName')"
+        />
+        <div class="grid gap-4 sm:grid-cols-2">
+          <UiTextField
+            v-model="values.email"
+            type="email"
+            :label="t('suppliers.email')"
+            :error="message('email')"
+            optional
+            autocomplete="off"
+            @blur="touch('email')"
+          />
+          <UiTextField
+            v-model="values.phone"
+            type="tel"
+            :label="t('suppliers.phone')"
+            :error="message('phone')"
+            optional
+            autocomplete="off"
+            @blur="touch('phone')"
+          />
+        </div>
+        <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+          <UiButton
+            v-if="item?.active"
+            variant="ghost"
+            @click="confirming = true"
+          >
+            {{ t("catalogue.deactivate") }}
+          </UiButton>
+          <span v-else />
+          <UiButton type="submit" :loading="saving">
+            {{ id ? t("catalogue.saveChanges") : t("suppliers.create") }}
+          </UiButton>
+        </div>
+      </form>
+
+      <dl
+        v-else-if="item"
+        class="grid gap-x-6 gap-y-3 rounded-lg border border-line bg-surface p-5 sm:grid-cols-[12rem_1fr]"
+      >
+        <template v-for="detail in details" :key="detail.term">
+          <dt class="font-medium text-fg-muted">{{ detail.term }}</dt>
+          <dd class="break-words">{{ detail.value || "—" }}</dd>
+        </template>
+      </dl>
     </div>
 
-    <form
-      v-if="canWrite"
-      novalidate
-      class="flex flex-col gap-4"
-      @submit.prevent="page.save"
-    >
-      <UiTextField
-        v-model="values.name"
-        :label="t('suppliers.name')"
-        :error="message('name')"
-        autocomplete="organization"
-        @blur="touch('name')"
-      />
-      <UiTextField
-        v-model="values.taxId"
-        :label="t('suppliers.taxId')"
-        :hint="taxIdHint"
-        :error="message('taxId')"
-        autocomplete="off"
-        spellcheck="false"
-        @input="onTaxIdInput"
-        @blur="touch('taxId')"
-      />
-      <UiTextField
-        v-model="values.contactName"
-        :label="t('suppliers.contactName')"
-        :error="message('contactName')"
-        optional
-        autocomplete="off"
-        @blur="touch('contactName')"
-      />
-      <div class="grid gap-4 sm:grid-cols-2">
-        <UiTextField
-          v-model="values.email"
-          type="email"
-          :label="t('suppliers.email')"
-          :error="message('email')"
-          optional
-          autocomplete="off"
-          @blur="touch('email')"
-        />
-        <UiTextField
-          v-model="values.phone"
-          type="tel"
-          :label="t('suppliers.phone')"
-          :error="message('phone')"
-          optional
-          autocomplete="off"
-          @blur="touch('phone')"
-        />
-      </div>
-      <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-        <UiButton
-          v-if="item?.active"
-          variant="ghost"
-          @click="confirming = true"
-        >
-          {{ t("catalogue.deactivate") }}
-        </UiButton>
-        <span v-else />
-        <UiButton type="submit" :loading="saving">
-          {{ id ? t("catalogue.saveChanges") : t("suppliers.create") }}
-        </UiButton>
-      </div>
-    </form>
-
-    <dl
-      v-else-if="item"
-      class="grid gap-x-6 gap-y-3 rounded-lg border border-line bg-surface p-5 sm:grid-cols-[12rem_1fr]"
-    >
-      <template v-for="detail in details" :key="detail.term">
-        <dt class="font-medium text-fg-muted">{{ detail.term }}</dt>
-        <dd class="break-words">{{ detail.value || "—" }}</dd>
-      </template>
-    </dl>
+    <SupplierProductsSection v-if="item" :supplier-id="item.id" />
 
     <DeactivateDialog
       v-if="item"
