@@ -54,7 +54,8 @@ label {
 
 /* At least 16px, so phones do not zoom in on focus; tall enough to tap. */
 input,
-button {
+button,
+select {
   font: inherit;
   font-size: 1rem;
   min-height: 2.75rem;
@@ -62,7 +63,8 @@ button {
   border-radius: 0.5rem;
 }
 
-input {
+input,
+select {
   border: 1px solid var(--line);
   background: #fff;
 }
@@ -86,10 +88,20 @@ button:disabled {
 
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
   color: var(--muted);
+}
+
+/* The language menu: its label beside it, at the right; on its own line, it sits at the right. */
+.language {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  margin-left: auto;
 }
 
 .list {
