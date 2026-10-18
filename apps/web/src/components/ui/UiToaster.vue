@@ -55,7 +55,9 @@ const tones = {
         <X class="size-4" aria-hidden="true" />
       </ToastClose>
     </ToastRoot>
+    <!-- Named in the user's language; Reka fills in {hotkey}, the key that jumps here (F8). -->
     <ToastViewport
+      :label="`${t('ui.toast.region')} ({hotkey})`"
       class="fixed end-0 bottom-(--bottom-nav-height) z-[100] flex w-full max-w-sm flex-col gap-2 p-4 outline-none"
     />
   </ToastProvider>
