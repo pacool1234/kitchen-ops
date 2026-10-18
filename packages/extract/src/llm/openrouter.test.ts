@@ -214,10 +214,11 @@ describe("createOpenRouterClient: the provider's own error (#64)", () => {
     minLength: 20,
     maxLength: 40,
   });
-  const filler = fc.string({
-    unit: fc.constantFrom(..."xyz -:"),
-    maxLength: 700,
-  });
+  // Lengths are spelled out: fast-check keeps strings short, and the cut is at 500 characters.
+  // Half the time the key lands near the cut, which falls about 440 characters into `raw`.
+  const filler = fc
+    .oneof(fc.integer({ min: 0, max: 700 }), fc.integer({ min: 380, max: 500 }))
+    .map((n) => "x".repeat(n));
 
   it("never holds the key or any piece of it longer than 4 characters, wherever the cut falls", async () => {
     await fc.assert(
@@ -241,13 +242,18 @@ describe("createOpenRouterClient: the provider's own error (#64)", () => {
 
   it("is at most 500 characters, ending with an ellipsis when cut", async () => {
     await fc.assert(
-      fc.asyncProperty(fc.string({ maxLength: 2000 }), async (raw) => {
-        const message = await errorMessage(400, {
-          error: { message: "Provider returned error", metadata: { raw } },
-        });
-        expect(message.length).toBeLessThanOrEqual(500);
-        if (message.length === 500) expect(message.endsWith("…")).toBe(true);
-      }),
+      fc.asyncProperty(
+        fc
+          .integer({ min: 0, max: 2000 })
+          .chain((n) => fc.string({ minLength: n, maxLength: n })),
+        async (raw) => {
+          const message = await errorMessage(400, {
+            error: { message: "Provider returned error", metadata: { raw } },
+          });
+          expect(message.length).toBeLessThanOrEqual(500);
+          if (message.length === 500) expect(message.endsWith("…")).toBe(true);
+        },
+      ),
     );
   });
 });
