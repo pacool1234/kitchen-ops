@@ -2,8 +2,9 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { loadModels, MODELS_FILE } from "./config";
+import { defaultExtraction, loadModels, MODELS_FILE } from "./config";
 import { loadPrompt } from "./prompts";
 
 function fileWith(content: string): URL {
@@ -13,6 +14,17 @@ function fileWith(content: string): URL {
   return pathToFileURL(file);
 }
 
+/** A models file's JSON, with a default naming its first model unless one is given. */
+function withDefault(config: {
+  models: Record<string, unknown>[];
+  default?: unknown;
+}): string {
+  return JSON.stringify({
+    default: { model: config.models[0]?.["id"] ?? "a/b", prompt: "v1" },
+    ...config,
+  });
+}
+
 describe("loadModels: model IDs come from config/models.json, never from code", () => {
   it("the committed models.json is valid", () => {
     expect(() => loadModels(MODELS_FILE)).not.toThrow();
@@ -20,7 +32,7 @@ describe("loadModels: model IDs come from config/models.json, never from code", 
 
   it("reads each model's ID, whether it supports structured output and whether it can read images", () => {
     const file = fileWith(
-      JSON.stringify({
+      withDefault({
         models: [
           { id: "vendor/cheap-model", structuredOutput: true, vision: true },
           {
@@ -47,7 +59,7 @@ describe("loadModels: model IDs come from config/models.json, never from code", 
     expect(() =>
       loadModels(
         fileWith(
-          JSON.stringify({ models: [{ id: "a/b", structuredOutput: true }] }),
+          withDefault({ models: [{ id: "a/b", structuredOutput: true }] }),
         ),
       ),
     ).toThrow("models.0.vision");
@@ -56,7 +68,7 @@ describe("loadModels: model IDs come from config/models.json, never from code", 
   it("a temperature is optional, from 0 to 2 (#68)", () => {
     const models = (temperature: unknown) =>
       fileWith(
-        JSON.stringify({
+        withDefault({
           models: [
             { id: "a/b", structuredOutput: true, vision: true, temperature },
           ],
@@ -74,7 +86,7 @@ describe("loadModels: model IDs come from config/models.json, never from code", 
     expect(() =>
       loadModels(
         fileWith(
-          JSON.stringify({
+          withDefault({
             models: [{ structuredOutput: true, vision: true }],
           }),
         ),
@@ -83,7 +95,7 @@ describe("loadModels: model IDs come from config/models.json, never from code", 
     expect(() =>
       loadModels(
         fileWith(
-          JSON.stringify({
+          withDefault({
             models: [
               { id: "a/b", structuredOutput: true, vision: true, price: 1 },
             ],
@@ -97,6 +109,83 @@ describe("loadModels: model IDs come from config/models.json, never from code", 
 /** The one rule prompt v2 adds to v1, in rule 4 (#63). */
 const LEGAL_NAME_RULE =
   " Its name is the legal name printed with its tax ID: the company name, with S.L., S.A. or similar as printed, or for a self-employed supplier the person's full name. Never a brand, logo or trade name, even when it is printed larger.";
+
+const model = (id: string) => ({ id, structuredOutput: true, vision: true });
+
+describe("the default model and prompt (#70)", () => {
+  it("the committed default is decision 0018's: Gemini 3.8 Flash with prompt v2, at temperature 0", () => {
+    const { model, prompt } = defaultExtraction(MODELS_FILE);
+    expect(model).toMatchObject({
+      id: "google/gemini-3.8-flash",
+      temperature: 0,
+    });
+    expect(prompt.version).toBe("v2");
+    expect(prompt.text).toBe(loadPrompt("v2").text);
+  });
+
+  it("a file with no default is refused, naming it", () => {
+    const file = fileWith(JSON.stringify({ models: [model("a/b")] }));
+    expect(() => loadModels(file)).toThrow("default");
+  });
+
+  it("a default naming a model that isn't in the list is refused, naming the model", () => {
+    const file = fileWith(
+      JSON.stringify({
+        models: [model("a/b")],
+        default: { model: "a/other", prompt: "v1" },
+      }),
+    );
+    expect(() => loadModels(file)).toThrow(
+      "default.model: a/other isn't one of the models",
+    );
+  });
+
+  it("a default prompt with no prompt file is refused, naming the version", () => {
+    const file = fileWith(
+      JSON.stringify({
+        models: [model("a/b")],
+        default: { model: "a/b", prompt: "v999" },
+      }),
+    );
+    expect(() => defaultExtraction(file)).toThrow("prompt v999");
+  });
+
+  it("any models, any default: the file loads exactly when the default is one of them, and gives back that model's whole config", () => {
+    const id = fc.constantFrom("a/one", "a/two", "b/three", "b/four");
+    fc.assert(
+      fc.property(
+        fc.uniqueArray(
+          fc.record({
+            id,
+            structuredOutput: fc.boolean(),
+            vision: fc.boolean(),
+            temperature: fc.option(fc.constantFrom(0, 0.5, 2), {
+              nil: undefined,
+            }),
+          }),
+          { selector: (m) => m.id, maxLength: 4 },
+        ),
+        id,
+        (models, chosen) => {
+          const file = fileWith(
+            JSON.stringify({
+              models,
+              default: { model: chosen, prompt: "v1" },
+            }),
+          );
+          const listed = models.find((m) => m.id === chosen);
+          if (listed === undefined) {
+            expect(() => defaultExtraction(file)).toThrow(chosen);
+          } else {
+            expect(defaultExtraction(file).model).toEqual(
+              JSON.parse(JSON.stringify(listed)),
+            );
+          }
+        },
+      ),
+    );
+  });
+});
 
 describe("loadPrompt: prompts are versioned files", () => {
   it("v1 exists and asks for nulls instead of guesses", () => {

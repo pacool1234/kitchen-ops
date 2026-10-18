@@ -48,6 +48,7 @@ function modelsFile(...ids: string[]): URL {
     file,
     JSON.stringify({
       models: ids.map((id) => ({ id, structuredOutput: true, vision: true })),
+      default: { model: ids[0], prompt: "v1" },
     }),
   );
   return pathToFileURL(file);
