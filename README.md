@@ -122,6 +122,13 @@ Every endpoint is declared once, in `packages/shared/src/contract.ts`, with its 
 
    A test fails while it's out of date. The API also serves it at `/api/openapi.json`.
 
+### Adding a string to the interface
+
+Every string the interface shows goes through i18n (decision 0023). Spanish is the default and English the second language.
+1. **Add it to `apps/web/src/i18n/messages/es.ts`,** then to `en.ts`. The typecheck fails until both have it.
+2. **Show it with `t("section.key")`,** from `const t = useT()`. A key that doesn't exist doesn't compile, and lint refuses raw text in templates.
+3. **Format amounts with `apps/web/src/i18n/format.ts`:** `formatMoney`, `formatUnitCost`, `formatQuantity`, `formatDate`, `formatDateTime` and `formatPercent`. They take cents as `bigint` or decimal strings, never a `number`, and refuse what they would otherwise round.
+
 ## Stock ledger
 
 `packages/ledger` holds the rules of spec section 4: movements and stock on hand, unit conversions, posting and reversing documents, weighted-average cost, yields and variance.
