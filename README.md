@@ -21,6 +21,8 @@ Reusable building blocks for restaurant purchasing and stock control: a deployed
 
 `docs/architecture.md` has the details: what each part does today and what isn't built yet.
 
+**Next:** phase 2, a working app built on the ledger and the pipeline: milestones M5–M10 in `docs/spec.md` section 11.
+
 ## Getting started
 
 Node 24 (see `.node-version`) and pnpm 10 (`corepack enable` picks the pinned version).
