@@ -125,8 +125,12 @@ test("a select opens, moves and chooses with the keyboard", async ({
   await unit.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("listbox")).toBeVisible();
+  // The first option has focus once the list is open; then the arrows move from it.
+  await expect(page.getByRole("option", { name: "Gramos" })).toBeFocused();
   await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("option", { name: "Mililitros" })).toBeFocused();
   await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("option", { name: "Unidades" })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("listbox")).toBeHidden();
   await expect(unit).toHaveText(/Unidades/);
