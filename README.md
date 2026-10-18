@@ -136,6 +136,13 @@ The interface is built from the components in `apps/web/src/components/ui/` (dec
 - **Quantities and prices:** use `UiNumberField`. It holds a decimal string, never a JavaScript `number`.
 - **The gallery:** run the dev server and open `/gallery` to see every component in every state, with switches for light, dark and English. It's left out of staging and production builds.
 
+### Adding a page
+
+Every signed-in page sits in the app's frame (`apps/web/src/shell/AppShell.vue`). On a desktop that's a sidebar; on phones and tablets, a bottom bar. The frame shows the page's title as its `h1`, in the browser tab and in a breadcrumb, and moves focus to the title after each navigation.
+1. **Add the route** as a child of the `AppShell` route in `apps/web/src/router.ts`, with a `name`, a `title` (a message key) and, if it has one, its `parent` route's name, for the breadcrumb.
+2. **Put it in the navigation,** if it belongs there: add it to `apps/web/src/shell/nav.ts` with the roles that may see it (spec section 6). The home page shows a shortcut to every item with a `description`.
+3. **Build the view from the components** in `apps/web/src/components/ui/`. The frame already gives the page its `h1`.
+
 ## Stock ledger
 
 `packages/ledger` holds the rules of spec section 4: movements and stock on hand, unit conversions, posting and reversing documents, weighted-average cost, yields and variance.

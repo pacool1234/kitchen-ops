@@ -45,6 +45,10 @@ const PAIRS: [string, string, number][] = [
   ["success", "surface", TEXT],
   ["info", "surface", TEXT],
   ["focus", "primary-soft", UI],
+  // An alert's text on its tinted background.
+  ...["danger-soft", "warning-soft", "success-soft", "info-soft"].map(
+    (bg): [string, string, number] => ["fg", bg, TEXT],
+  ),
 ];
 
 describe("contrastRatio: WCAG's contrast between two colours", () => {

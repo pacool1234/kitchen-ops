@@ -1,28 +1,29 @@
 <script setup lang="ts">
-import { endpoints, type Product } from "@kitchen-ops/shared";
-import { onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { endpoints, Locale, type Product } from "@kitchen-ops/shared";
+import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { ApiError, call } from "../api";
-import { authClient, type Me } from "../auth";
-import LanguageSwitch from "../components/LanguageSwitch.vue";
-import { type MessageKey, useT } from "../i18n";
+import UiDataTable, { type Column } from "../components/ui/UiDataTable.vue";
+import { pageRows, sortRows, type Sort } from "../components/ui/table";
+import { useT, type MessageKey } from "../i18n";
 import { errorMessageKey } from "../i18n/errors";
 
+// The active products and the unit each is counted in. The list comes whole and is sorted
+// and paged here; the catalogue (#89) will ask the API for one page at a time.
 const t = useT();
-const router = useRouter();
-const me = ref<Me>();
+const { locale } = useI18n();
 const products = ref<Product[]>([]);
-const error = ref<MessageKey>();
 const loading = ref(true);
+const error = ref<MessageKey>();
+const sort = ref<Sort | null>({ key: "name", direction: "asc" });
+const page = ref(1);
+const PAGE_SIZE = 20;
 
-onMounted(async () => {
+async function load() {
+  loading.value = true;
+  error.value = undefined;
   try {
-    const [user, list] = await Promise.all([
-      call(endpoints.me),
-      call(endpoints.listProducts),
-    ]);
-    me.value = user;
-    products.value = list.products;
+    products.value = (await call(endpoints.listProducts)).products;
   } catch (caught) {
     // The API's answer if it gave one, else most likely the connection.
     error.value =
@@ -32,33 +33,51 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
-});
-
-async function signOut() {
-  await authClient.signOut();
-  await router.push("/login");
 }
+onMounted(load);
+
+const columns = computed<Column<Product>[]>(() => [
+  {
+    key: "name",
+    label: t("products.name"),
+    sortable: true,
+    value: (p) => p.name,
+  },
+  {
+    key: "baseUnit",
+    label: t("products.baseUnit"),
+    sortable: true,
+    value: (p) => t(`units.${p.baseUnit}`),
+  },
+]);
+const rows = computed(() =>
+  pageRows(
+    sortRows(
+      products.value,
+      sort.value,
+      columns.value,
+      Locale.parse(locale.value),
+    ),
+    page.value,
+    PAGE_SIZE,
+  ),
+);
 </script>
 
 <template>
-  <div class="legacy">
-    <div class="toolbar">
-      <span v-if="me">{{ me.name }} · {{ t(`roles.${me.role}`) }}</span>
-      <LanguageSwitch :signed-in="true" />
-      <button type="button" class="secondary" @click="signOut">
-        {{ t("products.signOut") }}
-      </button>
-    </div>
-
-    <h1>{{ t("products.title") }}</h1>
-    <p v-if="loading">{{ t("products.loading") }}</p>
-    <p v-else-if="error" class="error" role="alert">{{ t(error) }}</p>
-    <p v-else-if="products.length === 0">{{ t("products.empty") }}</p>
-    <ul v-else class="list">
-      <li v-for="product in products" :key="product.id">
-        <span>{{ product.name }}</span>
-        <span class="muted">{{ t(`units.${product.baseUnit}`) }}</span>
-      </li>
-    </ul>
-  </div>
+  <UiDataTable
+    v-model:sort="sort"
+    v-model:page="page"
+    :caption="t('products.caption')"
+    :columns="columns"
+    :rows="rows"
+    :row-key="(p) => p.id"
+    :total="products.length"
+    :page-size="PAGE_SIZE"
+    :loading="loading"
+    :error="error && t(error)"
+    :empty-title="t('products.empty')"
+    :empty-description="t('products.emptyDescription')"
+    @retry="load"
+  />
 </template>

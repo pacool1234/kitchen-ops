@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expectAccessible } from "./a11y.ts";
+import { chooseLanguageSignedOut } from "./shell.ts";
 
 // The component gallery (#85): every component, in every state, checked with axe in light and
 // dark, and worked with the keyboard alone. It exists in development and browser-test builds
@@ -235,7 +236,7 @@ test("the table sorts from its headers with the keyboard, and pages", async ({
 
 test("the components' own text follows the language", async ({ page }) => {
   await openGallery(page);
-  await page.getByLabel("Idioma").selectOption("en");
+  await chooseLanguageSignedOut(page, "English");
   const pages = page.getByRole("navigation", { name: "Pages" });
   await expect(pages).toContainText("Page 1 of 5");
   await expect(pages).toContainText("1–10 of 42");

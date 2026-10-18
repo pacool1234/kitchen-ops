@@ -3,7 +3,7 @@ import { Locale } from "@kitchen-ops/shared";
 import { Plus, Truck } from "lucide-vue-next";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import LanguageSwitch from "../components/LanguageSwitch.vue";
+import UiAlert from "../components/ui/UiAlert.vue";
 import UiBadge from "../components/ui/UiBadge.vue";
 import UiButton from "../components/ui/UiButton.vue";
 import UiCard from "../components/ui/UiCard.vue";
@@ -23,6 +23,7 @@ import { pageRows, sortRows, type Sort } from "../components/ui/table";
 import { showToast } from "../components/ui/toasts";
 import { useT } from "../i18n";
 import { formatQuantity, formatUnitCost } from "../i18n/format";
+import LanguageMenu from "../shell/LanguageMenu.vue";
 import GallerySection from "./GallerySection.vue";
 import { sampleProducts, type SampleProduct } from "./sample";
 
@@ -172,7 +173,7 @@ const swatches = [
 </script>
 
 <template>
-  <div
+  <main
     data-testid="component-gallery"
     class="mx-auto flex max-w-5xl flex-col gap-10 px-4 py-8 text-fg"
   >
@@ -194,7 +195,9 @@ const swatches = [
             { value: 'dark', label: 'Oscuro' },
           ]"
         />
-        <LanguageSwitch :signed-in="false" />
+        <div class="flex items-end justify-end">
+          <LanguageMenu />
+        </div>
       </div>
     </header>
 
@@ -359,6 +362,24 @@ const swatches = [
           <UiSwitch v-model="autoOrder" label="Pedido automático" />
           <UiSwitch label="Sincronizar con la caja" disabled />
         </div>
+      </div>
+    </GallerySection>
+
+    <GallerySection
+      title="Mensajes"
+      description="Dentro de una página o un formulario. Un error se anuncia en el momento."
+    >
+      <div class="flex flex-col gap-3">
+        <UiAlert tone="error"
+          >El correo o la contraseña no son correctos.</UiAlert
+        >
+        <UiAlert tone="warning" title="Quedan 2 kg de tomate">
+          Está por debajo del mínimo de 5 kg.
+        </UiAlert>
+        <UiAlert tone="success">El albarán se ha registrado.</UiAlert>
+        <UiAlert tone="info"
+          >Los precios se actualizan con cada factura.</UiAlert
+        >
       </div>
     </GallerySection>
 
@@ -540,5 +561,5 @@ const swatches = [
         </template>
       </UiDataTable>
     </GallerySection>
-  </div>
+  </main>
 </template>

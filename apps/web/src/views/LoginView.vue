@@ -2,8 +2,10 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { authClient } from "../auth";
-import LanguageSwitch from "../components/LanguageSwitch.vue";
-import { type MessageKey, useT } from "../i18n";
+import UiAlert from "../components/ui/UiAlert.vue";
+import UiButton from "../components/ui/UiButton.vue";
+import UiTextField from "../components/ui/UiTextField.vue";
+import { useT, type MessageKey } from "../i18n";
 
 const t = useT();
 const router = useRouter();
@@ -35,7 +37,7 @@ async function signIn() {
     step.value = "code";
     return;
   }
-  await router.push("/products");
+  await router.push({ name: "home" });
 }
 
 async function verifyCode() {
@@ -47,50 +49,47 @@ async function verifyCode() {
     error.value = "signIn.invalidCode";
     return;
   }
-  await router.push("/products");
+  await router.push({ name: "home" });
 }
 </script>
 
 <template>
-  <div class="legacy">
-    <LanguageSwitch :signed-in="false" />
-    <h1>{{ t("signIn.title") }}</h1>
+  <UiAlert v-if="error" tone="error">{{ t(error) }}</UiAlert>
 
-    <form v-if="step === 'password'" @submit.prevent="signIn">
-      <label>
-        {{ t("signIn.email") }}
-        <input v-model="email" type="email" autocomplete="username" required />
-      </label>
-      <label>
-        {{ t("signIn.password") }}
-        <input
-          v-model="password"
-          type="password"
-          autocomplete="current-password"
-          required
-        />
-      </label>
-      <button type="submit" :disabled="busy">
-        {{ t("signIn.submit") }}
-      </button>
-    </form>
+  <form
+    v-if="step === 'password'"
+    class="flex flex-col gap-5"
+    @submit.prevent="signIn"
+  >
+    <UiTextField
+      v-model="email"
+      :label="t('signIn.email')"
+      type="email"
+      autocomplete="username"
+    />
+    <UiTextField
+      v-model="password"
+      :label="t('signIn.password')"
+      type="password"
+      autocomplete="current-password"
+    />
+    <UiButton type="submit" :loading="busy" class="w-full">
+      {{ t("signIn.submit") }}
+    </UiButton>
+  </form>
 
-    <form v-else @submit.prevent="verifyCode">
-      <p>{{ t("signIn.codePrompt") }}</p>
-      <label>
-        {{ t("signIn.code") }}
-        <input
-          v-model="code"
-          inputmode="numeric"
-          autocomplete="one-time-code"
-          pattern="[0-9]{6}"
-          maxlength="6"
-          required
-        />
-      </label>
-      <button type="submit" :disabled="busy">{{ t("signIn.verify") }}</button>
-    </form>
-
-    <p v-if="error" class="error" role="alert">{{ t(error) }}</p>
-  </div>
+  <form v-else class="flex flex-col gap-5" @submit.prevent="verifyCode">
+    <p class="text-fg-muted">{{ t("signIn.codePrompt") }}</p>
+    <UiTextField
+      v-model="code"
+      :label="t('signIn.code')"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      pattern="[0-9]{6}"
+      maxlength="6"
+    />
+    <UiButton type="submit" :loading="busy" class="w-full">
+      {{ t("signIn.verify") }}
+    </UiButton>
+  </form>
 </template>

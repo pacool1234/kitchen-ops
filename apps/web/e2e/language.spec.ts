@@ -1,40 +1,36 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expectAccessible } from "./a11y.ts";
 import { accounts, ENGLISH_SIGN_IN, signIn, submitSignIn } from "./accounts.ts";
+import { chooseLanguageSignedIn, chooseLanguageSignedOut } from "./shell.ts";
 
 // The interface's language (#86): Spanish by default, English second, saved per user.
-
-/** Picks a language in the language menu, whose label is in the language shown now. */
-async function chooseLanguage(page: Page, label: string, locale: "es" | "en") {
-  await page.getByLabel(label).selectOption(locale);
-}
 
 /** `<html lang>`, which screen readers use to pick a voice (WCAG 3.1.1). */
 const expectPageLanguage = (page: Page, locale: "es" | "en") =>
   expect(page.locator("html")).toHaveAttribute("lang", locale);
 
+const heading = (page: Page, name: string) =>
+  page.getByRole("heading", { name, level: 1 });
+
 test("the sign-in page switches to English and back, and this device remembers it", async ({
   page,
 }) => {
   await page.goto("/login");
-  await expect(
-    page.getByRole("heading", { name: "Iniciar sesión" }),
-  ).toBeVisible();
+  await expect(heading(page, "Iniciar sesión")).toBeVisible();
   await expectPageLanguage(page, "es");
 
-  await chooseLanguage(page, "Idioma", "en");
-  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await chooseLanguageSignedOut(page, "English");
+  await expect(heading(page, "Sign in")).toBeVisible();
   await expectPageLanguage(page, "en");
+  await expect(page).toHaveTitle("Sign in · kitchen-ops");
   await expectAccessible(page);
 
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await expect(heading(page, "Sign in")).toBeVisible();
   await expectPageLanguage(page, "en");
 
-  await chooseLanguage(page, "Language", "es");
-  await expect(
-    page.getByRole("heading", { name: "Iniciar sesión" }),
-  ).toBeVisible();
+  await chooseLanguageSignedOut(page, "Español");
+  await expect(heading(page, "Iniciar sesión")).toBeVisible();
   await expectPageLanguage(page, "es");
 });
 
@@ -52,9 +48,9 @@ test.describe("each user's own language", () => {
   }) => {
     // Chosen on the sign-in page, then saved as the user's when they sign in.
     await page.goto("/login");
-    await chooseLanguage(page, "Idioma", "en");
+    await chooseLanguageSignedOut(page, "English");
     await submitSignIn(page, accounts.staff, ENGLISH_SIGN_IN);
-    await expect(page.getByRole("heading", { name: "Products" })).toBeVisible();
+    await expect(heading(page, "Home")).toBeVisible();
     await expectPageLanguage(page, "en");
     await expectAccessible(page);
 
@@ -63,26 +59,20 @@ test.describe("each user's own language", () => {
     const otherDevice = await browser.newContext({ baseURL });
     const other = await otherDevice.newPage();
     await signIn(other, accounts.staff);
-    await expect(
-      other.getByRole("heading", { name: "Products" }),
-    ).toBeVisible();
+    await expect(heading(other, "Home")).toBeVisible();
 
-    // Switched back there, it's saved again...
+    // Switched back there, in the user menu, it's saved again...
     const saved = other.waitForResponse(
       (r) => r.url().endsWith("/api/me") && r.request().method() === "PATCH",
     );
-    await chooseLanguage(other, "Language", "es");
+    await chooseLanguageSignedIn(other, "Español");
     expect((await saved).status()).toBe(200);
-    await expect(
-      other.getByRole("heading", { name: "Productos" }),
-    ).toBeVisible();
+    await expect(heading(other, "Inicio")).toBeVisible();
     await otherDevice.close();
 
     // ...and the first device follows the user, though it last showed English.
     await page.reload();
-    await expect(
-      page.getByRole("heading", { name: "Productos" }),
-    ).toBeVisible();
+    await expect(heading(page, "Inicio")).toBeVisible();
     await expectPageLanguage(page, "es");
   });
 });

@@ -3,9 +3,3 @@
 @import "@fontsource-variable/inter";
 @import "./tokens.css";
 @import "./base.css";
-
-/*
- * The styles from before the design system, until the views move onto its components. In the
- * base layer, so a component's utilities always win over them.
- */
-@import "../style.css" layer(base);
