@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
@@ -54,4 +55,6 @@ export default defineConfig({
   server: { port: 5173, strictPort: true, proxy: api },
   // `vite preview` (the built app, with the service worker) uses the same origin and proxy.
   preview: { port: 5173, strictPort: true, proxy: api },
+  // Browser tests are Playwright's (e2e/), not Vitest's.
+  test: { exclude: ["e2e/**", "node_modules/**", "dist/**"] },
 });

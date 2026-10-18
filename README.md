@@ -36,6 +36,20 @@ pnpm --filter @kitchen-ops/web dev
 
 CI runs the same checks, plus a secret scan, the database migrations and a build, on every pull request.
 
+### Browser tests
+
+Playwright drives the built web app and the API in a real browser, at desktop and phone sizes, and axe checks every page against WCAG 2.2 AA (decision 0021). The tests are in `apps/web/e2e/`.
+
+```sh
+docker compose up -d                                              # Postgres
+pnpm --filter @kitchen-ops/web exec playwright install chromium   # first time only
+pnpm --filter @kitchen-ops/web e2e                                # or add a file and --project desktop
+```
+
+- **Their own database:** each run starts from a fresh database, `kitchen_ops_e2e`: reset, migrated and seeded. Your development data is never touched.
+- **Stop the dev servers first:** the tests use the same ports, 3000 and 5173.
+- **In CI:** the `e2e` job runs them on every pull request, and uploads the traces and screenshots of any failing test.
+
 ## Database
 
 Local Postgres 18 runs in Docker ([Docker Desktop](https://www.docker.com/products/docker-desktop/) on Windows and macOS).
