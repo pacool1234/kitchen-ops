@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { Copy } from "lucide-vue-next";
 import QRCode from "qrcode";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { authClient } from "../auth";
-import LanguageSwitch from "../components/LanguageSwitch.vue";
+import UiAlert from "../components/ui/UiAlert.vue";
+import UiButton from "../components/ui/UiButton.vue";
+import UiTextField from "../components/ui/UiTextField.vue";
+import { showToast } from "../components/ui/toasts";
 import { type MessageKey, useT } from "../i18n";
 
 // Owners must use 2FA (spec section 6). Until it is set up, the API answers every request with
@@ -29,7 +33,7 @@ async function start() {
   busy.value = false;
   if (result.error) {
     if (result.error.status === 401) {
-      await router.push("/login");
+      await router.push({ name: "login" });
       return;
     }
     error.value = "twoFactor.wrongPassword";
@@ -47,6 +51,15 @@ async function start() {
   step.value = "scan";
 }
 
+async function copy(text: string, done: MessageKey) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast({ tone: "success", title: t(done) });
+  } catch {
+    showToast({ tone: "error", title: t("twoFactor.copyFailed") });
+  }
+}
+
 async function confirm() {
   error.value = undefined;
   busy.value = true;
@@ -56,63 +69,97 @@ async function confirm() {
     error.value = "signIn.invalidCode";
     return;
   }
-  await router.push("/products");
+  await router.push({ name: "home" });
 }
 </script>
 
 <template>
-  <div class="legacy">
-    <LanguageSwitch :signed-in="false" />
-    <h1>{{ t("twoFactor.title") }}</h1>
+  <p class="text-fg-muted">{{ t("twoFactor.intro") }}</p>
+  <UiAlert v-if="error" tone="error">{{ t(error) }}</UiAlert>
 
-    <form v-if="step === 'password'" @submit.prevent="start">
-      <p>{{ t("twoFactor.intro") }}</p>
-      <label>
-        {{ t("twoFactor.password") }}
-        <input
-          v-model="password"
-          type="password"
-          autocomplete="current-password"
-          required
-        />
-      </label>
-      <button type="submit" :disabled="busy">
-        {{ t("twoFactor.continue") }}
-      </button>
-    </form>
+  <form
+    v-if="step === 'password'"
+    class="flex flex-col gap-5"
+    @submit.prevent="start"
+  >
+    <h2 class="text-lg font-semibold">{{ t("twoFactor.stepPassword") }}</h2>
+    <UiTextField
+      v-model="password"
+      :label="t('twoFactor.password')"
+      type="password"
+      autocomplete="current-password"
+    />
+    <UiButton type="submit" :loading="busy" class="w-full">
+      {{ t("twoFactor.continue") }}
+    </UiButton>
+  </form>
 
-    <form v-else @submit.prevent="confirm">
-      <p>{{ t("twoFactor.scan") }}</p>
-      <img :src="qrDataUrl" :alt="t('twoFactor.qrAlt')" class="qr" />
-      <p>
-        {{ t("twoFactor.manualKey") }}
-        <code class="key">{{ manualKey }}</code>
-      </p>
-      <p>
-        <strong>{{ t("twoFactor.backupTitle") }}</strong>
-        {{ t("twoFactor.backupText") }}
-      </p>
-      <ul class="codes">
-        <li v-for="backup in backupCodes" :key="backup">
-          <code>{{ backup }}</code>
-        </li>
+  <ol
+    v-else
+    class="flex list-decimal flex-col gap-8 ps-6 marker:text-lg marker:font-semibold"
+  >
+    <li class="flex flex-col gap-3">
+      <h2 class="text-lg font-semibold">{{ t("twoFactor.stepScan") }}</h2>
+      <img
+        :src="qrDataUrl"
+        :alt="t('twoFactor.qrAlt')"
+        class="size-48 self-center rounded-md bg-white p-2"
+      />
+      <p class="text-sm text-fg-muted">{{ t("twoFactor.manualKey") }}</p>
+      <div class="flex flex-wrap items-center gap-2">
+        <code
+          data-testid="totp-key"
+          class="rounded-md bg-surface-muted px-3 py-2 font-mono text-sm break-all"
+        >
+          {{ manualKey }}
+        </code>
+        <UiButton
+          variant="ghost"
+          size="sm"
+          :icon="Copy"
+          @click="copy(manualKey, 'twoFactor.keyCopied')"
+        >
+          {{ t("twoFactor.copyKey") }}
+        </UiButton>
+      </div>
+    </li>
+
+    <li class="flex flex-col gap-3">
+      <h2 class="text-lg font-semibold">{{ t("twoFactor.stepBackup") }}</h2>
+      <p class="text-sm text-fg-muted">{{ t("twoFactor.backupText") }}</p>
+      <ul
+        class="grid grid-cols-2 gap-2 rounded-md bg-surface-muted p-3 font-mono text-sm"
+      >
+        <li v-for="backup in backupCodes" :key="backup">{{ backup }}</li>
       </ul>
-      <label>
-        {{ t("twoFactor.code") }}
-        <input
+      <UiButton
+        variant="ghost"
+        size="sm"
+        :icon="Copy"
+        class="self-start"
+        @click="copy(backupCodes.join('\n'), 'twoFactor.codesCopied')"
+      >
+        {{ t("twoFactor.copyCodes") }}
+      </UiButton>
+    </li>
+
+    <li>
+      <form class="flex flex-col gap-5" @submit.prevent="confirm">
+        <h2 class="text-lg font-semibold">
+          {{ t("twoFactor.stepConfirm") }}
+        </h2>
+        <UiTextField
           v-model="code"
+          :label="t('twoFactor.code')"
           inputmode="numeric"
           autocomplete="one-time-code"
           pattern="[0-9]{6}"
           maxlength="6"
-          required
         />
-      </label>
-      <button type="submit" :disabled="busy">
-        {{ t("twoFactor.submit") }}
-      </button>
-    </form>
-
-    <p v-if="error" class="error" role="alert">{{ t(error) }}</p>
-  </div>
+        <UiButton type="submit" :loading="busy" class="w-full">
+          {{ t("twoFactor.submit") }}
+        </UiButton>
+      </form>
+    </li>
+  </ol>
 </template>
