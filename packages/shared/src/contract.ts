@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AuditLogPage, AuditLogQuery } from "./audit";
 import { MeResponse, UpdateMe, type Role } from "./auth";
 import { HealthResponse } from "./health";
 import { ProductList } from "./products";
@@ -80,6 +81,14 @@ export const endpoints = {
     summary: "The active products",
     access: "signed-in",
     response: ProductList,
+  }),
+  listAuditLog: endpoint({
+    method: "GET",
+    path: "/api/audit-log",
+    summary: "The audit log: every write, newest first, filtered and paged",
+    access: { roles: ["owner"] },
+    query: AuditLogQuery,
+    response: AuditLogPage,
   }),
 } as const;
 
