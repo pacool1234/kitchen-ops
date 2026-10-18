@@ -3,6 +3,8 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "types": ["node"],
+    // The browser tests' page.evaluate() callbacks run in the page, with its DOM.
+    "lib": ["ES2023", "DOM"],
 
     // vite.config.ts runs in Node, so it resolves modules the Node way, not the bundler way.
     "module": "nodenext",
