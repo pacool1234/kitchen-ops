@@ -9,7 +9,7 @@ import {
   formatUnitCost,
 } from "./format";
 
-// Intl puts a no-break space (U+00A0) before "€", "kg" and "%"; the tests write it as " ".
+// A no-break space (U+00A0) goes before "€", "kg" and "%", so a line never wraps between them.
 const NBSP = " ";
 
 /** Whole cents read back from "-1.234,56 €": every digit, and the sign. Inverse of formatMoney. */
