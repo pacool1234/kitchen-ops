@@ -19,6 +19,16 @@ export const FIELD_ERROR_CODES = [
   "invalid_tax_id",
   /** A value that must be unique, already used (409). */
   "taken",
+  /** A name kept for something else: a product's base unit, which every product has. */
+  "reserved",
+  /** A reference to a row that doesn't exist: a storeroom, a supplier, a product. */
+  "not_found",
+  /** Something other rows rely on, which can't be removed or changed so (409). */
+  "in_use",
+  /** A pack's unit that isn't one of the product's. */
+  "unknown_unit",
+  /** A pack that isn't a whole number of base units: 0.0001 kg is 0.1 g. */
+  "not_whole_base_units",
 ] as const;
 export const FieldErrorCode = z.enum(FIELD_ERROR_CODES);
 export type FieldErrorCode = z.infer<typeof FieldErrorCode>;
