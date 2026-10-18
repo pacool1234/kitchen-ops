@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { whoAmI } from "./auth";
+import { adoptUserLocale } from "./i18n";
 import LoginView from "./views/LoginView.vue";
 import ProductsView from "./views/ProductsView.vue";
 import TwoFactorSetupView from "./views/TwoFactorSetupView.vue";
@@ -31,5 +32,6 @@ router.beforeEach(async (to) => {
   const me = await whoAmI();
   if (me === "signed-out") return { path: "/login" };
   if (me === "two-factor-required") return { path: "/setup-2fa" };
+  await adoptUserLocale(me);
   return true;
 });

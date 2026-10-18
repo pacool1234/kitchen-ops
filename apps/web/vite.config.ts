@@ -14,6 +14,11 @@ export default defineConfig({
   // The commit being built, tagged on errors sent to Sentry. Render sets RENDER_GIT_COMMIT.
   define: {
     __APP_VERSION__: JSON.stringify(process.env.RENDER_GIT_COMMIT ?? "dev"),
+    // vue-i18n's build flags: the Composition API only, so its legacy API is left out of the
+    // bundle, and no devtools hooks in production.
+    __VUE_I18N_FULL_INSTALL__: true,
+    __VUE_I18N_LEGACY_API__: false,
+    __INTLIFY_PROD_DEVTOOLS__: false,
   },
   plugins: [
     vue(),
@@ -27,8 +32,8 @@ export default defineConfig({
       manifest: {
         name: "kitchen-ops",
         short_name: "kitchen-ops",
-        description: "Purchasing and stock control",
-        lang: "en",
+        description: "Compras y control de stock",
+        lang: "es",
         start_url: "/",
         display: "standalone",
         background_color: "#f4f1e8",

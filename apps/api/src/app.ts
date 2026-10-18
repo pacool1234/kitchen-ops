@@ -52,7 +52,7 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   registerAuth(app, createAuth(db, config));
   app.register(openApiRoutes);
   app.register(healthRoutes, { version: config.APP_VERSION });
-  app.register(meRoutes);
+  app.register(meRoutes, { db });
   app.register(productRoutes, { db });
 
   return app;

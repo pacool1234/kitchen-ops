@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MeResponse, type Role } from "./auth";
+import { MeResponse, UpdateMe, type Role } from "./auth";
 import { HealthResponse } from "./health";
 import { ProductList } from "./products";
 
@@ -64,6 +64,14 @@ export const endpoints = {
     path: "/api/me",
     summary: "Who is signed in",
     access: "signed-in",
+    response: MeResponse,
+  }),
+  updateMe: endpoint({
+    method: "PATCH",
+    path: "/api/me",
+    summary: "Change the signed-in user's own settings: their language",
+    access: "signed-in",
+    body: UpdateMe,
     response: MeResponse,
   }),
   listProducts: endpoint({

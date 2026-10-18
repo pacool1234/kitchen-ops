@@ -3,9 +3,12 @@ import QRCode from "qrcode";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { authClient } from "../auth";
+import LanguageSwitch from "../components/LanguageSwitch.vue";
+import { type MessageKey, useT } from "../i18n";
 
 // Owners must use 2FA (spec section 6). Until it is set up, the API answers every request with
 // two_factor_required and the router sends the owner here.
+const t = useT();
 const router = useRouter();
 const password = ref("");
 const code = ref("");
@@ -13,11 +16,11 @@ const step = ref<"password" | "scan">("password");
 const qrDataUrl = ref("");
 const manualKey = ref("");
 const backupCodes = ref<string[]>([]);
-const error = ref("");
+const error = ref<MessageKey>();
 const busy = ref(false);
 
 async function start() {
-  error.value = "";
+  error.value = undefined;
   busy.value = true;
   const result = await authClient.twoFactor.enable({
     password: password.value,
@@ -29,11 +32,11 @@ async function start() {
       await router.push("/login");
       return;
     }
-    error.value = "Wrong password.";
+    error.value = "twoFactor.wrongPassword";
     return;
   }
   if (result.data.method !== "totp") {
-    error.value = "Unexpected answer from the server. Try again.";
+    error.value = "twoFactor.unexpectedAnswer";
     return;
   }
   const { totpURI, backupCodes: codes } = result.data;
@@ -45,13 +48,12 @@ async function start() {
 }
 
 async function confirm() {
-  error.value = "";
+  error.value = undefined;
   busy.value = true;
   const result = await authClient.twoFactor.verifyTotp({ code: code.value });
   busy.value = false;
   if (result.error) {
-    error.value =
-      "That code is not valid. Enter the current one from your app.";
+    error.value = "signIn.invalidCode";
     return;
   }
   await router.push("/products");
@@ -59,16 +61,13 @@ async function confirm() {
 </script>
 
 <template>
-  <h1>Set up two-factor authentication</h1>
+  <LanguageSwitch :signed-in="false" />
+  <h1>{{ t("twoFactor.title") }}</h1>
 
   <form v-if="step === 'password'" @submit.prevent="start">
-    <p>
-      Owner accounts need an authenticator app (for example Google
-      Authenticator, Microsoft Authenticator or 1Password). Confirm your
-      password to start.
-    </p>
+    <p>{{ t("twoFactor.intro") }}</p>
     <label>
-      Password
+      {{ t("twoFactor.password") }}
       <input
         v-model="password"
         type="password"
@@ -76,19 +75,21 @@ async function confirm() {
         required
       />
     </label>
-    <button type="submit" :disabled="busy">Continue</button>
+    <button type="submit" :disabled="busy">
+      {{ t("twoFactor.continue") }}
+    </button>
   </form>
 
   <form v-else @submit.prevent="confirm">
-    <p>Scan this code with your authenticator app:</p>
-    <img :src="qrDataUrl" alt="QR code for your authenticator app" class="qr" />
+    <p>{{ t("twoFactor.scan") }}</p>
+    <img :src="qrDataUrl" :alt="t('twoFactor.qrAlt')" class="qr" />
     <p>
-      Or type this key into the app:
+      {{ t("twoFactor.manualKey") }}
       <code class="key">{{ manualKey }}</code>
     </p>
     <p>
-      <strong>Backup codes.</strong> Each works once if you lose your phone.
-      Store them somewhere safe now; they are not shown again.
+      <strong>{{ t("twoFactor.backupTitle") }}</strong>
+      {{ t("twoFactor.backupText") }}
     </p>
     <ul class="codes">
       <li v-for="backup in backupCodes" :key="backup">
@@ -96,7 +97,7 @@ async function confirm() {
       </li>
     </ul>
     <label>
-      Code from the app
+      {{ t("twoFactor.code") }}
       <input
         v-model="code"
         inputmode="numeric"
@@ -106,8 +107,10 @@ async function confirm() {
         required
       />
     </label>
-    <button type="submit" :disabled="busy">Turn on 2FA</button>
+    <button type="submit" :disabled="busy">
+      {{ t("twoFactor.submit") }}
+    </button>
   </form>
 
-  <p v-if="error" class="error" role="alert">{{ error }}</p>
+  <p v-if="error" class="error" role="alert">{{ t(error) }}</p>
 </template>

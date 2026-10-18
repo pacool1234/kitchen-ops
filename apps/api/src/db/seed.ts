@@ -1,4 +1,4 @@
-// Synthetic data for local development and CI: products and one user per role.
+// Synthetic data for local development and CI: products, one user per role, and a second counter.
 // Never real supplier, client or staff data.
 import type { Role } from "@kitchen-ops/shared";
 import { count } from "drizzle-orm";
@@ -21,10 +21,13 @@ const syntheticProducts: (typeof products.$inferInsert)[] = [
 
 // Local-only logins, documented in the README. Obviously fake: never reuse them anywhere real.
 // The owner starts without 2FA; the first sign-in has to set it up.
-const seedUsers: { role: Role; password: string }[] = [
-  { role: "counter", password: "local-only-counter" }, // gitleaks:allow
-  { role: "office", password: "local-only-office" }, // gitleaks:allow
-  { role: "owner", password: "local-only-owner" }, // gitleaks:allow
+const seedUsers: { name: string; role: Role; password: string }[] = [
+  { name: "counter", role: "counter", password: "local-only-counter" }, // gitleaks:allow
+  { name: "office", role: "office", password: "local-only-office" }, // gitleaks:allow
+  { name: "owner", role: "owner", password: "local-only-owner" }, // gitleaks:allow
+  // A second counter, for trying what changes a user's own settings without changing the
+  // others': the browser tests switch its language.
+  { name: "staff", role: "counter", password: "local-only-staff" }, // gitleaks:allow
 ];
 
 if (process.env.NODE_ENV === "production") {
@@ -49,16 +52,16 @@ try {
       console.log(`Skipped users: already ${existingUsers.n} rows.`);
     } else {
       const auth = createAuth(db, config);
-      for (const { role, password } of seedUsers) {
+      for (const { name, role, password } of seedUsers) {
         await createUser(auth, {
-          email: `${role}@example.test`,
-          name: `Local ${role}`,
+          email: `${name}@example.test`,
+          name: `Local ${name}`,
           role,
           password,
         });
       }
       console.log(
-        `Created ${seedUsers.length} users: ${seedUsers.map((u) => `${u.role}@example.test`).join(", ")}.`,
+        `Created ${seedUsers.length} users: ${seedUsers.map((u) => `${u.name}@example.test`).join(", ")}.`,
       );
     }
   } finally {

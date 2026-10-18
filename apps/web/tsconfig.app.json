@@ -3,6 +3,9 @@
   "extends": ["../../tsconfig.base.json", "@vue/tsconfig/tsconfig.dom.json"],
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    // Vue's ES2022, plus Intl.NumberFormat v3 (Baseline 2023), which formats a decimal string
+    // exactly: money is shown without becoming a number (src/i18n/format.ts).
+    "lib": ["ES2022", "ES2023.Intl", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],
     "allowArbitraryExtensions": true,
     "erasableSyntaxOnly": true

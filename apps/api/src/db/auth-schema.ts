@@ -11,11 +11,14 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { ROLES } from "@kitchen-ops/shared";
+import { DEFAULT_LOCALE, LOCALES, ROLES } from "@kitchen-ops/shared";
 import { createdAt, primaryId, updatedAt } from "./columns";
 
 /** Spec section 6; values come from packages/shared. New users get the least privilege. */
 export const userRole = pgEnum("user_role", ROLES);
+
+/** The interface language each user chose (#86); values come from packages/shared. */
+export const userLocale = pgEnum("user_locale", LOCALES);
 
 export const users = pgTable("users", {
   id: primaryId(),
@@ -24,6 +27,7 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
   role: userRole("role").notNull().default("counter"),
+  locale: userLocale("locale").notNull().default(DEFAULT_LOCALE),
   twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
   createdAt: createdAt(),
   updatedAt: updatedAt(),

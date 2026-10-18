@@ -34,22 +34,35 @@ function rolesDescription(access: Access): string | readonly string[] {
   return access.roles;
 }
 
+/** `{ [As]: schema }` if the endpoint has a `Key` schema, else nothing: Fastify's name for it. */
+type SchemaPart<E, Key extends string, As extends string> =
+  E extends Record<Key, infer S> ? Record<As, S> : unknown;
+
 /** A contract endpoint as Fastify route options: method, URL, schemas and who may call it. */
 export function routeFor<const E extends Endpoint>(e: E) {
+  const response =
+    e.access === "public"
+      ? { 200: e.response }
+      : { 200: e.response, 401: ErrorBody, 403: ErrorBody };
   return {
     method: e.method,
     url: e.path,
     config: routeConfig(e.access),
+    // Typed by hand: TypeScript loses each schema's type through the conditional spreads, and
+    // the handlers' `request.params`, `.query` and `.body` are inferred from these types.
     schema: {
       summary: e.summary,
       ...(e.params ? { params: e.params } : {}),
       ...(e.query ? { querystring: e.query } : {}),
       ...(e.body ? { body: e.body } : {}),
-      response:
-        e.access === "public"
-          ? { 200: e.response }
-          : { 200: e.response, 401: ErrorBody, 403: ErrorBody },
-    },
+      response,
+    } as { summary: string; response: typeof response } & SchemaPart<
+      E,
+      "params",
+      "params"
+    > &
+      SchemaPart<E, "query", "querystring"> &
+      SchemaPart<E, "body", "body">,
   } as const;
 }
 

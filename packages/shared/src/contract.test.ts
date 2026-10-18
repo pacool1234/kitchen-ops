@@ -38,13 +38,14 @@ describe("endpoints: the API's contract (decision 0022)", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it("the routes that exist today: health, openapi, me and the product list", () => {
+  it("the routes that exist today: health, openapi, me, changing me, and the product list", () => {
     expect(
       Object.values(endpoints).map((e) => [e.method, e.path, e.access]),
     ).toEqual([
       ["GET", "/health", "public"],
       ["GET", "/api/openapi.json", "public"],
       ["GET", "/api/me", "signed-in"],
+      ["PATCH", "/api/me", "signed-in"],
       ["GET", "/api/products", "signed-in"],
     ]);
   });

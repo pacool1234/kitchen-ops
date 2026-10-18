@@ -22,11 +22,11 @@ The plan's other arrows aren't built yet: the API calling `ledger` and `extract`
 
 | Part | What it does today | Depends on | Not yet |
 | --- | --- | --- | --- |
-| `apps/web` | Sign-in, owner 2FA setup, and the list of active products. Installable PWA; the service worker caches the app, never `/api`. | `shared` | Documents, review, counts, stock and reports |
-| `apps/api` | `GET /health`, Better Auth under `/api/auth/*` with roles and owner 2FA, `GET /api/me`, `GET /api/products`. Tables: `products` and the auth tables (`apps/api/src/db/schema.ts`). | `shared` | Documents, movements, suppliers, stock: anything that uses `ledger` or `extract` |
+| `apps/web` | Sign-in, owner 2FA setup, and the list of active products, in Spanish by default or English, chosen per user (decision 0023). Calls the API through the contract (decision 0022). Installable PWA; the service worker caches the app, never `/api`. | `shared` | Documents, review, counts, stock and reports |
+| `apps/api` | `GET /health`, Better Auth under `/api/auth/*` with roles and owner 2FA, `GET /api/me`, `PATCH /api/me` (the user's language), `GET /api/products`, and its OpenAPI document at `GET /api/openapi.json`. Tables: `products` and the auth tables, whose `users` hold each user's role and language (`apps/api/src/db/schema.ts`). | `shared` | Documents, movements, suppliers, stock: anything that uses `ledger` or `extract` |
 | `packages/ledger` | Movements, unit conversions, posting and reversing documents, weighted-average cost, latest purchase price, yields, variance. Pure: no I/O, no runtime dependencies. | nothing | Nothing stores its results yet |
 | `packages/extract` | Routing, LLM extraction, validation, and the eval harness, with the gold set's tooling. | `ledger`, `shared` | A public API: `src/index.ts` exports nothing yet |
-| `packages/shared` | Zod schemas shared by web, API and extract: auth, health, products, and the extraction schema sent to models. | nothing | |
+| `packages/shared` | Zod schemas shared by web, API and extract: auth, health, products, the languages, and the extraction schema sent to models. The API contract: every endpoint, declared once (decision 0022). | nothing | |
 
 The dependency rules (spec section 2, decision 0016) are enforced by lint, and the code keeps them: `api` and `web` import only `shared` so far.
 

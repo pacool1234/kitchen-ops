@@ -67,13 +67,16 @@ pnpm --filter @kitchen-ops/api db:seed  # synthetic products and users; each ski
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-The seed creates one **local-only** login per role. The passwords are deliberately fake; never use them anywhere real.
+The seed creates one **local-only** login per role, and a second counter. The passwords are deliberately fake; never use them anywhere real.
 
 | Email                  | Password             | Role    |
 | ---------------------- | -------------------- | ------- |
 | `counter@example.test` | `local-only-counter` | counter |
 | `office@example.test`  | `local-only-office`  | office  |
 | `owner@example.test`   | `local-only-owner`   | owner   |
+| `staff@example.test`   | `local-only-staff`   | counter |
+
+The second counter is for trying what changes a user's own settings, such as their language, without changing the others'. The browser tests use it that way.
 
 Owners must use 2FA: until the owner sets up an authenticator app (`POST /api/auth/two-factor/enable`, then `/two-factor/verify-totp`), every protected route answers `403 two_factor_required`.
 
@@ -118,6 +121,13 @@ Every endpoint is declared once, in `packages/shared/src/contract.ts`, with its 
    ```
 
    A test fails while it's out of date. The API also serves it at `/api/openapi.json`.
+
+### Adding a string to the interface
+
+Every string the interface shows goes through i18n (decision 0023). Spanish is the default and English the second language.
+1. **Add it to `apps/web/src/i18n/messages/es.ts`,** then to `en.ts`. The typecheck fails until both have it.
+2. **Show it with `t("section.key")`,** from `const t = useT()`. A key that doesn't exist doesn't compile, and lint refuses raw text in templates.
+3. **Format amounts with `apps/web/src/i18n/format.ts`:** `formatMoney`, `formatUnitCost`, `formatQuantity`, `formatDate`, `formatDateTime` and `formatPercent`. They take cents as `bigint` or decimal strings, never a `number`, and refuse what they would otherwise round.
 
 ## Stock ledger
 
