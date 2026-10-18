@@ -1,11 +1,12 @@
 import { readFileSync } from "node:fs";
-import { endpoints } from "@kitchen-ops/shared";
+import { endpoints, type Endpoint } from "@kitchen-ops/shared";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "./app";
 import { OPENAPI_FILE, routeConfig } from "./contract";
 import { testConfig } from "./test/helpers";
 
-const contract = Object.values(endpoints);
+// Typed as any endpoint, so the checks cover access by role before any endpoint uses it.
+const contract: readonly Endpoint[] = Object.values(endpoints);
 
 /** The routes the app registers once ready, without Fastify's automatic HEAD routes. */
 async function registeredRoutes() {
