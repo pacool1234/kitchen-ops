@@ -104,6 +104,7 @@ describe("summaryMarkdown: the report, silent error rate first", () => {
     expect(summary).toContain("2026-10-18");
     // The Facturae invoice right, then the two text PDFs read with a wrong number.
     expect(summary).toContain("2 of 3 (66.7%)");
+    expect(summary).toContain("\nCorrect: 1 of 3 (33.3%).\n");
   });
 
   it("says when the run stopped at the spending cap, and how many documents it didn't run", async () => {
