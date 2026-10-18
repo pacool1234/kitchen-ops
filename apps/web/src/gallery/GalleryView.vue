@@ -20,6 +20,8 @@ import UiSwitch from "../components/ui/UiSwitch.vue";
 import UiTabs from "../components/ui/UiTabs.vue";
 import UiTextField from "../components/ui/UiTextField.vue";
 import { pageRows, sortRows, type Sort } from "../components/ui/table";
+import type { SelectOption } from "../components/ui/options";
+import { matchesSearch } from "../components/ui/search";
 import { showToast } from "../components/ui/toasts";
 import { useT } from "../i18n";
 import { formatQuantity, formatUnitCost } from "../i18n/format";
@@ -74,6 +76,16 @@ const product = ref<string>();
 const productOptions = sampleProducts
   .map((p) => ({ value: p.id, label: p.name }))
   .sort((a, b) => a.label.localeCompare(b.label, "es"));
+// Searched "on the server": the page gets what's typed, and answers a moment later (#89).
+const remoteProduct = ref<string>();
+const remoteMatches = ref<SelectOption[]>([]);
+function searchRemotely(text: string) {
+  setTimeout(() => {
+    remoteMatches.value = productOptions
+      .filter((o) => matchesSearch(o.label, text))
+      .slice(0, 5);
+  }, 150);
+}
 
 const active = ref<boolean | "indeterminate">(false);
 const soldByUnit = ref<boolean | "indeterminate">(true);
@@ -331,6 +343,15 @@ const swatches = [
           v-model="product"
           label="Producto"
           :options="productOptions"
+        />
+        <UiCombobox
+          v-model="remoteProduct"
+          label="Producto, buscado en el servidor"
+          hint="Muestra hasta 5 resultados"
+          :options="remoteMatches"
+          remote
+          optional
+          @search="searchRemotely"
         />
         <UiCombobox
           label="Producto sustituto"
