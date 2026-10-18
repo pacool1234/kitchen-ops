@@ -40,6 +40,7 @@ export type ErrorBody = z.infer<typeof ErrorBody>;
 /** The OpenAPI document, checked only as far as the web app could rely on it. */
 export const OpenApiDocument = z.looseObject({
   openapi: z.string(),
+  info: z.looseObject({ title: z.string(), version: z.string() }),
   paths: z.record(z.string(), z.unknown()),
 });
 
