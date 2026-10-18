@@ -127,6 +127,13 @@ export default defineConfigWithVueTs(
     },
   },
 
+  {
+    // Every string the interface shows goes through i18n (#86): no raw text in templates, nor
+    // in the attributes people read (alt, title, aria-label, placeholder and the like).
+    files: ["apps/web/src/**/*.vue"],
+    rules: { "vue/no-bare-strings-in-template": "error" },
+  },
+
   // Last, so Prettier owns formatting and ESLint only reports problems.
   eslintConfigPrettier,
 );
