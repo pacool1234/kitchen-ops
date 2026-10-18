@@ -71,9 +71,7 @@ describe("each user's language (#86)", () => {
     const cookie = await signedInAs(app, auth, "counter");
     const response = await patchMe(cookie, { locale: "en", role: "owner" });
     expect(response.statusCode).toBe(400);
-    expect(MeResponse.parse((await getMe(cookie)).json()).role).toBe(
-      "counter",
-    );
+    expect(MeResponse.parse((await getMe(cookie)).json()).role).toBe("counter");
   });
 
   it("can't be changed through Better Auth's own update-user", async () => {
