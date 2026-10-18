@@ -98,9 +98,11 @@ router.beforeEach(async (to) => {
 });
 
 // After moving to another page, focus goes to its title, so a screen reader says where the
-// user is, and the next Tab starts from the top of the page. Not on the first page load.
-router.afterEach(async (_to, from, failure) => {
-  if (failure || from === START_LOCATION) return;
+// user is, and the next Tab starts from the top of the page. Not on the first page load, and
+// not when only the #hash changed: that's the same page, as when the skip link moves focus to
+// the content.
+router.afterEach(async (to, from, failure) => {
+  if (failure || from === START_LOCATION || to.path === from.path) return;
   await nextTick();
   document.querySelector<HTMLElement>("[data-page-title]")?.focus();
 });
