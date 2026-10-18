@@ -1,19 +1,33 @@
-import { buildPath, type Endpoint } from "@kitchen-ops/shared";
+import {
+  buildPath,
+  ErrorBody,
+  type Endpoint,
+  type FieldErrorCode,
+} from "@kitchen-ops/shared";
 import type { z } from "zod";
 
 // Calls to our API, through the contract in packages/shared (decision 0022): the path, its
 // parameters, the query and the body are typed by the endpoint, and every response is validated
 // with the endpoint's schema, so the web app never trusts data that doesn't match its types.
 
-/** An API call that did not return the expected data. `code` is the API's `error` field. */
+/**
+ * An API call that did not return the expected data. `code` is the API's `error` field, and
+ * `fields` the code of each field it refused (decision 0026), for a form to show by each field.
+ */
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  readonly fields: Readonly<Record<string, FieldErrorCode>> | undefined;
 
-  constructor(status: number, code: string) {
+  constructor(
+    status: number,
+    code: string,
+    fields?: Readonly<Record<string, FieldErrorCode>>,
+  ) {
     super(`API ${status}: ${code}`);
     this.status = status;
     this.code = code;
+    this.fields = fields;
   }
 }
 
@@ -62,6 +76,15 @@ export async function call<E extends Endpoint>(
   });
   if (!response.ok) {
     const errorBody: unknown = await response.json().catch(() => null);
+    // Fields only if every code is one the app knows: a form never shows an unknown one.
+    const parsed = ErrorBody.safeParse(errorBody);
+    if (parsed.success) {
+      throw new ApiError(
+        response.status,
+        parsed.data.error,
+        parsed.data.fields,
+      );
+    }
     const code =
       errorBody && typeof errorBody === "object" && "error" in errorBody
         ? String(errorBody.error)
