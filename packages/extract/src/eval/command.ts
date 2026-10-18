@@ -149,23 +149,22 @@ export async function evalCommand(
     checkPrivateResultsDirectory(set.resultsDirectory, deps.isIgnoredByGit);
   }
 
-  const info: RunInfo = {
-    date: deps.today,
-    set: set.name,
-    prompt: prompt.version,
-    maxMicroUsd,
-  };
-  const files = models.flatMap((model) => {
-    const name = resultsFileName(info, model);
-    return [`${name}.json`, `${name}.md`];
+  // Each model's run takes the first number with neither file there yet (#68). Writing with
+  // `wx` below still refuses to replace a file, so a run already there is never changed.
+  const taken = (name: string) =>
+    existsSync(join(set.resultsDirectory, `${name}.json`)) ||
+    existsSync(join(set.resultsDirectory, `${name}.md`));
+  const infos = models.map((model): RunInfo => {
+    const info = {
+      date: deps.today,
+      set: set.name,
+      prompt: prompt.version,
+      maxMicroUsd,
+    };
+    let runNumber = 1;
+    while (taken(resultsFileName({ ...info, runNumber }, model))) runNumber++;
+    return { ...info, runNumber };
   });
-  for (const file of files) {
-    if (existsSync(join(set.resultsDirectory, file))) {
-      throw new Error(
-        `${file} already exists: results are never overwritten; delete it to run again`,
-      );
-    }
-  }
 
   const client = deps.client ?? openRouterFromEnv(deps.env);
   const runs = await runEval({
@@ -180,7 +179,9 @@ export async function evalCommand(
 
   mkdirSync(set.resultsDirectory, { recursive: true });
   const written: string[] = [];
-  for (const run of runs) {
+  for (const [i, run] of runs.entries()) {
+    // runEval returns one run per model, in the order given.
+    const info = infos[i]!;
     const name = resultsFileName(info, run.model);
     const json = join(set.resultsDirectory, `${name}.json`);
     const md = join(set.resultsDirectory, `${name}.md`);
