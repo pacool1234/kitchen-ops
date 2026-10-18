@@ -283,6 +283,46 @@ describe("evalCommand: refusals, before any call", () => {
     ).rejects.toThrow("vendor/other isn't in config/models.json");
   });
 
+  it("the same model given twice, naming it: both runs would take one run number (#71)", async () => {
+    const d = deps({ client: noCalls });
+    await expect(
+      evalCommand(args("--model", "vendor/model-a"), d),
+    ).rejects.toThrow("--model vendor/model-a is given more than once");
+    expect(readdirSync(d.results)).toEqual([]);
+  });
+
+  it("any list of models: refused exactly when one repeats, and a refused command calls no model and writes nothing (#71)", async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(fc.constantFrom("vendor/model-a", "vendor/model-b"), {
+          minLength: 1,
+          maxLength: 4,
+        }),
+        async (ids) => {
+          const repeats = new Set(ids).size < ids.length;
+          const d = deps(repeats ? { client: noCalls } : {});
+          const argv = [
+            "--set",
+            "gold",
+            ...ids.flatMap((id) => ["--model", id]),
+            "--prompt",
+            "v1",
+          ];
+          if (repeats) {
+            await expect(evalCommand(argv, d)).rejects.toThrow(
+              "is given more than once",
+            );
+            expect(readdirSync(d.results)).toEqual([]);
+          } else {
+            await evalCommand(argv, d);
+            expect(readdirSync(d.results)).toHaveLength(2 * ids.length);
+          }
+        },
+      ),
+      { numRuns: 30 },
+    );
+  });
+
   it("the private set without its environment variable", async () => {
     await expect(
       evalCommand(
