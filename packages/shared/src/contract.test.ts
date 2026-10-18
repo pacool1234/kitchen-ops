@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { buildPath, endpoints } from "./contract";
+import { ROLES } from "./auth";
+import { buildPath, endpoints, mayCall } from "./contract";
 
 /** The path's parameters read back from a URL path: the inverse of buildPath, for testing it. */
 function readPath(
@@ -106,5 +107,28 @@ describe("buildPath: a path with its parameters filled in", () => {
         },
       ),
     );
+  });
+});
+
+describe("mayCall: whether a role may call an endpoint, as the API decides (#89)", () => {
+  it("a public endpoint: anyone, signed in or not", () => {
+    expect(mayCall(endpoints.health, null)).toBe(true);
+    for (const role of ROLES)
+      expect(mayCall(endpoints.health, role)).toBe(true);
+  });
+
+  it("a signed-in endpoint: every role, but nobody signed out", () => {
+    expect(mayCall(endpoints.listSuppliers, null)).toBe(false);
+    for (const role of ROLES) {
+      expect(mayCall(endpoints.listSuppliers, role)).toBe(true);
+    }
+  });
+
+  it("an endpoint for some roles: only those", () => {
+    expect(mayCall(endpoints.createSupplier, "counter")).toBe(false);
+    expect(mayCall(endpoints.createSupplier, "office")).toBe(true);
+    expect(mayCall(endpoints.createSupplier, "owner")).toBe(true);
+    expect(mayCall(endpoints.createSupplier, null)).toBe(false);
+    expect(mayCall(endpoints.listAuditLog, "office")).toBe(false);
   });
 });

@@ -7,7 +7,7 @@ test("the product list shows the seed's active products a page at a time, in Spa
   page,
 }) => {
   await signIn(page, accounts.counter);
-  await mainNav(page).getByRole("link", { name: "Productos" }).click();
+  await mainNav(page).getByRole("link", { name: "Catálogo" }).click();
   await expect(page.getByRole("heading", { name: "Productos" })).toBeVisible();
 
   // The seed has 43 active products: pages of 20, 20 and 3.
