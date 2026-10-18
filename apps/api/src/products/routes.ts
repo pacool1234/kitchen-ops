@@ -1,5 +1,6 @@
-import { ProductList } from "@kitchen-ops/shared";
+import { endpoints } from "@kitchen-ops/shared";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
+import { routeFor } from "../contract";
 import type { Db } from "../db/client";
 import { listActiveProducts } from "./queries";
 
@@ -8,9 +9,8 @@ export const productRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
   app,
   { db },
 ) => {
-  app.get(
-    "/api/products",
-    { schema: { response: { 200: ProductList } } },
-    async () => ({ products: await listActiveProducts(db) }),
-  );
+  app.route({
+    ...routeFor(endpoints.listProducts),
+    handler: async () => ({ products: await listActiveProducts(db) }),
+  });
 };

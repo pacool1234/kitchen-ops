@@ -60,6 +60,8 @@ export function registerAuth(app: FastifyInstance, auth: Auth) {
     method: ["GET", "POST"],
     url: `${AUTH_BASE_PATH}/*`,
     config: { public: true },
+    // Better Auth's own routes: not in the contract or the OpenAPI document (decision 0022).
+    schema: { hide: true },
     async handler(request, reply) {
       const url = new URL(request.url, auth.options.baseURL);
       const response = await auth.handler(
