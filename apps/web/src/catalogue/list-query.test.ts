@@ -1,6 +1,12 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { latestOnly, readListQuery, writeListQuery } from "./list-query";
+import {
+  changeList,
+  latestOnly,
+  readListQuery,
+  writeListQuery,
+  type ListState,
+} from "./list-query";
 
 // A catalogue list's search, filters and page live in the URL (#89), so the back button and a
 // refresh keep them. Only what differs from the defaults is written.
@@ -58,6 +64,32 @@ describe("readListQuery and writeListQuery", () => {
         expect(readListQuery(asUrl, ["type", "storeroomId"])).toEqual(s);
       }),
     );
+  });
+});
+
+describe("changeList: a new search or filter goes back to page 1", () => {
+  const onPage3: ListState = {
+    q: "tom",
+    status: "active",
+    page: 3,
+    filters: { type: "bar", storeroomId: "" },
+  };
+
+  it("a new search, status or filter starts again at page 1", () => {
+    expect(changeList(onPage3, { q: "tomate" })).toMatchObject({
+      q: "tomate",
+      page: 1,
+    });
+    expect(changeList(onPage3, { status: "all" })).toMatchObject({ page: 1 });
+    expect(changeList(onPage3, { filters: { type: "cold_room" } })).toEqual({
+      ...onPage3,
+      page: 1,
+      filters: { type: "cold_room", storeroomId: "" },
+    });
+  });
+
+  it("a change of page keeps everything else", () => {
+    expect(changeList(onPage3, { page: 4 })).toEqual({ ...onPage3, page: 4 });
   });
 });
 

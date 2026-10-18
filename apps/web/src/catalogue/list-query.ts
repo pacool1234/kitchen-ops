@@ -66,6 +66,24 @@ export function writeListQuery(state: ListState): LocationQueryRaw {
   return query;
 }
 
+/** A change to a list: its search, status, page or some of its filters. */
+export type ListChange = Partial<Omit<ListState, "filters">> & {
+  filters?: Record<string, string>;
+};
+
+/**
+ * The list after a change. A new search, status or filter goes back to page 1: page 3 of the
+ * old results may not exist in the new ones. Only a change of page itself keeps it.
+ */
+export function changeList(state: ListState, change: ListChange): ListState {
+  return {
+    ...state,
+    page: 1,
+    ...change,
+    filters: { ...state.filters, ...change.filters },
+  };
+}
+
 export type Latest<T> = { stale: true } | { stale: false; value: T };
 
 /**
@@ -110,19 +128,11 @@ export function useCatalogueList<
   const error = ref<MessageKey>();
   const latest = latestOnly();
 
-  function set(
-    change: Partial<Omit<ListState, "filters">> & {
-      filters?: Record<string, string>;
-    },
-  ) {
-    const next: ListState = {
-      ...state.value,
-      page: 1,
-      ...change,
-      filters: { ...state.value.filters, ...change.filters },
-    };
+  function set(change: ListChange) {
     // Replaced, not pushed: the back button leaves the list, not each keystroke.
-    void router.replace({ query: writeListQuery(next) });
+    void router.replace({
+      query: writeListQuery(changeList(state.value, change)),
+    });
   }
 
   // What's typed: it goes into the URL once typing pauses.
