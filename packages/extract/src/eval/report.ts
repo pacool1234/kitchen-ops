@@ -129,7 +129,7 @@ export function summaryMarkdown(run: ModelRun, info: RunInfo): string {
         : []),
       ...failureLines,
       "",
-      `Correct:${formatRatio({ part: summary.outcomes.correct, whole: summary.documents })}.`,
+      `Correct: ${formatRatio({ part: summary.outcomes.correct, whole: summary.documents })}.`,
     ],
     "Header field accuracy": [
       `Over the ${compared} documents that produced a document.`,
