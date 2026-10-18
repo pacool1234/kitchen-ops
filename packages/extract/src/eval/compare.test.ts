@@ -134,6 +134,39 @@ describe("compareDocument: a result against its gold answer", () => {
     expect(comparison.correct).toBe(true);
   });
 
+  it("a blank discount read as 0% is right: the ledger posts both the same (#72, decision 0019)", () => {
+    const comparison = compareDocument(
+      withLines([
+        { ...tomato, discountPercent: "0" },
+        { ...onion, discountPercent: "0.00" },
+        delivery,
+      ]),
+      gold,
+    );
+    expect(comparison.correct).toBe(true);
+    expect(comparison.differences).toEqual([]);
+  });
+
+  it("only for the discount: a blank quantity or price read as 0 is still wrong", () => {
+    const blank = withLines([
+      { ...tomato, quantity: null, unitPrice: null },
+      onion,
+      delivery,
+    ]);
+    const comparison = compareDocument(
+      withLines([
+        { ...tomato, quantity: "0", unitPrice: "0" },
+        onion,
+        delivery,
+      ]),
+      blank,
+    );
+    expect(comparison.differences).toEqual([
+      "lines.0.quantity",
+      "lines.0.unitPrice",
+    ]);
+  });
+
   it("the VAT breakdown is one field: the same rows in any order, each with the same rate, base and amount", () => {
     const vat = gold.totals!.vat;
     const reordered = compareDocument(

@@ -4,6 +4,7 @@ import {
   canonicalDecimal,
   sameDate,
   sameDecimal,
+  sameDiscount,
   sameDocumentNumber,
   sameText,
 } from "./normalize";
@@ -86,6 +87,65 @@ describe("decimals compare by value, never as JavaScript numbers", () => {
           expect(sameDecimal(value, changed)).toBe(false);
         },
       ),
+    );
+  });
+});
+
+describe("a discount: a blank column and 0% are the same, as the ledger posts them (#72, decision 0019)", () => {
+  it.each([
+    ["0", null],
+    [null, "0.00"],
+    ["-0", null],
+    [null, null],
+    ["5", "5.0"],
+  ])("%s equals %s", (a, b) => {
+    expect(sameDiscount(a, b)).toBe(true);
+  });
+
+  it.each([
+    ["5", null],
+    [null, "0.5"],
+    ["10", "1"],
+  ])("%s doesn't equal %s", (a, b) => {
+    expect(sameDiscount(a, b)).toBe(false);
+  });
+
+  const discount = fc.oneof(
+    fc.constant(null),
+    fc.constantFrom("0", "0.00", "-0", "00"),
+    fc
+      .tuple(
+        fc.nat({ max: 100 }),
+        fc.string({ unit: fc.constantFrom(..."0123456789"), maxLength: 3 }),
+      )
+      .map(([whole, fraction]) =>
+        fraction === "" ? String(whole) : `${whole}.${fraction}`,
+      ),
+  );
+
+  it("is symmetric", () => {
+    fc.assert(
+      fc.property(discount, discount, (a, b) => {
+        expect(sameDiscount(a, b)).toBe(sameDiscount(b, a));
+      }),
+    );
+  });
+
+  it("with neither blank, it compares as any decimal does", () => {
+    fc.assert(
+      fc.property(discount, discount, (a, b) => {
+        fc.pre(a !== null && b !== null);
+        expect(sameDiscount(a, b)).toBe(sameDecimal(a, b));
+      }),
+    );
+  });
+
+  it("a blank equals a discount exactly when that discount is zero", () => {
+    fc.assert(
+      fc.property(discount, (a) => {
+        fc.pre(a !== null);
+        expect(sameDiscount(a, null)).toBe(canonicalDecimal(a) === "0");
+      }),
     );
   });
 });

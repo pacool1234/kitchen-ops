@@ -6,6 +6,7 @@ import type {
 import {
   sameDate,
   sameDecimal,
+  sameDiscount,
   sameDocumentNumber,
   sameText,
 } from "./normalize";
@@ -65,7 +66,7 @@ const LINE_RULES: Readonly<
   quantity: sameDecimal,
   unit: sameText,
   unitPrice: sameDecimal,
-  discountPercent: sameDecimal,
+  discountPercent: sameDiscount,
   vatRate: sameDecimal,
   lineTotal: sameDecimal,
 };
