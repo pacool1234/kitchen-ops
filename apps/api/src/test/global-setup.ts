@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Client } from "pg";
+import { PgBoss } from "pg-boss";
 import type { TestProject } from "vitest/node";
 import { createDb } from "../db/client";
 
@@ -52,6 +53,16 @@ export default async function setup(project: TestProject) {
   } finally {
     await close();
   }
+
+  // pg-boss's own schema (decision 0030), which the API creates when it starts. Created here too,
+  // so tests can clear its jobs before any app has started.
+  const boss = new PgBoss({
+    connectionString: url,
+    schedule: false,
+    supervise: false,
+  });
+  await boss.start();
+  await boss.stop({ graceful: false });
 
   project.provide("testDatabaseUrl", url);
 }
