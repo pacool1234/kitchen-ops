@@ -271,6 +271,53 @@ describe("POST /api/documents", () => {
   });
 });
 
+describe("two uploads of the same file at the same moment", () => {
+  it("the one saved second answers 409, and the files it had just stored are removed", async () => {
+    // A storage whose first put lets the other upload win: it saves the same file first.
+    const racing = createMemoryStorage();
+    const bytes = sample.pdf(42);
+    let raced = false;
+    const app2 = buildApp(config, {
+      storage: {
+        ...racing,
+        async put(key, data, contentType) {
+          await racing.put(key, data, contentType);
+          if (raced) return;
+          raced = true;
+          const [winner] = await db
+            .insert(documents)
+            .values({ uploadedBy: (await db.select().from(users))[0]!.id })
+            .returning();
+          await db.insert(documentFiles).values({
+            documentId: winner!.id,
+            position: 1,
+            kind: "pdf",
+            contentType: "application/pdf",
+            sizeBytes: bytes.length,
+            sha256: sha256(bytes),
+            storageKey: `documents/${winner!.id}/1.pdf`,
+          });
+        },
+      },
+    });
+    const body = multipart([{ name: "a.pdf", bytes }]);
+    const response = await app2.inject({
+      method: "POST",
+      url: "/api/documents",
+      headers: { ...body.headers, cookie },
+      payload: body.payload,
+    });
+    await app2.close();
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toEqual({
+      error: "conflict",
+      fields: { files: "taken" },
+    });
+    expect(racing.keys()).toEqual([]);
+  });
+});
+
 describe("GET /api/documents", () => {
   it("newest first, filtered by status, a page at a time", async () => {
     const a = await uploaded([{ name: "a.pdf", bytes: sample.pdf(1) }]);
