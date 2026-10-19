@@ -55,6 +55,15 @@ const ConfigSchema = z.object({
   S3_BUCKET: z.preprocess(emptyAsUnset, z.string().optional()),
   S3_ACCESS_KEY_ID: z.preprocess(emptyAsUnset, z.string().optional()),
   S3_SECRET_ACCESS_KEY: z.preprocess(emptyAsUnset, z.string().optional()),
+  // Reading documents (#104). "fake" answers a fixed extraction without calling OpenRouter, for
+  // development and tests; refused in production. Unset: the default model (decision 0018).
+  EXTRACTION_MODEL: z.preprocess(
+    emptyAsUnset,
+    z.literal("fake", { error: 'must be "fake", or unset' }).optional(),
+  ),
+  // OpenRouter's key, for the default model. Without it (and without the fake model) the API
+  // starts, and uploaded documents wait, queued, until it's set.
+  OPENROUTER_API_KEY: z.preprocess(emptyAsUnset, z.string().optional()),
 });
 
 const STORAGE_VARIABLES = [
@@ -66,7 +75,8 @@ const STORAGE_VARIABLES = [
 ] as const;
 
 // Storage is all or nothing: a half-set storage would fail on the first upload instead of now.
-const ConfigWithStorage = ConfigSchema.superRefine((config, ctx) => {
+// The fake model never runs in production: staging and production always read for real.
+const CheckedConfig = ConfigSchema.superRefine((config, ctx) => {
   const set = STORAGE_VARIABLES.filter((name) => config[name] !== undefined);
   if (set.length > 0 && set.length < STORAGE_VARIABLES.length) {
     for (const name of STORAGE_VARIABLES.filter((n) => !set.includes(n))) {
@@ -76,6 +86,13 @@ const ConfigWithStorage = ConfigSchema.superRefine((config, ctx) => {
         message: `is required with ${set.join(", ")}`,
       });
     }
+  }
+  if (config.EXTRACTION_MODEL === "fake" && config.NODE_ENV === "production") {
+    ctx.addIssue({
+      code: "custom",
+      path: ["EXTRACTION_MODEL"],
+      message: "the fake model can't be used in production",
+    });
   }
 });
 
@@ -106,6 +123,18 @@ export function storageConfig(config: Config) {
   };
 }
 
+/** How documents are read: the fake model, the default one with its key, or not at all. */
+export type ExtractionConfig =
+  { model: "fake" } | { model: "default"; apiKey: string };
+
+export function extractionConfig(config: Config): ExtractionConfig | null {
+  if (config.EXTRACTION_MODEL === "fake") return { model: "fake" };
+  if (config.OPENROUTER_API_KEY) {
+    return { model: "default", apiKey: config.OPENROUTER_API_KEY };
+  }
+  return null;
+}
+
 export type Config = z.infer<typeof ConfigSchema>;
 
 export class ConfigError extends Error {
@@ -134,7 +163,7 @@ function parseEnv<T extends z.ZodType>(
 
 /** Validates the environment once at startup. Throws a ConfigError listing every problem. */
 export function loadConfig(env: Record<string, string | undefined>): Config {
-  return parseEnv(ConfigWithStorage, env);
+  return parseEnv(CheckedConfig, env);
 }
 
 /** For the migrate script, which needs only the database. */
