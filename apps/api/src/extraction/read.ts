@@ -69,6 +69,17 @@ const spent = (record: CallRecord | null) =>
       }
     : {};
 
+/** What a try's log line says of its calls: never what the document says. */
+const logged = (record: CallRecord | null) =>
+  record
+    ? {
+        model: record.model,
+        modelCalls: record.attempts,
+        costMicroUsd: record.costMicroUsd,
+        latencyMs: record.latencyMs,
+      }
+    : {};
+
 /** Records the try and moves the document on, together. */
 async function finish(
   db: Db,
@@ -187,7 +198,12 @@ async function readOnce(context: ReadContext, job: ReadTry): Promise<void> {
       const reason =
         result.httpStatus === null ? "model_unreachable" : "model_error";
       log.warn(
-        { ...job, reason, httpStatus: result.httpStatus },
+        {
+          ...job,
+          reason,
+          httpStatus: result.httpStatus,
+          ...logged(result.record),
+        },
         "read failed",
       );
       return tryAgain(db, job, reason, result.record);
@@ -200,7 +216,10 @@ async function readOnce(context: ReadContext, job: ReadTry): Promise<void> {
         failureReason: "unreadable",
       });
     case "needs-review":
-      log.info({ ...job, outcome: "needs_review" }, "document read");
+      log.info(
+        { ...job, outcome: "needs_review", ...logged(result.record) },
+        "document read",
+      );
       return finish(db, job, "needs_review", null, result.record, {
         status: "ready_for_review",
         draft: null,
@@ -214,7 +233,15 @@ async function readOnce(context: ReadContext, job: ReadTry): Promise<void> {
         result.document,
         (context.now ?? (() => new Date()))(),
       );
-      log.info({ ...job, outcome: "extracted" }, "document read");
+      log.info(
+        {
+          ...job,
+          outcome: "extracted",
+          ...logged(result.record),
+          checksFailed: changes.checkFailures?.length ?? 0,
+        },
+        "document read",
+      );
       return finish(db, job, "extracted", null, result.record, changes);
     }
   }
