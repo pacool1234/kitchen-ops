@@ -17,7 +17,7 @@ packages/extract ──► packages/ledger (line totals, unit costs: decision 00
 ops/backup (Render cron, weekly) ──► Scaleway Object Storage (encrypted DB dumps)
 ```
 
-The plan's other arrow isn't built yet: the API posting through `ledger`. Staging and production have no bucket or OpenRouter key yet (#105): until then, uploads answer 503 there.
+The plan's other arrow isn't built yet: the API posting through `ledger`. Staging and production each have their own documents' bucket and OpenRouter key: `render.yaml` names the bucket, and the keys are entered in Render's dashboard (README, "One-time setup").
 
 ## Apps and packages
 

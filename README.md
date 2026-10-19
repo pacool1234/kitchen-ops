@@ -281,6 +281,16 @@ The "Deploy production" workflow checks that the commit is on `main` and that st
 2. Render generates each environment's `BETTER_AUTH_SECRET`. Copy both into your password manager: losing one signs everyone out and makes the owners' 2FA unusable.
 3. In GitHub, **Settings → Environments → New environment** `production`. Allow only tags matching `v*` to deploy to it, and add two secrets: `RENDER_DEPLOY_HOOK_API` and `RENDER_DEPLOY_HOOK_WEB`, the deploy hook URLs from each production service's **Settings** in Render. Treat them like passwords.
 4. Set up a billing alert. Every provider needs one (spec section 7).
+5. **Documents' storage and model** (#105, decisions 0029 and 0030). Do this before the Manual Sync that adds the `S3_*` and `OPENROUTER_API_KEY` variables to `render.yaml`, in this order:
+   1. **Scaleway, one project per environment:** `kitchen-ops-staging` and `kitchen-ops-production`. The backups keep their own project, `kitchen-ops-backups`, and its upload-only key (`docs/runbooks/restore.md`): nothing here touches them.
+   2. **In each project, a private bucket in Paris (`fr-par`):** `kitchen-ops-documents-staging` and `kitchen-ops-documents-production`, with versioning on. Add a lifecycle rule that deletes non-current versions after 30 days. If a name is taken, pick another and change `S3_BUCKET` in `render.yaml` to match.
+   3. **IAM, one application per environment:** `kitchen-ops-api-staging` and `kitchen-ops-api-production`.
+      - Each gets a policy with `ObjectStorageObjectsRead`, `ObjectStorageObjectsWrite` and `ObjectStorageObjectsDelete`, scoped to its own project only. Delete is needed because a failed upload removes the files it had just stored.
+      - Each gets an API key, with its own project as the preferred project. Store both halves in the password manager.
+   4. **OpenRouter, one key per environment,** each with a spending limit that resets monthly: about $2 for staging and $5 for production. The default model costs about $0.011 a document (decision 0018), so $5 is about 450 documents. Raise a limit on the key's page when needed. When a key's limit is used up, documents fail with `model_error` until it resets or is raised.
+   5. **In Render, in each API's Environment page,** add `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` and `OPENROUTER_API_KEY` with **Save only**, so nothing redeploys yet.
+   6. **Then click Manual Sync** on the Blueprint. It adds the bucket's endpoint, region and name, and redeploys both environments, production included. The API refuses to start with only some of the `S3_*` variables: adding the keys first means it never sees only some.
+   7. **Check staging's log** for the line `documents aren't read`: after the sync it should be gone.
 
 If Render adds a suffix to a service name because it was taken, update the addresses in `render.yaml`, in `.github/workflows/deploy-production.yml` and in the table above.
 

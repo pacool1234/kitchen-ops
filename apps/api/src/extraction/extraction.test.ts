@@ -8,6 +8,7 @@ import {
 import { Document, type ExtractedDocument } from "@kitchen-ops/shared";
 import { asc, eq, sql } from "drizzle-orm";
 import fc from "fast-check";
+import { Writable } from "node:stream";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../app";
 import { createAuth } from "../auth/auth";
@@ -84,14 +85,18 @@ afterEach(async () => {
 /** An app that reads documents with this client, or none that reads them at all. */
 function appReadingWith(
   client: OpenRouterClient | null,
-  options: { storage?: Storage } = {},
+  options: { storage?: Storage; logs?: Writable } = {},
 ) {
   const reader: Reader | null = client ? { client, model, prompt } : null;
-  const app = buildApp(config, {
-    storage: options.storage ?? storage,
-    reader,
-    jobs: FAST,
-  });
+  const app = buildApp(
+    options.logs ? testConfig({ LOG_LEVEL: "info" }) : config,
+    {
+      storage: options.storage ?? storage,
+      reader,
+      jobs: FAST,
+      ...(options.logs ? { logStream: options.logs } : {}),
+    },
+  );
   open.push(app);
   return app;
 }
@@ -278,6 +283,41 @@ describe("an uploaded document is read in the background", () => {
         costMicroUsd: 800,
       }),
     ]);
+  });
+});
+
+describe("the log", () => {
+  it("says what reading a document cost and how long it took, and nothing of what it says", async () => {
+    const lines: Record<string, unknown>[] = [];
+    const logs = new Writable({
+      write(chunk: Buffer, _encoding, callback) {
+        for (const line of chunk.toString().split("\n")) {
+          if (line) lines.push(JSON.parse(line) as Record<string, unknown>);
+        }
+        callback();
+      },
+    });
+    await supplier();
+    const app = appReadingWith(scripted(read()).client, { logs });
+    const { document } = await upload(app);
+    await settled(document.id);
+    await app.close();
+
+    expect(lines.filter((l) => l.msg === "document read")).toEqual([
+      expect.objectContaining({
+        documentId: document.id,
+        try: 1,
+        outcome: "extracted",
+        model: "vendor/vision",
+        costMicroUsd: 400,
+        latencyMs: expect.any(Number),
+        checksFailed: 0,
+      }),
+    ]);
+    const logged = JSON.stringify(lines);
+    for (const words of ["Frutas del Huerto", "A-2026-0042", "Tomate"]) {
+      expect(logged).not.toContain(words);
+    }
   });
 });
 

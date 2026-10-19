@@ -86,6 +86,23 @@ projects:
                 sync: false
               - key: SENTRY_ENVIRONMENT
                 value: staging
+              # Documents (#105, decisions 0029 and 0030): their files in a Scaleway bucket of this
+              # environment's own, and the model that reads them. The key can read, write and
+              # delete objects in this environment's Scaleway project only; it and OpenRouter's key
+              # (with a monthly spending limit) are entered in the dashboard. All five S3_* or none:
+              # the API refuses to start with some of them.
+              - key: S3_ENDPOINT
+                value: https://s3.fr-par.scw.cloud
+              - key: S3_REGION
+                value: fr-par
+              - key: S3_BUCKET
+                value: kitchen-ops-documents-staging
+              - key: S3_ACCESS_KEY_ID
+                sync: false
+              - key: S3_SECRET_ACCESS_KEY
+                sync: false
+              - key: OPENROUTER_API_KEY
+                sync: false
               # The demo restaurant and one login per role (decision 0028). Each password is
               # entered in Render's dashboard, at least 12 characters; without them the seed
               # refuses and the API doesn't start, naming the one missing.
@@ -169,6 +186,23 @@ projects:
                 sync: false
               - key: SENTRY_ENVIRONMENT
                 value: production
+              # Documents (#105, decisions 0029 and 0030): their files in a Scaleway bucket of this
+              # environment's own, and the model that reads them. The key can read, write and
+              # delete objects in this environment's Scaleway project only; it and OpenRouter's key
+              # (with a monthly spending limit) are entered in the dashboard. All five S3_* or none:
+              # the API refuses to start with some of them.
+              - key: S3_ENDPOINT
+                value: https://s3.fr-par.scw.cloud
+              - key: S3_REGION
+                value: fr-par
+              - key: S3_BUCKET
+                value: kitchen-ops-documents-production
+              - key: S3_ACCESS_KEY_ID
+                sync: false
+              - key: S3_SECRET_ACCESS_KEY
+                sync: false
+              - key: OPENROUTER_API_KEY
+                sync: false
 
           # Weekly encrypted dump of the production database to a Scaleway bucket: the copy outside
           # Render (ops/backup, docs/runbooks/restore.md). Render gives cron jobs no deploy hook, so
