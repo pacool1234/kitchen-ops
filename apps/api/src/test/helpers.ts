@@ -45,3 +45,17 @@ export function totpCode(base32Secret: string, time = Date.now()): string {
   const code = (hmac.readUInt32BE(offset) & 0x7fffffff) % 1_000_000;
   return code.toString().padStart(6, "0");
 }
+
+/**
+ * The local stand-in for Scaleway (docker-compose.yml's `s3`, and CI's): the bucket and its
+ * local-only keys, or TEST_S3_ENDPOINT's server.
+ */
+export function testStorageConfig() {
+  return {
+    endpoint: process.env.TEST_S3_ENDPOINT ?? "http://127.0.0.1:9000",
+    region: "fr-par",
+    bucket: "kitchen-ops-documents",
+    accessKeyId: "local-only-key",
+    secretAccessKey: "local-only-secret",
+  };
+}
