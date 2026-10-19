@@ -2,6 +2,12 @@ import { z } from "zod";
 import { AuditLogPage, AuditLogQuery } from "./audit";
 import { MeResponse, UpdateMe, type Role } from "./auth";
 import { HealthResponse } from "./health";
+import {
+  Document,
+  DocumentPage,
+  DocumentQuery,
+  UPLOAD_LIMITS,
+} from "./documents";
 import { IdParams } from "./lists";
 import {
   NewProduct,
@@ -59,6 +65,13 @@ export interface Endpoint {
   readonly response: z.ZodType;
   /** It may answer 409: a value that must be unique is already taken. */
   readonly conflict?: true;
+  /**
+   * It takes files, as multipart/form-data parts named `field` (#102), instead of a JSON body.
+   * The API reads and checks them itself; the web app sends them as a FormData.
+   */
+  readonly upload?: { readonly field: string };
+  /** It needs object storage, and answers 503 storage_unavailable without it (decision 0029). */
+  readonly needsStorage?: true;
 }
 
 /** Declares an endpoint, keeping its exact types for the API's handlers and the web's calls. */
@@ -264,6 +277,38 @@ export const endpoints = {
     body: SupplierProductChanges,
     response: SupplierProduct,
     conflict: true,
+  }),
+
+  // Supplier documents (#102): everyone receives deliveries (spec section 6), so everyone signed
+  // in uploads and reads them. Reviewing and posting them are M7's.
+  uploadDocument: endpoint({
+    method: "POST",
+    path: "/api/documents",
+    summary:
+      "Upload a document: one PDF or Facturae file, or up to 10 photos of it, in order",
+    access: "signed-in",
+    upload: { field: UPLOAD_LIMITS.field },
+    status: 201,
+    response: Document,
+    conflict: true,
+    needsStorage: true,
+  }),
+  listDocuments: endpoint({
+    method: "GET",
+    path: "/api/documents",
+    summary: "Documents, newest first: by status, a page at a time",
+    access: "signed-in",
+    query: DocumentQuery,
+    response: DocumentPage,
+  }),
+  getDocument: endpoint({
+    method: "GET",
+    path: "/api/documents/:id",
+    summary: "One document, with short-lived links to its files",
+    access: "signed-in",
+    params: IdParams,
+    response: Document,
+    needsStorage: true,
   }),
 } as const;
 

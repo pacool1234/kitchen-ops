@@ -55,7 +55,7 @@ pnpm --filter @kitchen-ops/web e2e                                # or add a fil
 Local Postgres 18 runs in Docker ([Docker Desktop](https://www.docker.com/products/docker-desktop/) on Windows and macOS).
 
 ```sh
-docker compose up -d                  # start Postgres on 127.0.0.1:5432 (data kept in a Docker volume)
+docker compose up -d                  # Postgres on 127.0.0.1:5432, and the S3 stand-in on :9000
 cp apps/api/.env.example apps/api/.env  # first time only, then set BETTER_AUTH_SECRET (below)
 pnpm --filter @kitchen-ops/api db:migrate
 pnpm --filter @kitchen-ops/api db:seed  # synthetic products and users; each skipped if any exist
@@ -79,6 +79,8 @@ The seed creates one **local-only** login per role, and a second counter. The pa
 The second counter is for trying what changes a user's own settings, such as their language, without changing the others'. The browser tests use it that way.
 
 Owners must use 2FA: until the owner sets up an authenticator app (`POST /api/auth/two-factor/enable`, then `/two-factor/verify-totp`), every protected route answers `403 two_factor_required`.
+
+**Documents' files** (decision 0029) are kept in object storage: Scaleway on Render, and locally the `s3` service (`rclone serve s3` on `127.0.0.1:9000`). To upload documents locally, set the five `S3_*` variables in `apps/api/.env` to the local server's values, which `.env.example` lists. Without them the API still starts, and its document endpoints answer 503. The API's storage tests need the `s3` service running.
 
 API tests use a separate `kitchen_ops_test` database on the same server, created and migrated automatically, so they never touch your development data.
 

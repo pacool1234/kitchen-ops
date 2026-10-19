@@ -4,7 +4,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth";
 import { createUser } from "../auth/users";
 import { createDb } from "../db/client";
-import { auditLog, users } from "../db/schema";
+import { auditLog, documents, users } from "../db/schema";
 import { TEST_PASSWORD } from "../test/auth";
 import { testConfig } from "../test/helpers";
 import { audited, type AuditContext } from "./audited";
@@ -121,7 +121,12 @@ describe("audited: a write and its audit entry are saved together, or not at all
   });
 
   it("one entry per entity changed, each with its own document if it has one", async () => {
-    const documentId = randomUUIDv7();
+    // A document that exists: the log refers to it (#102).
+    const [document] = await db
+      .insert(documents)
+      .values({ uploadedBy: userId })
+      .returning({ id: documents.id });
+    const documentId = document!.id;
     await audited(db, context(), async () => ({
       result: null,
       changes: [toEnglish(userId), { ...toEnglish("other-user"), documentId }],

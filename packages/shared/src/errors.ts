@@ -29,14 +29,24 @@ export const FIELD_ERROR_CODES = [
   "unknown_unit",
   /** A pack that isn't a whole number of base units: 0.0001 kg is 0.1 g. */
   "not_whole_base_units",
+  /** More files than an upload may hold. */
+  "too_many",
+  /** A file that isn't a PDF, a Facturae XML, a JPEG or a PNG, by its bytes. */
+  "unsupported_type",
+  /** A PDF or XML file sent with other files: it makes a document on its own. */
+  "mixed_kinds",
 ] as const;
 export const FieldErrorCode = z.enum(FIELD_ERROR_CODES);
 export type FieldErrorCode = z.infer<typeof FieldErrorCode>;
 
-/** Every error answer: `error`, and `fields` for invalid input or a conflict. */
+/**
+ * Every error answer: `error`, and `fields` for invalid input or a conflict. A file already
+ * received names the document that has it in `duplicateOf` (#102).
+ */
 export const ErrorBody = z.object({
   error: z.string(),
   fields: z.record(z.string(), FieldErrorCode).optional(),
+  duplicateOf: z.uuid().optional(),
 });
 export type ErrorBody = z.infer<typeof ErrorBody>;
 

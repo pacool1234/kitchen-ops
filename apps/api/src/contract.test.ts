@@ -138,11 +138,34 @@ describe("GET /api/openapi.json: the OpenAPI document", () => {
       const statuses = Object.keys(operation.responses as object);
       const name = `${e.method} ${e.path}`;
       expect(statuses.includes("400"), name).toBe(
-        Boolean(e.params ?? e.query ?? e.body),
+        Boolean(e.params ?? e.query ?? e.body ?? e.upload),
       );
+      expect(statuses.includes("503"), name).toBe(Boolean(e.needsStorage));
       expect(statuses.includes("404"), name).toBe(Boolean(e.params));
       expect(statuses.includes("409"), name).toBe(Boolean(e.conflict));
     }
+  });
+
+  it("an upload is described as multipart/form-data, with its files as binary parts", async () => {
+    const doc = await openApiDocument();
+    const upload = doc.paths["/api/documents"]!.post!;
+    expect(upload.requestBody).toMatchObject({
+      required: true,
+      content: {
+        "multipart/form-data": {
+          schema: {
+            type: "object",
+            properties: {
+              files: {
+                type: "array",
+                items: { type: "string", format: "binary" },
+              },
+            },
+            required: ["files"],
+          },
+        },
+      },
+    });
   });
 
   it("leaves Better Auth's routes out: its own client calls them", async () => {
