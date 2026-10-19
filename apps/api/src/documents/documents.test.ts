@@ -233,7 +233,7 @@ describe("POST /api/documents", () => {
       expect(response.statusCode, role).toBe(201);
     }
     const signedOut = await upload(
-      [{ name: "x.pdf", bytes: sample.pdf(n++) }],
+      [{ name: "x.pdf", bytes: sample.pdf(n) }],
       "",
     );
     expect(signedOut.statusCode).toBe(401);

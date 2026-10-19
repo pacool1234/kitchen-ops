@@ -15,9 +15,11 @@ import { FOREIGN_KEY_FIELDS, UNIQUE_FIELDS } from "./db/schema";
 /** A refusal a handler throws: 404 for a row that doesn't exist, for example. */
 export class HttpError extends Error {
   constructor(
-    readonly status: 400 | 404 | 409,
+    readonly status: 400 | 404 | 409 | 503,
     readonly code: string,
     readonly fields?: Readonly<Record<string, FieldErrorCode>>,
+    /** For a file already received: the document that has it (#102). */
+    readonly duplicateOf?: string,
   ) {
     super(code);
   }
@@ -94,6 +96,7 @@ export function registerErrors(app: FastifyInstance) {
       return send(error.status, {
         error: error.code,
         ...(error.fields ? { fields: { ...error.fields } } : {}),
+        ...(error.duplicateOf ? { duplicateOf: error.duplicateOf } : {}),
       });
     }
     const refused = refusedBy(error);

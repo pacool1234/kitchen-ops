@@ -29,6 +29,7 @@
   "dependencies": {
     "@fastify/multipart": "^10.1.2",
     "@fastify/swagger": "^9.9.2",
+    "@kitchen-ops/extract": "workspace:*",
     "@kitchen-ops/ledger": "workspace:*",
     "@kitchen-ops/shared": "workspace:*",
     "@sentry/node": "^11.8.0",

@@ -69,6 +69,9 @@ jobs:
         run: pnpm format:check
       - name: Typecheck
         run: pnpm typecheck
+      # The S3 stand-in the storage tests run against (docker-compose.yml's `s3`, decision 0029).
+      - name: Local S3 server
+        run: docker compose up -d --wait s3
       - name: Test
         run: pnpm test
         env:

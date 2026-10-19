@@ -278,6 +278,8 @@ export const en: Messages = {
     invalid_input: "Check the marked fields.",
     conflict: "Something is already in use.",
     not_found: "It doesn't exist, or is no longer available.",
+    storage_unavailable:
+      "Documents aren't available right now. Try again later.",
     unknown: "Something went wrong. Try again.",
     // Why a field was refused: one per code in packages/shared (FIELD_ERROR_CODES).
     fields: {
@@ -296,6 +298,11 @@ export const en: Messages = {
       in_use: "This is in use and can't be changed like this.",
       unknown_unit: "This isn't one of the product's units.",
       not_whole_base_units: "This isn't a whole number of the base unit.",
+      too_many: "There are too many files.",
+      unsupported_type:
+        "Only PDF, Facturae XML, JPEG or PNG files are accepted.",
+      mixed_kinds:
+        "A PDF or an XML file goes on its own, without photos or other files.",
     },
   },
 };
