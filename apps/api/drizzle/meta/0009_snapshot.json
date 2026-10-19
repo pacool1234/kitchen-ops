@@ -136,12 +136,8 @@
           "name": "audit_log_user_id_users_id_fk",
           "tableFrom": "audit_log",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -149,12 +145,8 @@
           "name": "audit_log_document_id_documents_id_fk",
           "tableFrom": "audit_log",
           "tableTo": "documents",
-          "columnsFrom": [
-            "document_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["document_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -285,12 +277,8 @@
           "name": "document_files_document_id_documents_id_fk",
           "tableFrom": "document_files",
           "tableTo": "documents",
-          "columnsFrom": [
-            "document_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["document_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -439,12 +427,8 @@
           "name": "documents_supplier_id_suppliers_id_fk",
           "tableFrom": "documents",
           "tableTo": "suppliers",
-          "columnsFrom": [
-            "supplier_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["supplier_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -452,12 +436,8 @@
           "name": "documents_uploaded_by_users_id_fk",
           "tableFrom": "documents",
           "tableTo": "users",
-          "columnsFrom": [
-            "uploaded_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["uploaded_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -591,12 +571,8 @@
           "name": "extraction_attempts_document_id_documents_id_fk",
           "tableFrom": "extraction_attempts",
           "tableTo": "documents",
-          "columnsFrom": [
-            "document_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["document_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -709,12 +685,8 @@
           "name": "products_default_storeroom_id_storerooms_id_fk",
           "tableFrom": "products",
           "tableTo": "storerooms",
-          "columnsFrom": [
-            "default_storeroom_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["default_storeroom_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -907,12 +879,8 @@
           "name": "supplier_products_supplier_id_suppliers_id_fk",
           "tableFrom": "supplier_products",
           "tableTo": "suppliers",
-          "columnsFrom": [
-            "supplier_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["supplier_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -920,12 +888,8 @@
           "name": "supplier_products_product_id_products_id_fk",
           "tableFrom": "supplier_products",
           "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1086,12 +1050,8 @@
           "name": "unit_conversions_product_id_products_id_fk",
           "tableFrom": "unit_conversions",
           "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1215,12 +1175,8 @@
           "name": "accounts_user_id_users_id_fk",
           "tableFrom": "accounts",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1309,12 +1265,8 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1324,9 +1276,7 @@
         "sessions_token_unique": {
           "name": "sessions_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -1420,12 +1370,8 @@
           "name": "two_factors_user_id_users_id_fk",
           "tableFrom": "two_factors",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1517,9 +1463,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -1599,47 +1543,27 @@
     "public.audit_action": {
       "name": "audit_action",
       "schema": "public",
-      "values": [
-        "create",
-        "update",
-        "delete"
-      ]
+      "values": ["create", "update", "delete"]
     },
     "public.base_unit": {
       "name": "base_unit",
       "schema": "public",
-      "values": [
-        "g",
-        "ml",
-        "unit"
-      ]
+      "values": ["g", "ml", "unit"]
     },
     "public.document_file_kind": {
       "name": "document_file_kind",
       "schema": "public",
-      "values": [
-        "pdf",
-        "xml",
-        "image"
-      ]
+      "values": ["pdf", "xml", "image"]
     },
     "public.document_status": {
       "name": "document_status",
       "schema": "public",
-      "values": [
-        "queued",
-        "reading",
-        "ready_for_review",
-        "failed"
-      ]
+      "values": ["queued", "reading", "ready_for_review", "failed"]
     },
     "public.document_type": {
       "name": "document_type",
       "schema": "public",
-      "values": [
-        "delivery-note",
-        "invoice"
-      ]
+      "values": ["delivery-note", "invoice"]
     },
     "public.extraction_failure": {
       "name": "extraction_failure",
@@ -1656,12 +1580,7 @@
     "public.extraction_outcome": {
       "name": "extraction_outcome",
       "schema": "public",
-      "values": [
-        "extracted",
-        "needs_review",
-        "rejected",
-        "failed"
-      ]
+      "values": ["extracted", "needs_review", "rejected", "failed"]
     },
     "public.product_category": {
       "name": "product_category",
@@ -1682,28 +1601,17 @@
     "public.storeroom_type": {
       "name": "storeroom_type",
       "schema": "public",
-      "values": [
-        "cold_room",
-        "dry_store",
-        "bar"
-      ]
+      "values": ["cold_room", "dry_store", "bar"]
     },
     "public.user_locale": {
       "name": "user_locale",
       "schema": "public",
-      "values": [
-        "es",
-        "en"
-      ]
+      "values": ["es", "en"]
     },
     "public.user_role": {
       "name": "user_role",
       "schema": "public",
-      "values": [
-        "counter",
-        "office",
-        "owner"
-      ]
+      "values": ["counter", "office", "owner"]
     }
   },
   "schemas": {},
