@@ -97,7 +97,12 @@ describe("evaluateDocument: each document has exactly one outcome", () => {
     ],
     [
       "a failed call",
-      run({ status: "failed", message: "HTTP 500", record: record(null) }),
+      run({
+        status: "failed",
+        message: "HTTP 500",
+        httpStatus: 500,
+        record: record(null),
+      }),
       "review",
       "failed",
     ],
@@ -131,7 +136,12 @@ describe("summarize: the run's metrics", () => {
     run(extracted({ ...gold, lines: [gold.lines[0]!] }, record(null, 5000)), [
       "missing-value",
     ]),
-    run({ status: "failed", message: "HTTP 500", record: record(2000, 300) }),
+    run({
+      status: "failed",
+      message: "HTTP 500",
+      httpStatus: 500,
+      record: record(2000, 300),
+    }),
     run(extracted(gold, null)),
   ].map(evaluateDocument);
   const summary = summarize(evaluations);
@@ -238,6 +248,7 @@ describe("summarize: properties", () => {
       fc.constant<FileResult>({
         status: "failed",
         message: "HTTP 500",
+        httpStatus: 500,
         record: record(10),
       }),
       fc.constant<FileResult>({

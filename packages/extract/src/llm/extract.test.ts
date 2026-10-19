@@ -209,9 +209,21 @@ describe("extractDocument: errors from OpenRouter", () => {
     expect(await extractDocument(client, request(), { now: clock() })).toEqual({
       status: "failed",
       message: "OpenRouter answered 429: Rate limit exceeded",
+      httpStatus: 429,
       record: expect.objectContaining({ attempts: 1, costMicroUsd: 0 }),
     });
     expect(requests).toHaveLength(1);
+  });
+
+  it("an error that isn't OpenRouter's, such as the network failing, has no HTTP status", async () => {
+    const { client } = fakeClient(new TypeError("fetch failed"));
+    expect(
+      await extractDocument(client, request(), { now: clock() }),
+    ).toMatchObject({
+      status: "failed",
+      message: "fetch failed",
+      httpStatus: null,
+    });
   });
 
   it("an error on the retry also fails, counting both attempts", async () => {
@@ -223,6 +235,7 @@ describe("extractDocument: errors from OpenRouter", () => {
       await extractDocument(client, request(), { now: clock() }),
     ).toMatchObject({
       status: "failed",
+      httpStatus: 500,
       record: { attempts: 2, costMicroUsd: 500 },
     });
   });
