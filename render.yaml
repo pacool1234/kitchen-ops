@@ -12,7 +12,10 @@
 # - staging deploys every commit on main once CI passes; production deploys only from a release
 #   tag (.github/workflows/deploy-production.yml), so its automatic deploys are off;
 # - the staging API is on the free plan (sleeps when idle, no pre-deploy command), so it applies
-#   migrations when it starts; production applies them as a pre-deploy command.
+#   migrations when it starts; production applies them as a pre-deploy command;
+# - the staging API seeds its demo restaurant when it starts (SEED_DEMO, decision 0028): the
+#   first start fills the empty database, and every later one changes nothing. Production is
+#   never seeded.
 
 projects:
   - name: kitchen-ops
@@ -58,9 +61,10 @@ projects:
             autoDeployTrigger: checksPass
             # Production dependencies of the API and its workspace packages only.
             buildCommand: corepack enable pnpm && pnpm install --frozen-lockfile --prod --filter "@kitchen-ops/api..."
-            # Free plan: no pre-deploy command, so migrate first. `exec` hands the shell's process
-            # to Node, so Render's SIGTERM reaches the graceful shutdown in server.ts.
-            startCommand: pnpm --filter @kitchen-ops/api db:migrate && cd apps/api && APP_VERSION="$RENDER_GIT_COMMIT" exec node --import tsx --import ./src/instrument.ts src/server.ts
+            # Free plan: no pre-deploy command, so migrate first, then seed the demo (each table
+            # only if it's empty). `exec` hands the shell's process to Node, so Render's SIGTERM
+            # reaches the graceful shutdown in server.ts.
+            startCommand: pnpm --filter @kitchen-ops/api db:migrate && pnpm --filter @kitchen-ops/api db:seed && cd apps/api && APP_VERSION="$RENDER_GIT_COMMIT" exec node --import tsx --import ./src/instrument.ts src/server.ts
             healthCheckPath: /health
             envVars:
               - key: NODE_ENV
@@ -82,6 +86,17 @@ projects:
                 sync: false
               - key: SENTRY_ENVIRONMENT
                 value: staging
+              # The demo restaurant and one login per role (decision 0028). Each password is
+              # entered in Render's dashboard, at least 12 characters; without them the seed
+              # refuses and the API doesn't start, naming the one missing.
+              - key: SEED_DEMO
+                value: "true"
+              - key: DEMO_PASSWORD_COUNTER
+                sync: false
+              - key: DEMO_PASSWORD_OFFICE
+                sync: false
+              - key: DEMO_PASSWORD_OWNER
+                sync: false
 
         databases:
           - name: kitchen-ops-db-staging
