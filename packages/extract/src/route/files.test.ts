@@ -26,6 +26,8 @@ const vision: ModelConfig = {
 };
 const prompt: Prompt = { version: "v1", text: "Extract the document." };
 const request = { model: vision, prompt, source: "client" } as const;
+/** A clock that stands still: two calls compared whole record the same latency. */
+const stillClock = { now: () => 0 };
 
 /** A fake client answering with the expected document, remembering each request. */
 function fakeClient() {
@@ -108,8 +110,18 @@ describe("extractFiles: one document from its files", () => {
     const page = await photo(300);
     const one = fakeClient();
     const reference = fakeClient();
-    const extraction = await extractFiles(one.client, [page], request);
-    const single = await extractFile(reference.client, page, request);
+    const extraction = await extractFiles(
+      one.client,
+      [page],
+      request,
+      stillClock,
+    );
+    const single = await extractFile(
+      reference.client,
+      page,
+      request,
+      stillClock,
+    );
     expect(one.requests).toEqual(reference.requests);
     expect(extraction).toEqual({
       sha256s: [single.sha256],
@@ -127,8 +139,18 @@ describe("extractFiles: one document from its files", () => {
       const file = goldSource(id);
       const one = fakeClient();
       const reference = fakeClient();
-      const extraction = await extractFiles(one.client, [file], request);
-      const single = await extractFile(reference.client, file, request);
+      const extraction = await extractFiles(
+        one.client,
+        [file],
+        request,
+        stillClock,
+      );
+      const single = await extractFile(
+        reference.client,
+        file,
+        request,
+        stillClock,
+      );
       expect(one.requests).toEqual(reference.requests);
       expect(extraction).toEqual({
         sha256s: [single.sha256],
