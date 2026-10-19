@@ -1,7 +1,8 @@
 // Writes the OpenAPI document the API serves to apps/api/openapi.json (decision 0022), so every
 // API change shows up in review. A test fails while the committed file is out of date.
 //   pnpm --filter @kitchen-ops/api openapi:write
-// No database is touched: the pool connects only on a query, and this route never queries.
+// No database is touched: the pool connects only on a query, this route never queries, and no
+// background jobs start.
 import { writeFileSync } from "node:fs";
 import { buildApp } from "./app";
 import { loadConfig } from "./config";
@@ -16,6 +17,7 @@ const app = buildApp(
     BETTER_AUTH_URL: "http://127.0.0.1:3000",
     LOG_LEVEL: "silent",
   }),
+  { jobs: false },
 );
 try {
   const response = await app.inject({

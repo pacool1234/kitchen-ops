@@ -12,11 +12,14 @@ import { createAuth } from "./auth/auth";
 import { registerAuth } from "./auth/fastify";
 import { meRoutes } from "./auth/routes";
 import { catalogueRoutes } from "./catalogue/routes";
-import { storageConfig, type Config } from "./config";
+import { extractionConfig, storageConfig, type Config } from "./config";
 import { openApiRoutes, registerOpenApi } from "./contract";
 import { createDb } from "./db/client";
 import { documentRoutes } from "./documents/routes";
 import { registerErrors } from "./errors";
+import { createJobs, JOB_SETTINGS, type JobSettings } from "./extraction/jobs";
+import { failedRead, tryReading } from "./extraction/read";
+import { readerFor, type Reader } from "./extraction/reader";
 import { healthRoutes } from "./health/routes";
 import { tagRequest } from "./sentry";
 import { createS3Storage } from "./storage/s3";
@@ -30,6 +33,16 @@ export interface BuildAppOptions {
    * none (decision 0029); tests pass an in-memory one.
    */
   storage?: Storage;
+  /**
+   * What reads documents (#104). Defaults to what the config says (EXTRACTION_MODEL,
+   * OPENROUTER_API_KEY); null reads none, and uploads wait, queued. Tests pass a scripted client.
+   */
+  reader?: Reader | null;
+  /**
+   * Background jobs' timings (src/extraction/jobs.ts): tests try again at once. `false` starts
+   * none, for the OpenAPI writer, which has no database.
+   */
+  jobs?: Partial<JobSettings> | false;
 }
 
 /** Builds the API without listening on a port, so tests can call it with `inject`. */
@@ -57,9 +70,17 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
     tagRequest(request.id);
   });
 
-  // The pool connects lazily, on the first query; closed with the app.
+  // The pool connects lazily, on the first query; closed with the app, after the jobs stop.
   const { db, close } = createDb(config.DATABASE_URL);
-  app.addHook("onClose", close);
+  const jobs = createJobs(
+    config.DATABASE_URL,
+    { ...JOB_SETTINGS, ...(options.jobs || {}) },
+    app.log,
+  );
+  app.addHook("onClose", async () => {
+    await jobs.stop();
+    await close();
+  });
 
   // Uploads (#102): files are read from multipart/form-data, each cut off just past the limit,
   // so that what's too big is refused by field instead of failing the whole request.
@@ -78,6 +99,29 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
     app.log.warn("documents are off: no object storage is configured (S3_*)");
   }
 
+  // Reading documents (#104, decision 0030): in this process, one at a time, once it's ready.
+  const extraction = extractionConfig(config);
+  const reader =
+    options.reader !== undefined
+      ? options.reader
+      : extraction && readerFor(extraction);
+  if (!reader) {
+    app.log.warn(
+      "documents aren't read: set OPENROUTER_API_KEY (or EXTRACTION_MODEL=fake locally); uploads wait, queued",
+    );
+  }
+  app.addHook("onReady", async () => {
+    if (options.jobs === false) return;
+    await jobs.start();
+    if (reader && storage) {
+      const context = { db, storage, reader, log: app.log };
+      await jobs.work({
+        read: (job) => tryReading(context, job),
+        failed: failedRead(db),
+      });
+    }
+  });
+
   // Before the routes: it builds the OpenAPI document from each route as it is registered.
   registerOpenApi(app);
   registerAuth(app, createAuth(db, config));
@@ -86,7 +130,7 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   app.register(meRoutes, { db });
   app.register(auditRoutes, { db });
   app.register(catalogueRoutes, { db });
-  app.register(documentRoutes, { db, storage });
+  app.register(documentRoutes, { db, storage, jobs });
 
   return app;
 }
