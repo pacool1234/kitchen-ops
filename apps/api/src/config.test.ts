@@ -5,6 +5,7 @@ import {
   loadDatabaseUrl,
   loadSeedConfig,
   loadSentryConfig,
+  storageConfig,
 } from "./config";
 
 const DATABASE_URL = "postgres://user:pass@localhost:5432/db";
@@ -133,6 +134,46 @@ describe("loadConfig", () => {
     expect(() =>
       loadConfig({ ...required, DATABASE_URL: "mysql://u:hunter2@h/db" }),
     ).not.toThrow(/hunter2/);
+  });
+});
+
+describe("storage (#102)", () => {
+  // Local-only values, as in docker-compose.yml.
+  const storage = {
+    S3_ENDPOINT: "http://127.0.0.1:9000",
+    S3_REGION: "fr-par",
+    S3_BUCKET: "kitchen-ops-documents",
+    S3_ACCESS_KEY_ID: "local-only-key",
+    S3_SECRET_ACCESS_KEY: "local-only-secret",
+  };
+
+  it("is off without its variables: the API still starts", () => {
+    expect(storageConfig(loadConfig(required))).toBeNull();
+  });
+
+  it("is on with all five", () => {
+    expect(storageConfig(loadConfig({ ...required, ...storage }))).toEqual({
+      endpoint: "http://127.0.0.1:9000",
+      region: "fr-par",
+      bucket: "kitchen-ops-documents",
+      accessKeyId: "local-only-key",
+      secretAccessKey: "local-only-secret",
+    });
+  });
+
+  it("refuses some without the others, naming each one missing, without printing the secret", () => {
+    const partial = Object.fromEntries(
+      Object.entries(storage).filter(
+        ([name]) => name !== "S3_BUCKET" && name !== "S3_REGION",
+      ),
+    );
+    expect(() => loadConfig({ ...required, ...partial })).toThrow(ConfigError);
+    expect(() => loadConfig({ ...required, ...partial })).toThrow(
+      /S3_REGION: is required with[\s\S]*S3_BUCKET: is required with/,
+    );
+    expect(() => loadConfig({ ...required, ...partial })).not.toThrow(
+      /local-only-secret/,
+    );
   });
 });
 

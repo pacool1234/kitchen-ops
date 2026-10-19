@@ -36,7 +36,10 @@ describe("S3 storage", () => {
     await storage.put(k, bytes("x"), "text/plain");
     const { url } = await storage.signedUrl(k, 1);
     await new Promise((resolve) => setTimeout(resolve, 2100));
-    expect((await fetch(url)).status).toBe(403);
+    // Refused: Scaleway and AWS answer 403, the local server 400.
+    const { status } = await fetch(url);
+    expect(status).toBeGreaterThanOrEqual(400);
+    expect(status).toBeLessThan(500);
   });
 
   it("a link that was tampered with doesn't work", async () => {
