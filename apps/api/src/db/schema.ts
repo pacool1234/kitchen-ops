@@ -2,11 +2,14 @@ import {
   AUDIT_ACTIONS,
   DOCUMENT_STATUSES,
   EXTRACTED_DOCUMENT_TYPES,
+  EXTRACTION_FAILURES,
   FILE_KINDS,
   BASE_UNITS,
   PRODUCT_CATEGORIES,
   STOREROOM_TYPES,
+  type ExtractedDocument,
 } from "@kitchen-ops/shared";
+import type { CheckFailure } from "@kitchen-ops/extract";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -167,6 +170,11 @@ export const documentStatus = pgEnum("document_status", DOCUMENT_STATUSES);
 /** A delivery note or an invoice, once read: the extraction's own values. */
 export const documentType = pgEnum("document_type", EXTRACTED_DOCUMENT_TYPES);
 export const documentFileKind = pgEnum("document_file_kind", FILE_KINDS);
+/** Why reading a document failed (#104); values come from packages/shared. */
+export const extractionFailure = pgEnum(
+  "extraction_failure",
+  EXTRACTION_FAILURES,
+);
 
 /**
  * A supplier document (spec section 3, #102): one PDF or Facturae file, or one or several photos,
@@ -181,6 +189,14 @@ export const documents = pgTable(
     supplierId: uuid("supplier_id").references(() => suppliers.id),
     number: text("number"),
     date: date("date", { mode: "string" }),
+    /** What extraction read (#104), for review (M7). Null until read, or if it couldn't be. */
+    draft: jsonb("draft").$type<ExtractedDocument>(),
+    /** The checks the draft failed: names and paths, and messages that may quote the document. */
+    checkFailures: jsonb("check_failures").$type<readonly CheckFailure[]>(),
+    /** Why it needs review without a draft: the model's answer didn't match the schema… */
+    reviewNote: text("review_note"),
+    /** Set exactly when the status is `failed`. */
+    failureReason: extractionFailure("failure_reason"),
     // No cascade: a user who uploaded documents can't be deleted, only deactivated.
     uploadedBy: uuid("uploaded_by")
       .notNull()
@@ -191,6 +207,10 @@ export const documents = pgTable(
   (table) => [
     index("documents_status_created_idx").on(table.status, table.createdAt),
     index("documents_created_idx").on(table.createdAt),
+    check(
+      "documents_failure_reason_when_failed",
+      sql`(${table.status} = 'failed') = (${table.failureReason} is not null)`,
+    ),
   ],
 );
 
@@ -223,6 +243,49 @@ export const documentFiles = pgTable(
       table.position,
     ),
     check("document_files_position_positive", sql`${table.position} > 0`),
+  ],
+);
+
+/** How one try at reading a document ended (#104). */
+export const extractionOutcome = pgEnum("extraction_outcome", [
+  "extracted",
+  "needs_review",
+  "rejected",
+  "failed",
+]);
+
+/**
+ * One try at reading a document (#104): what it called, what that cost and how it ended. A job
+ * tries up to 3 times; a retry from the app is a new job. A Facturae file, read without a model,
+ * has no model and costs nothing.
+ */
+export const extractionAttempts = pgTable(
+  "extraction_attempts",
+  {
+    id: primaryId(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id),
+    /** The pg-boss job, and which of its tries this was, from 1. */
+    jobId: text("job_id").notNull(),
+    try: integer("try").notNull(),
+    outcome: extractionOutcome("outcome").notNull(),
+    /** For a `failed` or `rejected` try. */
+    failureReason: extractionFailure("failure_reason"),
+    model: text("model"),
+    promptVersion: text("prompt_version"),
+    /** Calls to the model in this try: 2 when the first answer didn't match the schema. */
+    modelCalls: integer("model_calls").notNull().default(0),
+    promptTokens: integer("prompt_tokens").notNull().default(0),
+    completionTokens: integer("completion_tokens").notNull().default(0),
+    /** Millionths of a US dollar, a whole number; null if OpenRouter didn't report it. */
+    costMicroUsd: integer("cost_micro_usd"),
+    latencyMs: integer("latency_ms"),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    index("extraction_attempts_document_idx").on(table.documentId),
+    check("extraction_attempts_try_positive", sql`${table.try} > 0`),
   ],
 );
 
