@@ -67,7 +67,7 @@ pnpm --filter @kitchen-ops/api db:seed  # synthetic products and users; each ski
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-The seed creates one **local-only** login per role, and a second counter. The passwords are deliberately fake; never use them anywhere real.
+The seed creates one **local-only** login per role, and a second counter. The passwords are deliberately fake; never use them anywhere real. They don't work on staging, which has logins of its own (below, "Deploying"). The seed refuses to run in production unless `SEED_DEMO=true` says it's staging's demo (decision 0028).
 
 | Email                  | Password             | Role    |
 | ---------------------- | -------------------- | ------- |
@@ -247,7 +247,12 @@ Render, Frankfurt region, defined in `render.yaml` (a Render Blueprint):
 
 `/health` answers `{"status":"ok","version":"<git commit>"}`, so you can see which commit is running. The staging API is on Render's free plan and sleeps after 15 minutes without traffic; the first request then takes about a minute.
 
-Each deploy applies the database migrations before the new version takes traffic. If a migration fails, the deploy fails and the previous version keeps running. The seed never runs on Render.
+Each deploy applies the database migrations before the new version takes traffic. If a migration fails, the deploy fails and the previous version keeps running.
+
+**Staging's demo** (decision 0028): the staging API seeds the fictional restaurant and one login per role when it starts. Each table is filled only while it's empty, so it seeds once and then keeps whatever you create; it's never reset. Production is never seeded.
+- **Sign in** at https://kitchen-ops-web-staging.onrender.com as `counter@example.test`, `office@example.test` or `owner@example.test`. The owner sets up 2FA on the first sign-in.
+- **The passwords** are the staging API's `DEMO_PASSWORD_COUNTER`, `DEMO_PASSWORD_OFFICE` and `DEMO_PASSWORD_OWNER`, entered in Render's dashboard (the service's **Environment**), at least 12 characters each. They're never written in the repo; keep them in a password manager. Without them, the staging API refuses to start, and its log names the one missing.
+- **Changing a password** after the first start doesn't change a login: the seed only creates users while there are none.
 
 **Changing `render.yaml`:** the Blueprint applies changes only when you click **Manual Sync** on its page in Render. A sync that changes a service also redeploys it from the latest commit on `main`, **production included**, without a release tag. Sync only when `main` is ready for production, ideally right after releasing it.
 
