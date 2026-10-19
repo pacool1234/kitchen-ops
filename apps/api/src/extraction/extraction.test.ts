@@ -391,11 +391,13 @@ describe("errors are tried again, 3 tries in all", () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 0, max: 3 }), async (failures) => {
         await db.execute(sql`truncate ${users}, ${documents} cascade`);
+        // Each failed try is paid for: an answer that doesn't match the schema, then an error
+        // on its retry. So a document's cost is more than any one try's.
         const replies: Reply[] = [
-          ...Array.from(
-            { length: failures },
-            () => new OpenRouterError("OpenRouter answered 502", 502),
-          ),
+          ...Array.from({ length: failures }, () => [
+            "not json",
+            new OpenRouterError("OpenRouter answered 502", 502),
+          ]).flat(),
           read(),
         ];
         const app = appReadingWith(scripted(...replies).client);
@@ -405,6 +407,7 @@ describe("errors are tried again, 3 tries in all", () => {
         const tries = await attempts(document.id);
         expect(tries).toHaveLength(Math.min(failures + 1, 3));
         const sum = tries.reduce((n, a) => n + (a.costMicroUsd ?? 0), 0);
+        expect(sum).toBe(400 * (failures < 3 ? failures + 1 : 3));
         expect((await getDocument(app, document.id, cookie)).costMicroUsd).toBe(
           sum,
         );
