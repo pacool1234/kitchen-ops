@@ -218,6 +218,8 @@ export const documentRoutes: FastifyPluginAsyncZod<{
           await tx
             .insert(documents)
             .values({ id, uploadedBy: request.user!.id });
+          // Its job, in this transaction: if anything after this fails, the job goes too.
+          await jobs.queueRead(tx, id);
           await tx.insert(documentFiles).values(
             files.map((f) => ({
               documentId: id,
@@ -229,7 +231,6 @@ export const documentRoutes: FastifyPluginAsyncZod<{
               storageKey: f.storageKey,
             })),
           );
-          await jobs.queueRead(tx, id);
           return {
             result: undefined,
             changes: [
