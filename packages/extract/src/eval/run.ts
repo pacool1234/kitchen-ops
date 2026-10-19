@@ -4,7 +4,7 @@ import type { CallRecord } from "../llm/extract";
 import type { OpenRouterClient } from "../llm/openrouter";
 import type { Prompt } from "../llm/prompts";
 import { extractFile, sha256Hex, type Route } from "../route/route";
-import { validate, type CheckName } from "../validation/checks";
+import { MAX_AGE_DAYS, validate, type CheckName } from "../validation/checks";
 import {
   evaluateDocument,
   summarize,
@@ -18,9 +18,6 @@ import type { EvalDocument, EvalSet } from "./sets";
 
 // One eval run (spec section 5): every document of a set, for each model, through routing,
 // extraction, validation and evaluation, one at a time, stopping at the spending cap.
-
-/** Validation's date check allows this many days before a document's (gold) date. */
-const MAX_AGE_DAYS = 365;
 
 export interface RunOptions {
   readonly set: EvalSet;

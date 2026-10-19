@@ -145,12 +145,14 @@ export default defineConfigWithVueTs(
   {
     // Every write is in the audit log (#87, decision 0025): the API's features write through
     // the transaction audited() hands them, never straight through `db`. The seed, the
-    // database scripts and the tests set data up directly.
+    // database scripts and the tests set data up directly. So does the job that reads documents
+    // (#104, decision 0030): no user makes those writes, and its tries are its own record.
     files: ["apps/api/src/**/*.ts"],
     ignores: [
       "apps/api/src/**/*.test.ts",
       "apps/api/src/test/**",
       "apps/api/src/db/**",
+      "apps/api/src/extraction/read.ts",
     ],
     rules: {
       "no-restricted-syntax": [

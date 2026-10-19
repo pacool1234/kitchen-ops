@@ -13,14 +13,22 @@ import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { audited, auditContext } from "../audit/audited";
 import { routeFor } from "../contract";
 import type { Db } from "../db/client";
-import { documentFiles, documents, suppliers, users } from "../db/schema";
+import {
+  documentFiles,
+  documents,
+  extractionAttempts,
+  suppliers,
+  users,
+} from "../db/schema";
 import { HttpError, notFound } from "../errors";
+import type { Jobs } from "../extraction/jobs";
 import type { Storage } from "../storage/storage";
 import { checkUpload } from "./upload";
 
 // Supplier documents (#102): uploaded as one PDF or Facturae file or up to 10 photos, each file
 // kept in object storage (decision 0029), and read back with links that last 5 minutes. A file
-// already received, by its sha256, is refused, naming the document that has it.
+// already received, by its sha256, is refused, naming the document that has it. Saving one queues
+// the job that reads it (#104), in the same transaction; a failed one can be queued again.
 
 /** How long a link to a file works. */
 export const LINK_SECONDS = 5 * 60;
@@ -86,6 +94,7 @@ async function findDuplicates(db: Db, hashes: string[]): Promise<Duplicates> {
 const summary = {
   id: documents.id,
   status: documents.status,
+  failureReason: documents.failureReason,
   type: documents.type,
   supplierId: suppliers.id,
   supplierName: suppliers.name,
@@ -109,6 +118,7 @@ type SummaryRow = Awaited<ReturnType<typeof withNames>>[number];
 const toSummary = (row: SummaryRow) => ({
   id: row.id,
   status: row.status,
+  failureReason: row.failureReason,
   type: row.type,
   supplier:
     row.supplierId && row.supplierName
@@ -121,7 +131,7 @@ const toSummary = (row: SummaryRow) => ({
   uploadedAt: row.createdAt.toISOString(),
 });
 
-/** One document with its files in order, each with a fresh link. */
+/** One document with its files in order, each with a fresh link, and what reading it cost. */
 async function readDocument(
   db: Db,
   storage: Storage,
@@ -129,13 +139,22 @@ async function readDocument(
 ): Promise<Document | undefined> {
   const [row] = await withNames(db).where(eq(documents.id, id));
   if (!row) return undefined;
-  const files = await db
-    .select()
-    .from(documentFiles)
-    .where(eq(documentFiles.documentId, id))
-    .orderBy(asc(documentFiles.position));
+  const [files, [spent]] = await Promise.all([
+    db
+      .select()
+      .from(documentFiles)
+      .where(eq(documentFiles.documentId, id))
+      .orderBy(asc(documentFiles.position)),
+    db
+      .select({
+        costMicroUsd: sql<number>`coalesce(sum(${extractionAttempts.costMicroUsd}), 0)::int`,
+      })
+      .from(extractionAttempts)
+      .where(eq(extractionAttempts.documentId, id)),
+  ]);
   return {
     ...toSummary(row),
+    costMicroUsd: spent?.costMicroUsd ?? 0,
     files: await Promise.all(
       files.map(async (f) => {
         const link = await storage.signedUrl(f.storageKey, LINK_SECONDS);
@@ -156,7 +175,8 @@ async function readDocument(
 export const documentRoutes: FastifyPluginAsyncZod<{
   db: Db;
   storage: Storage | null;
-}> = async (app, { db, storage }) => {
+  jobs: Jobs;
+}> = async (app, { db, storage, jobs }) => {
   /** Storage, or 503: without it, files can be neither kept nor read. */
   const needStorage = (): Storage => {
     if (!storage) throw new HttpError(503, "storage_unavailable");
@@ -198,6 +218,8 @@ export const documentRoutes: FastifyPluginAsyncZod<{
           await tx
             .insert(documents)
             .values({ id, uploadedBy: request.user!.id });
+          // Its job, in this transaction: if anything after this fails, the job goes too.
+          await jobs.queueRead(tx, id);
           await tx.insert(documentFiles).values(
             files.map((f) => ({
               documentId: id,
@@ -269,6 +291,49 @@ export const documentRoutes: FastifyPluginAsyncZod<{
       const found = await readDocument(db, needStorage(), params.id);
       if (!found) throw notFound();
       return found;
+    },
+  });
+
+  app.route({
+    ...routeFor(endpoints.retryDocument),
+    handler: async (request) => {
+      const store = needStorage();
+      const { id } = request.params;
+      await audited(db, auditContext(request), async (tx) => {
+        // Locked, so two retries at once can't both queue it.
+        const [before] = await tx
+          .select({
+            status: documents.status,
+            failureReason: documents.failureReason,
+          })
+          .from(documents)
+          .where(eq(documents.id, id))
+          .for("update");
+        if (!before) throw notFound();
+        if (before.status !== "failed") throw new HttpError(409, "not_failed");
+        await tx
+          .update(documents)
+          .set({ status: "queued", failureReason: null })
+          .where(eq(documents.id, id));
+        await jobs.queueRead(tx, id);
+        return {
+          result: undefined,
+          changes: [
+            {
+              action: "update",
+              entityType: "document",
+              entityId: id,
+              documentId: id,
+              before: {
+                status: before.status,
+                failureReason: before.failureReason,
+              },
+              after: { status: "queued", failureReason: null },
+            },
+          ],
+        };
+      });
+      return (await readDocument(db, store, id))!;
     },
   });
 };

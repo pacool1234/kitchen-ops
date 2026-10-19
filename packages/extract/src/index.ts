@@ -19,6 +19,7 @@ export {
 /** Checking what was read (spec section 5, stage 4). */
 export {
   CHECKS,
+  MAX_AGE_DAYS,
   validate,
   type CheckFailure,
   type CheckName,

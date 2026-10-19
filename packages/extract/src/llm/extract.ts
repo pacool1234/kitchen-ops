@@ -3,7 +3,11 @@ import {
   extractedDocumentJsonSchema,
 } from "@kitchen-ops/shared";
 import type { ModelConfig } from "./config";
-import type { ChatReply, OpenRouterClient } from "./openrouter";
+import {
+  OpenRouterError,
+  type ChatReply,
+  type OpenRouterClient,
+} from "./openrouter";
 import type { Prompt } from "./prompts";
 
 // One extraction (spec section 5, stage 3): ask the model, validate with the Zod schema, retry
@@ -64,6 +68,8 @@ export type ExtractionResult =
   | {
       readonly status: "failed";
       readonly message: string;
+      /** OpenRouter's HTTP status; null for any other error, such as the network failing. */
+      readonly httpStatus: number | null;
       readonly record: CallRecord;
     };
 
@@ -174,6 +180,7 @@ export async function extractDocument(
       return {
         status: "failed",
         message: error instanceof Error ? error.message : String(error),
+        httpStatus: error instanceof OpenRouterError ? error.status : null,
         record: record(),
       };
     }

@@ -82,6 +82,8 @@ Owners must use 2FA: until the owner sets up an authenticator app (`POST /api/au
 
 **Documents' files** (decision 0029) are kept in object storage: Scaleway on Render, and locally the `s3` service (`rclone serve s3` on `127.0.0.1:9000`). To upload documents locally, set the five `S3_*` variables in `apps/api/.env` to the local server's values, which `.env.example` lists. Without them the API still starts, and its document endpoints answer 503. The API's storage tests need the `s3` service running.
 
+**Reading documents** (decision 0030): each upload queues a background job, which runs inside the API and reads the document with the default model through OpenRouter. Locally, set `EXTRACTION_MODEL=fake` in `apps/api/.env`: a fake model answers a fixed delivery note without calling OpenRouter, and fails every time for a document whose text contains `fake-model:fail`. To read with the real model, set `OPENROUTER_API_KEY` instead; each document then costs real money. With neither, the API still starts and uploads wait, queued. The queue is kept in Postgres by pg-boss, in its own `pgboss` schema.
+
 API tests use a separate `kitchen_ops_test` database on the same server, created and migrated automatically, so they never touch your development data.
 
 Changing the schema (`apps/api/src/db/schema.ts`):

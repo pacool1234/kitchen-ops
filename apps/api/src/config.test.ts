@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ConfigError,
+  extractionConfig,
   loadConfig,
   loadDatabaseUrl,
   loadSeedConfig,
@@ -174,6 +175,64 @@ describe("storage (#102)", () => {
     expect(() => loadConfig({ ...required, ...partial })).not.toThrow(
       /local-only-secret/,
     );
+  });
+});
+
+describe("extraction (#104)", () => {
+  // Synthetic: the shape of an OpenRouter key, obviously not one.
+  const OPENROUTER_API_KEY = `sk-or-v1-${"0".repeat(16)}`;
+
+  it("is off without a key or the fake model: the API still starts, and uploads wait", () => {
+    expect(extractionConfig(loadConfig(required))).toBeNull();
+  });
+
+  it("uses the default model (decision 0018) with OPENROUTER_API_KEY", () => {
+    expect(
+      extractionConfig(loadConfig({ ...required, OPENROUTER_API_KEY })),
+    ).toEqual({ model: "default", apiKey: OPENROUTER_API_KEY });
+  });
+
+  it.each(["development", "test"] as const)(
+    "uses the fake model with EXTRACTION_MODEL=fake in %s, even with a key",
+    (NODE_ENV) => {
+      expect(
+        extractionConfig(
+          loadConfig({
+            ...required,
+            NODE_ENV,
+            EXTRACTION_MODEL: "fake",
+            OPENROUTER_API_KEY,
+          }),
+        ),
+      ).toEqual({ model: "fake" });
+    },
+  );
+
+  it("refuses the fake model in production: staging and production always read for real", () => {
+    expect(() =>
+      loadConfig({
+        ...required,
+        NODE_ENV: "production",
+        EXTRACTION_MODEL: "fake",
+      }),
+    ).toThrow(/EXTRACTION_MODEL: the fake model can't be used in production/);
+    expect(
+      extractionConfig(
+        loadConfig({ ...required, NODE_ENV: "production", OPENROUTER_API_KEY }),
+      ),
+    ).toEqual({ model: "default", apiKey: OPENROUTER_API_KEY });
+  });
+
+  it("refuses any other EXTRACTION_MODEL: a model is chosen in packages/extract, not here", () => {
+    expect(() =>
+      loadConfig({ ...required, EXTRACTION_MODEL: "openai/gpt-5" }),
+    ).toThrow(/EXTRACTION_MODEL: must be "fake", or unset/);
+  });
+
+  it("an empty key counts as unset", () => {
+    expect(
+      extractionConfig(loadConfig({ ...required, OPENROUTER_API_KEY: "" })),
+    ).toBeNull();
   });
 });
 

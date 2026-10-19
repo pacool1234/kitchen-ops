@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { crc32, deflateSync } from "node:zlib";
 
 // Uploading documents in tests (#102): sample files, recognised by their first bytes as the API
 // recognises them, and a multipart body for app.inject.
@@ -40,6 +41,39 @@ export const sample = {
   /** Neither a PDF, XML nor a photo, whatever its name says. */
   plainText: (n: number) => text(`just some notes ${n}`),
 };
+
+/** One PNG chunk: its length, type, data and CRC (the PNG specification, section 5.3). */
+function pngChunk(type: string, data: Uint8Array): Uint8Array {
+  const head = new Uint8Array(8);
+  const view = new DataView(head.buffer);
+  view.setUint32(0, data.length);
+  head.set(text(type), 4);
+  const tail = new Uint8Array(4);
+  new DataView(tail.buffer).setUint32(0, crc32(join(text(type), data)));
+  return join(head, data, tail);
+}
+
+/**
+ * A real photo, which extraction can decode, unlike `sample.png`: a grey PNG `n` + 1 pixels wide
+ * and 1 high, so each `n` is a file of its own (#104).
+ */
+export function photo(n: number): Uint8Array {
+  const width = n + 1;
+  const header = new Uint8Array(13);
+  const view = new DataView(header.buffer);
+  view.setUint32(0, width);
+  view.setUint32(4, 1);
+  header.set([8, 2, 0, 0, 0], 8); // 8 bits a channel, RGB, no interlacing
+  // One row: filter type 0, then each pixel's red, green and blue.
+  const row = new Uint8Array(1 + 3 * width).fill(0x80);
+  row[0] = 0;
+  return join(
+    new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk("IHDR", header),
+    pngChunk("IDAT", new Uint8Array(deflateSync(row))),
+    pngChunk("IEND", new Uint8Array()),
+  );
+}
 
 export interface UploadFile {
   name: string;

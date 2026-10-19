@@ -68,6 +68,7 @@ describe("endpoints: the API's contract (decision 0022)", () => {
       ["POST", "/api/documents", "signed-in"],
       ["GET", "/api/documents", "signed-in"],
       ["GET", "/api/documents/:id", "signed-in"],
+      ["POST", "/api/documents/:id/retry", "signed-in"],
     ]);
   });
 

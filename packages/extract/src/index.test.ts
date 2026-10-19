@@ -16,6 +16,8 @@ describe("the package's public API", () => {
       "openRouterFromEnv",
       "CLIENT_ROUTING",
       "detectFormat",
+      "MAX_AGE_DAYS",
+      "OpenRouterError",
     ]) {
       expect(extract, name).toHaveProperty(name);
     }
