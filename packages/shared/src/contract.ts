@@ -310,6 +310,17 @@ export const endpoints = {
     response: Document,
     needsStorage: true,
   }),
+  retryDocument: endpoint({
+    method: "POST",
+    path: "/api/documents/:id/retry",
+    summary:
+      "Read a failed document again; 409 not_failed if it isn't failed (#104)",
+    access: "signed-in",
+    params: IdParams,
+    response: Document,
+    conflict: true,
+    needsStorage: true,
+  }),
 } as const;
 
 /**
