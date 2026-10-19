@@ -340,7 +340,7 @@ describe("GET /api/documents", () => {
     const c = await uploaded([{ name: "c.pdf", bytes: sample.pdf(3) }]);
     await db
       .update(documents)
-      .set({ status: "failed" })
+      .set({ status: "failed", failureReason: "model_error" })
       .where(eq(documents.id, b.id));
 
     const all = DocumentPage.parse((await read("/api/documents")).json());

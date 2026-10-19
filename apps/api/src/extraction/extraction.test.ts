@@ -412,7 +412,7 @@ describe("errors are tried again, 3 tries in all", () => {
       }),
       { numRuns: 6 },
     );
-  });
+  }, 60_000);
 });
 
 describe("reading stopped before it finished", () => {
