@@ -1,4 +1,4 @@
-import { ExtractedDocument, UPLOAD_LIMITS } from "@kitchen-ops/shared";
+import { ExtractedDocument } from "@kitchen-ops/shared";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { GOLD_DIRECTORY, goldIds, readGoldEntry } from "../gold/gold-set";
@@ -6,7 +6,7 @@ import type { ModelConfig } from "../llm/config";
 import { CLIENT_ROUTING, type ContentPart } from "../llm/extract";
 import type { ChatReply, OpenRouterClient } from "../llm/openrouter";
 import type { Prompt } from "../llm/prompts";
-import { extractFiles } from "./files";
+import { extractFiles, MAX_PHOTOS } from "./files";
 import { prepareImage } from "./image";
 import { extractFile, sha256Hex } from "./route";
 import { plainImage } from "./testing";
@@ -113,14 +113,12 @@ describe("extractFiles: one document from its files", () => {
   it.each([
     ["no files", async () => [], "a document needs at least one file"],
     [
-      `${UPLOAD_LIMITS.maxPhotos + 1} photos`,
+      `${MAX_PHOTOS + 1} photos`,
       async () =>
         Promise.all(
-          Array.from({ length: UPLOAD_LIMITS.maxPhotos + 1 }, (_, i) =>
-            photo(300 + i),
-          ),
+          Array.from({ length: MAX_PHOTOS + 1 }, (_, i) => photo(300 + i)),
         ),
-      `a document has at most ${UPLOAD_LIMITS.maxPhotos} photos`,
+      `a document has at most ${MAX_PHOTOS} photos`,
     ],
     [
       "a PDF with a photo",
