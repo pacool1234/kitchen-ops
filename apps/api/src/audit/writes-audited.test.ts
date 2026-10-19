@@ -492,6 +492,50 @@ const WRITE_CASES: Record<string, () => Promise<void>> = {
     expect((await upload([sample.jpeg(1)])).statusCode).toBe(409);
     expect(await allEntries("document")).toHaveLength(1);
   },
+
+  async retryDocument() {
+    const cookie = await signedInAs(app, auth, "counter");
+    const body = multipart([{ name: "a.pdf", bytes: sample.pdf(1) }]);
+    const document = Document.parse(
+      (
+        await app.inject({
+          method: "POST",
+          url: "/api/documents",
+          headers: { ...body.headers, cookie },
+          payload: body.payload,
+        })
+      ).json(),
+    );
+    // As the job leaves it after its last try (src/extraction/read.ts).
+    await db
+      .update(documents)
+      .set({ status: "failed", failureReason: "model_unreachable" })
+      .where(eq(documents.id, document.id));
+    const retry = () =>
+      app.inject({
+        method: "POST",
+        url: `/api/documents/${document.id}/retry`,
+        headers: { cookie },
+      });
+
+    const response = await retry();
+    expect(response.statusCode).toBe(200);
+    expect(await updatesOf("document", document.id)).toEqual([
+      expect.objectContaining({
+        action: "update",
+        requestId: response.headers["x-request-id"],
+        documentId: document.id,
+        changes: {
+          status: { before: "failed", after: "queued" },
+          failureReason: { before: "model_unreachable", after: null },
+        },
+      }),
+    ]);
+
+    // Not failed any more: 409, and nothing recorded.
+    expect((await retry()).statusCode).toBe(409);
+    expect(await updatesOf("document", document.id)).toHaveLength(1);
+  },
 };
 
 const TOMATE = {

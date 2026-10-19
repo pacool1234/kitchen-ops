@@ -12,6 +12,7 @@ import { buildApp } from "../app";
 import { createAuth } from "../auth/auth";
 import { createDb } from "../db/client";
 import { documentFiles, documents, users } from "../db/schema";
+import { READ_QUEUE } from "../extraction/jobs";
 import { createMemoryStorage } from "../storage/memory";
 import { signedInAs, signedInAsOwner } from "../test/auth";
 import { multipart, sample, type UploadFile } from "../test/documents";
@@ -34,6 +35,7 @@ afterAll(async () => {
 let cookie: string;
 beforeEach(async () => {
   await db.execute(sql`truncate ${users}, ${documents}, verifications cascade`);
+  await db.execute(sql`delete from pgboss.job`);
   storage.clear();
   cookie = await signedInAs(app, auth, "office");
 });
@@ -52,6 +54,14 @@ async function uploaded(files: readonly UploadFile[]) {
   const response = await upload(files);
   expect(response.statusCode, response.body).toBe(201);
   return Document.parse(response.json());
+}
+
+/** The documents a reading job is queued for (#104), in pg-boss's own table. */
+async function queuedReads(): Promise<string[]> {
+  const { rows } = await db.execute<{ documentId: string }>(
+    sql`select data->>'documentId' as "documentId" from pgboss.job where name = ${READ_QUEUE} and state = 'created'`,
+  );
+  return rows.map((r) => r.documentId);
 }
 
 const read = (url: string) =>
@@ -82,6 +92,8 @@ describe("POST /api/documents", () => {
     });
     expect(storage.keys()).toHaveLength(1);
     expect(await storage.get(storage.keys()[0]!)).toEqual(bytes);
+    // Queued to be read, in the same transaction as the document (#104).
+    expect(await queuedReads()).toEqual([document.id]);
   });
 
   it("a Facturae XML file", async () => {
@@ -173,6 +185,7 @@ describe("POST /api/documents", () => {
       expect(response.json()).toEqual({ error: "invalid_input", fields });
       expect(storage.keys()).toEqual([]);
       expect(await db.select().from(documents)).toEqual([]);
+      expect(await queuedReads()).toEqual([]);
     },
   );
 
@@ -315,6 +328,8 @@ describe("two uploads of the same file at the same moment", () => {
       fields: { files: "taken" },
     });
     expect(racing.keys()).toEqual([]);
+    // Its transaction rolled back, the job it queued with it.
+    expect(await queuedReads()).toEqual([]);
   });
 });
 
