@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from "node:fs";
 import { ExtractedDocument } from "@kitchen-ops/shared";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -71,6 +72,13 @@ async function imageUrl(bytes: Uint8Array): Promise<string> {
   return prepared.dataUrl;
 }
 
+/** A gold document's source file: a text PDF, a Facturae XML. */
+function goldSource(id: string): Uint8Array {
+  const directory = new URL(`${id}/`, GOLD_DIRECTORY);
+  const source = readdirSync(directory).find((f) => f.startsWith("source."))!;
+  return new Uint8Array(readFileSync(new URL(source, directory)));
+}
+
 const pdf = new TextEncoder().encode("%PDF-1.7\n%%EOF\n");
 const xml = new TextEncoder().encode(
   '<?xml version="1.0"?><fe:Facturae></fe:Facturae>',
@@ -109,6 +117,27 @@ describe("extractFiles: one document from its files", () => {
       result: single.result,
     });
   });
+
+  it.each([
+    ["a text PDF", "syn-002-invoice-discounts-two-vat"],
+    ["a Facturae XML file", "syn-006-facturae"],
+  ])(
+    "one file that isn't a photo, %s: exactly what extractFile does",
+    async (_, id) => {
+      const file = goldSource(id);
+      const one = fakeClient();
+      const reference = fakeClient();
+      const extraction = await extractFiles(one.client, [file], request);
+      const single = await extractFile(reference.client, file, request);
+      expect(one.requests).toEqual(reference.requests);
+      expect(extraction).toEqual({
+        sha256s: [single.sha256],
+        route: single.route,
+        result: single.result,
+      });
+      expect(extraction.result.status).not.toBe("rejected");
+    },
+  );
 
   it.each([
     ["no files", async () => [], "a document needs at least one file"],
