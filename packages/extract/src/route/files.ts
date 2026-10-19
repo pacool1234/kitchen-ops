@@ -1,3 +1,4 @@
+import { UPLOAD_LIMITS } from "@kitchen-ops/shared";
 import {
   extractDocument,
   type ContentPart,
@@ -13,8 +14,8 @@ import { extractFile, sha256Hex, type FileResult, type Route } from "./route";
 // Several photos go to the model as images in one request, as a scanned PDF's pages already do;
 // prompt v2 asks for every line "including lines on later pages", so nothing is added to it.
 
-/** The most photos one document may have: the upload's own limit (#102). */
-export const MAX_PHOTOS = 10;
+/** The most photos one document may have: the upload's own limit (#102), one number for both. */
+export const MAX_PHOTOS = UPLOAD_LIMITS.maxPhotos;
 
 /** What extraction made of a document's files. */
 export interface DocumentExtraction {
