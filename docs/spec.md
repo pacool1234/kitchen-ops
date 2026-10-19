@@ -202,6 +202,8 @@ Every write is recorded in an audit log: who, what, when, and from which documen
 | Extraction jobs | Background worker | ~$7/month | Suspended when idle |
 | Database | Render Postgres, paid instance (point-in-time recovery) | From ~$6/month, sized up as needed | Smallest instance |
 
+For now, extraction jobs run inside the API process instead of their own worker (decision 0030).
+
 Render prices as checked in October 2026; confirm before subscribing. A solo workspace is enough pre-employment; the employer may need a paid workspace once several people need access.
 
 **Environments (Decided)**
