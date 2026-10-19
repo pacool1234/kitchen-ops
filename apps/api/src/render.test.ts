@@ -25,7 +25,13 @@ function service(name: string): string {
   return lines.slice(start, end === -1 ? undefined : end).join("\n");
 }
 
-const occurrences = (text: string, word: string) => text.split(word).length - 1;
+/** How often `word` is in the settings, comments left out: they may explain it anywhere. */
+const occurrences = (text: string, word: string) =>
+  text
+    .split("\n")
+    .filter((line) => !line.trim().startsWith("#"))
+    .join("\n")
+    .split(word).length - 1;
 
 const PASSWORDS = [
   "DEMO_PASSWORD_COUNTER",
