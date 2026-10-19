@@ -38,6 +38,9 @@ export interface CheckFailure {
   readonly message: string;
 }
 
+/** How old a document may be, in days, before the date check fails: the eval's and the API's. */
+export const MAX_AGE_DAYS = 365;
+
 /** What the checks need besides the document. Passed in, so the checks stay pure. */
 export interface ValidationContext {
   /** Today, as YYYY-MM-DD. */
