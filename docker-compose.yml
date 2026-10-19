@@ -1,4 +1,5 @@
-# Local Postgres for development. Start with `docker compose up -d`; see README "Database".
+# Local Postgres, and a stand-in for Scaleway's object storage, for development and the API's
+# tests. Start with `docker compose up -d`; see README "Database".
 # Same major version as CI and Render (18; product IDs use its built-in uuidv7()).
 services:
   db:
@@ -16,6 +17,23 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U kitchen_ops -d kitchen_ops"]
       interval: 2s
+      timeout: 5s
+      retries: 15
+
+  # Stands in for Scaleway Object Storage (decision 0029): an S3-compatible server that keeps each
+  # bucket as a folder, as ops/backup's test does. The keys are local-only, not secrets.
+  s3:
+    image: rclone/rclone:1.71.2
+    entrypoint: ["sh", "-c"]
+    command:
+      - mkdir -p /data/kitchen-ops-documents && exec rclone serve s3 --addr :9000 --auth-key local-only-key,local-only-secret /data
+    ports:
+      - "127.0.0.1:9000:9000" # reachable from this machine only
+    volumes:
+      - s3-data:/data
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "9000"]
+      interval: 1s
       timeout: 5s
       retries: 15
 
@@ -38,3 +56,4 @@ services:
 
 volumes:
   db-data:
+  s3-data:

@@ -44,20 +44,24 @@ type Success<E extends Endpoint> = E extends { status: 201 }
   : { 200: E["response"] };
 
 /** The refusals an endpoint may answer, each an ErrorBody. */
-type Refusals = Partial<Record<400 | 401 | 403 | 404 | 409, typeof ErrorBody>>;
+type Refusals = Partial<
+  Record<400 | 401 | 403 | 404 | 409 | 503, typeof ErrorBody>
+>;
 
 /**
  * A contract endpoint as Fastify route options: method, URL, schemas and who may call it. Its
  * responses describe each refusal it can answer: 401 and 403 unless it's public, 400 if it takes
- * input, 404 if its path has an ID, and 409 if a value it saves must be unique.
+ * input (files included), 404 if its path has an ID, 409 if a value it saves must be unique, and
+ * 503 if it needs object storage. An upload takes multipart/form-data, which its handler reads.
  */
 export function routeFor<const E extends Endpoint>(e: E) {
   const response = {
     [e.status ?? 200]: e.response,
     ...(e.access === "public" ? {} : { 401: ErrorBody, 403: ErrorBody }),
-    ...(e.params || e.query || e.body ? { 400: ErrorBody } : {}),
+    ...(e.params || e.query || e.body || e.upload ? { 400: ErrorBody } : {}),
     ...(e.params ? { 404: ErrorBody } : {}),
     ...(e.conflict ? { 409: ErrorBody } : {}),
+    ...(e.needsStorage ? { 503: ErrorBody } : {}),
   } as Success<E> & Refusals;
   return {
     method: e.method,
@@ -67,6 +71,7 @@ export function routeFor<const E extends Endpoint>(e: E) {
     // the handlers' `request.params`, `.query` and `.body` are inferred from these types.
     schema: {
       summary: e.summary,
+      ...(e.upload ? { consumes: ["multipart/form-data"] } : {}),
       ...(e.params ? { params: e.params } : {}),
       ...(e.query ? { querystring: e.query } : {}),
       ...(e.body ? { body: e.body } : {}),
@@ -103,10 +108,31 @@ export function registerOpenApi(app: FastifyInstance) {
       const document = jsonSchemaTransformObject(input) as {
         paths?: Record<string, Record<string, Record<string, unknown>>>;
       };
-      for (const e of Object.values(endpoints)) {
+      for (const e of Object.values(endpoints) as Endpoint[]) {
         const operation =
           document.paths?.[openApiPath(e.path)]?.[e.method.toLowerCase()];
-        if (operation) operation["x-roles"] = rolesDescription(e.access);
+        if (!operation) continue;
+        operation["x-roles"] = rolesDescription(e.access);
+        // An upload's body isn't a Zod schema: its files are described here, as binary parts.
+        if (e.upload) {
+          operation.requestBody = {
+            required: true,
+            content: {
+              "multipart/form-data": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    [e.upload.field]: {
+                      type: "array",
+                      items: { type: "string", format: "binary" },
+                    },
+                  },
+                  required: [e.upload.field],
+                },
+              },
+            },
+          };
+        }
       }
       return document as ReturnType<typeof jsonSchemaTransformObject>;
     },

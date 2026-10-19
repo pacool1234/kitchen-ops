@@ -1,5 +1,8 @@
 import {
   AUDIT_ACTIONS,
+  DOCUMENT_STATUSES,
+  EXTRACTED_DOCUMENT_TYPES,
+  FILE_KINDS,
   BASE_UNITS,
   PRODUCT_CATEGORIES,
   STOREROOM_TYPES,
@@ -8,6 +11,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  date,
   index,
   integer,
   jsonb,
@@ -158,6 +162,70 @@ export const supplierProducts = pgTable(
   ],
 );
 
+/** Where a document is on its way to review (#102); values come from packages/shared. */
+export const documentStatus = pgEnum("document_status", DOCUMENT_STATUSES);
+/** A delivery note or an invoice, once read: the extraction's own values. */
+export const documentType = pgEnum("document_type", EXTRACTED_DOCUMENT_TYPES);
+export const documentFileKind = pgEnum("document_file_kind", FILE_KINDS);
+
+/**
+ * A supplier document (spec section 3, #102): one PDF or Facturae file, or one or several photos,
+ * on its way to review. Its type, supplier, number and date are filled in once it's read (#104).
+ */
+export const documents = pgTable(
+  "documents",
+  {
+    id: primaryId(),
+    status: documentStatus("status").notNull().default("queued"),
+    type: documentType("type"),
+    supplierId: uuid("supplier_id").references(() => suppliers.id),
+    number: text("number"),
+    date: date("date", { mode: "string" }),
+    // No cascade: a user who uploaded documents can't be deleted, only deactivated.
+    uploadedBy: uuid("uploaded_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("documents_status_created_idx").on(table.status, table.createdAt),
+    index("documents_created_idx").on(table.createdAt),
+  ],
+);
+
+/**
+ * One file of a document, in object storage (decision 0029). Its sha256 is unique: a file
+ * received once is never received again as another document.
+ */
+export const documentFiles = pgTable(
+  "document_files",
+  {
+    id: primaryId(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id),
+    /** From 1, in the order the files were sent. */
+    position: integer("position").notNull(),
+    kind: documentFileKind("kind").notNull(),
+    contentType: text("content_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    sha256: text("sha256").notNull(),
+    /** Where it's kept: documents/<document id>/<position>.<extension>. */
+    storageKey: text("storage_key").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("document_files_sha256_unique").on(table.sha256),
+    uniqueIndex("document_files_storage_key_unique").on(table.storageKey),
+    uniqueIndex("document_files_document_position_unique").on(
+      table.documentId,
+      table.position,
+    ),
+    check("document_files_position_positive", sql`${table.position} > 0`),
+  ],
+);
+
 /**
  * The request field each unique index guards: a duplicate answers 409 naming it
  * (src/errors.ts).
@@ -168,6 +236,8 @@ export const UNIQUE_FIELDS: Readonly<Record<string, string>> = {
   products_name_unique: "name",
   unit_conversions_product_unit_unique: "conversions",
   supplier_products_supplier_code_unique: "code",
+  // Two uploads of the same file at the same moment: the one checked first wins (#102).
+  document_files_sha256_unique: "files",
 };
 
 /**
@@ -204,8 +274,8 @@ export const auditLog = pgTable(
     entityType: text("entity_type").notNull(),
     // Text, so an entity without a UUID can be logged too.
     entityId: text("entity_id").notNull(),
-    // The supplier document behind the change. No foreign key until documents exist (M6).
-    documentId: uuid("document_id"),
+    // The supplier document behind the change, if there is one.
+    documentId: uuid("document_id").references(() => documents.id),
     requestId: text("request_id").notNull(),
     changes: jsonb("changes").$type<AuditChanges>().notNull(),
   },

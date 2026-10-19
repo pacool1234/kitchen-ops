@@ -1,4 +1,5 @@
 import {
+  Document,
   endpoints,
   MeResponse,
   Product,
@@ -11,9 +12,18 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../app";
 import { createAuth } from "../auth/auth";
 import { createDb } from "../db/client";
-import { auditLog, products, storerooms, suppliers, users } from "../db/schema";
+import {
+  auditLog,
+  documents,
+  products,
+  storerooms,
+  suppliers,
+  users,
+} from "../db/schema";
 import { signedInAs } from "../test/auth";
+import { createMemoryStorage } from "../storage/memory";
 import { syntheticCif } from "../test/catalogue";
+import { multipart, sample } from "../test/documents";
 import { testConfig } from "../test/helpers";
 
 // Every write endpoint records its changes in the audit log (#87). A new write endpoint fails
@@ -22,7 +32,7 @@ import { testConfig } from "../test/helpers";
 const config = testConfig();
 const { db, close } = createDb(config.DATABASE_URL);
 const auth = createAuth(db, config);
-const app = buildApp(config);
+const app = buildApp(config, { storage: createMemoryStorage() });
 afterAll(async () => {
   await app.close();
   await close();
@@ -30,7 +40,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await db.execute(
-    sql`truncate ${users}, ${products}, ${storerooms}, ${suppliers}, verifications cascade`,
+    sql`truncate ${users}, ${documents}, ${products}, ${storerooms}, ${suppliers}, verifications cascade`,
   );
 });
 
@@ -432,6 +442,55 @@ const WRITE_CASES: Record<string, () => Promise<void>> = {
       (await update({ pack: { quantity: "0.0001", unit: "kg" } })).statusCode,
     ).toBe(400);
     expect(await updatesOf("supplier_product", offer.id)).toHaveLength(1);
+  },
+
+  async uploadDocument() {
+    const cookie = await signedInAs(app, auth, "counter");
+    const me = MeResponse.parse(
+      (
+        await app.inject({ method: "GET", url: "/api/me", headers: { cookie } })
+      ).json(),
+    );
+    const upload = (bytes: Uint8Array[]) => {
+      const body = multipart(
+        bytes.map((b, i) => ({ name: `${i}.jpg`, bytes: b })),
+      );
+      return app.inject({
+        method: "POST",
+        url: "/api/documents",
+        headers: { ...body.headers, cookie },
+        payload: body.payload,
+      });
+    };
+
+    const response = await upload([sample.jpeg(1), sample.jpeg(2)]);
+    expect(response.statusCode).toBe(201);
+    const document = Document.parse(response.json());
+    expect(await entriesFor("document", document.id)).toEqual([
+      expect.objectContaining({
+        userId: me.id,
+        action: "create",
+        requestId: response.headers["x-request-id"],
+        // The document behind the change is this one.
+        documentId: document.id,
+        changes: {
+          id: { before: null, after: document.id },
+          status: { before: null, after: "queued" },
+          files: {
+            before: null,
+            after: [
+              expect.objectContaining({ position: 1, kind: "image" }),
+              expect.objectContaining({ position: 2, kind: "image" }),
+            ],
+          },
+        },
+      }),
+    ]);
+
+    // Refused, or a duplicate: nothing recorded.
+    expect((await upload([])).statusCode).toBe(400);
+    expect((await upload([sample.jpeg(1)])).statusCode).toBe(409);
+    expect(await allEntries("document")).toHaveLength(1);
   },
 };
 

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ExtractedDocument } from "@kitchen-ops/shared";
+import { ExtractedDocument, UPLOAD_LIMITS } from "@kitchen-ops/shared";
 import { GOLD_DIRECTORY, goldIds, readGoldEntry } from "../gold/gold-set";
 import { GoldMeta, type GoldKind } from "../gold/meta";
 import type { ModelConfig } from "../llm/config";
@@ -311,5 +311,11 @@ describe("extractFile: route, then extract; the model only sees what the route p
         record: null,
       },
     });
+  });
+});
+
+describe("the size limit", () => {
+  it("is the API's upload limit for one file (#102): the API never stores a file extraction won't read", () => {
+    expect(MAX_INPUT_BYTES).toBe(UPLOAD_LIMITS.maxFileBytes);
   });
 });

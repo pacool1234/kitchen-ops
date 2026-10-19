@@ -287,6 +287,8 @@ export const es = {
     invalid_input: "Revisa los campos marcados.",
     conflict: "Algún dato ya está en uso.",
     not_found: "No existe, o ya no está disponible.",
+    storage_unavailable:
+      "Los documentos no están disponibles ahora mismo. Inténtalo más tarde.",
     unknown: "Algo ha fallado. Inténtalo de nuevo.",
     // Why a field was refused: one per code in packages/shared (FIELD_ERROR_CODES).
     fields: {
@@ -305,6 +307,9 @@ export const es = {
       in_use: "Está en uso y no se puede cambiar así.",
       unknown_unit: "No es una de las unidades del producto.",
       not_whole_base_units: "No da un número entero de la unidad base.",
+      too_many: "Son demasiados archivos.",
+      unsupported_type: "Solo se admiten PDF, XML Facturae, JPEG o PNG.",
+      mixed_kinds: "Un PDF o un XML va solo, sin fotos ni otros archivos.",
     },
   },
 };
