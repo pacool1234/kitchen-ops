@@ -47,11 +47,11 @@ Spec section 5's stages:
 
 Paths in the table are under `packages/extract/` unless they say otherwise.
 
-**Default model and prompt:** Gemini 3.8 Flash with prompt v2, at temperature 0 (decision 0018). They're set in `packages/extract/config/models.json` and read with `defaultExtraction()` (`src/llm/config.ts`). Prompts are versioned files in `packages/extract/prompts/`.
+**Default model and prompt:** Gemini 3.8 Flash with prompt v2 (decision 0018), at the provider's own temperature: the only zero-retention endpoints don't take one (decision 0031). They're set in `packages/extract/config/models.json` and read with `defaultExtraction()` (`src/llm/config.ts`). Prompts are versioned files in `packages/extract/prompts/`.
 
 ## The eval harness
 
-- **Gold set:** `eval/gold/` has 20 committed documents: synthetic text PDFs, photos, scans and Facturae XML, each with a hand-checked `expected.json` and `meta.json`. `eval/gold/README.md` lists them. Its tests check the set's size, its metadata, that rendered PDFs match their source, and that no image carries metadata.
+- **Gold set:** `eval/gold/` has 20 committed documents: synthetic text PDFs, photos, scans and Facturae XML, each with a hand-checked `expected.json` and `meta.json`. `eval/gold/README.md` lists them. Runs over it use client routing, so they measure the endpoints staging and production reach (decision 0031). Its tests check the set's size, its metadata, that rendered PDFs match their source, and that no image carries metadata.
 - **Private set:** client documents, found through `EVAL_PRIVATE_DIR`, never in the repo. Runs over it are started by the repo owner, always with restricted routing, and their results keep no value read.
 - **`eval`:** runs a model and prompt over a set, with a spending cap. It writes `eval/results/<date>-<model>-<prompt>[-runN].json` and `.md`, and never overwrites a file (#68). The summary reports the silent error rate first, then the other section 5 metrics, and why any call failed (#64).
 - **`eval:compare`:** runs side by side, with totals and ranges across repeated runs, and the documents whose outcome changed (#52, #68).
