@@ -92,14 +92,14 @@ describe("the form's values: a draft as its fields hold it, and back", () => {
     );
   });
 
-  it("a field left empty, or only spaces, is null: not printed", () => {
+  it("a field left empty is null: not printed. Spaces are kept, so a draft read with them goes back the same", () => {
     const values = toValues(null);
-    values.number = "   ";
-    values.supplier.name = "";
+    values.number = "";
+    values.supplier.name = " ";
     values.lines[0]!.quantity = "";
     const sent = toDraft(values);
     expect(sent.number).toBeNull();
-    expect(sent.supplier.name).toBeNull();
+    expect(sent.supplier.name).toBe(" ");
     expect(sent.lines[0]!.quantity).toBeNull();
   });
 
