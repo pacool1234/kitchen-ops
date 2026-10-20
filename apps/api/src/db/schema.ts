@@ -214,6 +214,11 @@ export const documents = pgTable(
      * its own, with no files. At most one reversal per document.
      */
     reverses: uuid("reverses").references((): AnyPgColumn => documents.id),
+    /**
+     * The reversed document this one is a corrected copy of (#119, decision 0038): reviewed and
+     * posted in its place. Its files are that one's. At most one copy per document.
+     */
+    copyOf: uuid("copy_of").references((): AnyPgColumn => documents.id),
     // No cascade: a user who uploaded documents can't be deleted, only deactivated.
     uploadedBy: uuid("uploaded_by")
       .notNull()
@@ -239,6 +244,7 @@ export const documents = pgTable(
       sql`${table.reverses} is null or ${table.status}::text = 'posted'`,
     ),
     uniqueIndex("documents_reverses_unique").on(table.reverses),
+    uniqueIndex("documents_copy_of_unique").on(table.copyOf),
   ],
 );
 
@@ -306,6 +312,13 @@ export const documentLines = pgTable(
     ),
     /** A flagged adjustment: it may take stock below zero (invariant 6). */
     adjustment: boolean("adjustment").notNull().default(false),
+    /**
+     * The supplier product the line was matched to, whose pack it was received at (decision
+     * 0038). None for a line posted without one.
+     */
+    supplierProductId: uuid("supplier_product_id").references(
+      () => supplierProducts.id,
+    ),
   },
   (table) => [
     uniqueIndex("document_lines_document_position_unique").on(
