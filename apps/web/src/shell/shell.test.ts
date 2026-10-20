@@ -5,10 +5,11 @@ import { breadcrumbTrail, initials } from "./layout";
 import { NAV, visibleNav, type NavItem } from "./nav";
 
 describe("visibleNav: the navigation shows only what the user's role can do (spec section 6)", () => {
-  it("today, every role sees Inicio and the catalogue (#89): counter reads it, office and owner edit it", () => {
+  it("today, every role sees Inicio, the documents (#106: everyone receives deliveries) and the catalogue (#89)", () => {
     for (const role of ROLES) {
       expect(visibleNav(NAV, role).map((item) => item.name)).toEqual([
         "home",
+        "documents",
         "catalogue",
       ]);
     }

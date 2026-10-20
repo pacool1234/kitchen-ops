@@ -1,4 +1,11 @@
-import { FIELD_ERROR_CODES, LOCALES } from "@kitchen-ops/shared";
+import {
+  CHECK_NAMES,
+  DOCUMENT_STATUSES,
+  EXTRACTED_DOCUMENT_TYPES,
+  EXTRACTION_FAILURES,
+  FIELD_ERROR_CODES,
+  LOCALES,
+} from "@kitchen-ops/shared";
 import { describe, expect, it } from "vitest";
 import { createI18n } from "vue-i18n";
 import { useT } from "./index";
@@ -36,6 +43,24 @@ describe("the message files (#86)", () => {
         Object.keys(messages[locale].errors.fields).sort(),
         locale,
       ).toEqual([...FIELD_ERROR_CODES].sort());
+    }
+  });
+
+  it("every document status, failure reason, check and type from packages/shared has a message, in both languages (#106)", () => {
+    for (const locale of LOCALES) {
+      const { statuses, failures, checks, types } = messages[locale].documents;
+      expect(Object.keys(statuses).sort(), locale).toEqual(
+        [...DOCUMENT_STATUSES].sort(),
+      );
+      expect(Object.keys(failures).sort(), locale).toEqual(
+        [...EXTRACTION_FAILURES].sort(),
+      );
+      expect(Object.keys(checks).sort(), locale).toEqual(
+        [...CHECK_NAMES].sort(),
+      );
+      expect(Object.keys(types).sort(), locale).toEqual(
+        [...EXTRACTED_DOCUMENT_TYPES].sort(),
+      );
     }
   });
 

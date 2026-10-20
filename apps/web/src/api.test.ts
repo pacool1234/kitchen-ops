@@ -24,6 +24,16 @@ const renameThing = endpoint({
   response: Thing,
 });
 
+const uploadThing = endpoint({
+  method: "POST",
+  path: "/api/things",
+  summary: "Upload a thing's files",
+  access: "signed-in",
+  upload: { field: "files" },
+  status: 201,
+  response: Thing,
+});
+
 /** Replaces fetch with one that answers `status` and `body`, and remembers what it was asked. */
 function fakeFetch(status: number, body: unknown) {
   const calls: { url: string; init: RequestInit }[] = [];
@@ -114,11 +124,50 @@ describe("call: a contract endpoint, typed and validated (decision 0022)", () =>
       void call(renameThing, { params: { id: "1" }, body: { name: 1 } });
       // @ts-expect-error: /api/me takes no parameters.
       void call(endpoints.me, { params: { id: "1" } });
+      // @ts-expect-error: an upload needs its files.
+      void call(uploadThing);
+      const notAnUpload = { params: { id: "1" }, body: { name: "a" } };
+      // @ts-expect-error: only an upload takes files.
+      void call(renameThing, { ...notAnUpload, files: [] });
       // An endpoint with nothing to send needs no input, and its result is typed.
       const me: Promise<{ role: string }> = call(endpoints.me);
       void me;
     };
     expect(typeChecks).toBeTypeOf("function");
+  });
+
+  it("sends an upload's files as a form, in order, under the endpoint's field, letting the browser set its type (#106)", async () => {
+    const calls = fakeFetch(201, { id: "1", name: "Albarán" });
+    const first = new File(["page 1"], "1.jpg", { type: "image/jpeg" });
+    const second = new File(["page 2"], "2.jpg", { type: "image/jpeg" });
+    await call(uploadThing, { files: [first, second] });
+
+    const { method, body, headers } = calls[0]!.init;
+    expect(method).toBe("POST");
+    expect(body).toBeInstanceOf(FormData);
+    const sent = (body as FormData).getAll("files") as File[];
+    expect(sent.map((f) => f.name)).toEqual(["1.jpg", "2.jpg"]);
+    expect(await sent[1]!.text()).toBe("page 2");
+    // The browser writes multipart/form-data with its boundary itself.
+    expect(new Headers(headers).has("content-type")).toBe(false);
+  });
+
+  it("a file already received: the ApiError names the document that has it (#106)", async () => {
+    const earlier = "0199a000-0000-7000-8000-000000000001";
+    fakeFetch(409, {
+      error: "conflict",
+      fields: { "files.1": "taken" },
+      duplicateOf: earlier,
+    });
+    const error = await call(uploadThing, {
+      files: [new File(["x"], "x.pdf")],
+    }).catch((e: unknown) => e);
+    expect(error).toMatchObject({
+      status: 409,
+      code: "conflict",
+      fields: { "files.1": "taken" },
+      duplicateOf: earlier,
+    });
   });
 
   it("refuses a response that doesn't match the endpoint's schema", async () => {
