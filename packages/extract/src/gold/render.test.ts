@@ -48,6 +48,7 @@ function invoiceWith(lines: number): ExtractedDocument {
     supplier: { name: "Proveedor Ficticio S.L.", taxId: "B00000000" },
     number: "F-1",
     issueDate: "2026-10-15",
+    deliveryNotes: [],
     totals: { net, vat: [], total: net },
     lines: Array.from({ length: lines }, (_, i) => line(i + 1)),
   };

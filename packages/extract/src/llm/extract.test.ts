@@ -24,6 +24,7 @@ const valid: ExtractedDocument = {
   supplier: { name: "Proveedor Ficticio S.L.", taxId: "B00123455" },
   number: "ALB-1",
   issueDate: "2026-10-14",
+  deliveryNotes: [],
   totals: null,
   lines: [
     {

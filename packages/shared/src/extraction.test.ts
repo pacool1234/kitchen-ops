@@ -127,14 +127,6 @@ describe("ExtractedDocument: what extraction returns", () => {
     expect(problems(unreadable)).toEqual([]);
   });
 
-  it("a draft read before it listed delivery notes is read as listing none (#120)", () => {
-    const { deliveryNotes: _, ...before } = invoice;
-    expect(ExtractedDocument.parse(before)).toEqual({
-      ...invoice,
-      deliveryNotes: [],
-    });
-  });
-
   it("drops keys it doesn't know, instead of failing on them", () => {
     expect(ExtractedDocument.parse({ ...invoice, notes: "x" })).toEqual(
       invoice,
@@ -143,6 +135,12 @@ describe("ExtractedDocument: what extraction returns", () => {
 });
 
 describe("ExtractedDocument: rejected, with the path to the bad field", () => {
+  it("no list of delivery notes: it's always written, [] for none (#120)", () => {
+    const unlisted: Record<string, unknown> = { ...invoice };
+    delete unlisted.deliveryNotes;
+    expect(problems(unlisted)).toEqual(["deliveryNotes"]);
+  });
+
   it("an empty delivery-note number in the list (#120)", () => {
     expect(problems({ ...invoice, deliveryNotes: ["ALB-0042", ""] })).toEqual([
       "deliveryNotes.1",

@@ -106,10 +106,11 @@ describe("goldEntryProblems: what makes a gold folder invalid", () => {
     ]);
   });
 
-  it("an expected.json that doesn't say which delivery notes it lists, even none: the schema would read it as none, which nobody checked (#120)", () => {
-    const { deliveryNotes: _, ...unsaid } = expected;
+  it("an expected.json that doesn't say which delivery notes it lists, even none (#120)", () => {
+    const unsaid: Record<string, unknown> = { ...expected };
+    delete unsaid.deliveryNotes;
     expect(goldEntryProblems({ ...valid, expected: unsaid })).toEqual([
-      "syn-999-example: expected.json: deliveryNotes: must be written, [] for none",
+      "syn-999-example: expected.json: deliveryNotes: Invalid input: expected array, received undefined",
     ]);
   });
 

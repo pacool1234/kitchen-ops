@@ -7,7 +7,6 @@ import {
   BASE_UNITS,
   PRODUCT_CATEGORIES,
   STOREROOM_TYPES,
-  type ExtractedDocument,
 } from "@kitchen-ops/shared";
 import type { CheckFailure } from "@kitchen-ops/extract";
 import type { MovementKind } from "@kitchen-ops/ledger";
@@ -31,7 +30,7 @@ import {
 } from "drizzle-orm/pg-core";
 import type { AuditChanges } from "../audit/diff";
 import { users } from "./auth-schema";
-import { createdAt, primaryId, updatedAt } from "./columns";
+import { createdAt, primaryId, storedDraft, updatedAt } from "./columns";
 
 export * from "./auth-schema";
 
@@ -194,12 +193,12 @@ export const documents = pgTable(
     number: text("number"),
     date: date("date", { mode: "string" }),
     /** What extraction read (#104), for review (M7). Null until read, or if it couldn't be. */
-    draft: jsonb("draft").$type<ExtractedDocument>(),
+    draft: storedDraft("draft"),
     /**
      * The draft as corrected in review (#118, decision 0037), whole. Null until a correction is
      * saved; `draft` stays what was read.
      */
-    corrected: jsonb("corrected").$type<ExtractedDocument>(),
+    corrected: storedDraft("corrected"),
     /**
      * The checks the draft failed, the corrected one if there is one: names and paths, and
      * messages that may quote the document.

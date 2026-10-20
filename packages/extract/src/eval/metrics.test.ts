@@ -20,6 +20,7 @@ const gold: ExtractedDocument = {
   supplier: { name: "Huerta Ficticia S.L.", taxId: "B00123455" },
   number: "ALB-7",
   issueDate: "2026-10-14",
+  deliveryNotes: [],
   totals: null,
   lines: [
     {

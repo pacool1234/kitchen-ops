@@ -6750,6 +6750,14 @@
                               ],
                               "description": "The issue date, as YYYY-MM-DD. null if not printed."
                             },
+                            "deliveryNotes": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "description": "The numbers of the delivery notes (albaranes) the document says it bills, each as printed, in the order printed. An invoice often lists them in its header, in its notes, or above each group of lines. Empty if it lists none, and on a delivery note."
+                            },
                             "totals": {
                               "anyOf": [
                                 {
@@ -6970,6 +6978,7 @@
                             "supplier",
                             "number",
                             "issueDate",
+                            "deliveryNotes",
                             "totals",
                             "lines"
                           ],
@@ -7060,6 +7069,14 @@
                               ],
                               "description": "The issue date, as YYYY-MM-DD. null if not printed."
                             },
+                            "deliveryNotes": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "description": "The numbers of the delivery notes (albaranes) the document says it bills, each as printed, in the order printed. An invoice often lists them in its header, in its notes, or above each group of lines. Empty if it lists none, and on a delivery note."
+                            },
                             "totals": {
                               "anyOf": [
                                 {
@@ -7280,6 +7297,7 @@
                             "supplier",
                             "number",
                             "issueDate",
+                            "deliveryNotes",
                             "totals",
                             "lines"
                           ],
@@ -8370,6 +8388,14 @@
                               ],
                               "description": "The issue date, as YYYY-MM-DD. null if not printed."
                             },
+                            "deliveryNotes": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "description": "The numbers of the delivery notes (albaranes) the document says it bills, each as printed, in the order printed. An invoice often lists them in its header, in its notes, or above each group of lines. Empty if it lists none, and on a delivery note."
+                            },
                             "totals": {
                               "anyOf": [
                                 {
@@ -8590,6 +8616,7 @@
                             "supplier",
                             "number",
                             "issueDate",
+                            "deliveryNotes",
                             "totals",
                             "lines"
                           ],
@@ -8680,6 +8707,14 @@
                               ],
                               "description": "The issue date, as YYYY-MM-DD. null if not printed."
                             },
+                            "deliveryNotes": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "description": "The numbers of the delivery notes (albaranes) the document says it bills, each as printed, in the order printed. An invoice often lists them in its header, in its notes, or above each group of lines. Empty if it lists none, and on a delivery note."
+                            },
                             "totals": {
                               "anyOf": [
                                 {
@@ -8900,6 +8935,7 @@
                             "supplier",
                             "number",
                             "issueDate",
+                            "deliveryNotes",
                             "totals",
                             "lines"
                           ],
@@ -9563,6 +9599,14 @@
                               ],
                               "description": "The issue date, as YYYY-MM-DD. null if not printed."
                             },
+                            "deliveryNotes": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "description": "The numbers of the delivery notes (albaranes) the document says it bills, each as printed, in the order printed. An invoice often lists them in its header, in its notes, or above each group of lines. Empty if it lists none, and on a delivery note."
+                            },
                             "totals": {
                               "anyOf": [
                                 {
@@ -9783,6 +9827,7 @@
                             "supplier",
                             "number",
                             "issueDate",
+                            "deliveryNotes",
                             "totals",
                             "lines"
                           ],
@@ -9873,6 +9918,14 @@
                               ],
                               "description": "The issue date, as YYYY-MM-DD. null if not printed."
                             },
+                            "deliveryNotes": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "description": "The numbers of the delivery notes (albaranes) the document says it bills, each as printed, in the order printed. An invoice often lists them in its header, in its notes, or above each group of lines. Empty if it lists none, and on a delivery note."
+                            },
                             "totals": {
                               "anyOf": [
                                 {
@@ -10093,6 +10146,7 @@
                             "supplier",
                             "number",
                             "issueDate",
+                            "deliveryNotes",
                             "totals",
                             "lines"
                           ],
@@ -10592,6 +10646,14 @@
                     ],
                     "description": "The issue date, as YYYY-MM-DD. null if not printed."
                   },
+                  "deliveryNotes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": "The numbers of the delivery notes (albaranes) the document says it bills, each as printed, in the order printed. An invoice often lists them in its header, in its notes, or above each group of lines. Empty if it lists none, and on a delivery note."
+                  },
                   "totals": {
                     "anyOf": [
                       {
@@ -10809,6 +10871,7 @@
                   "supplier",
                   "number",
                   "issueDate",
+                  "deliveryNotes",
                   "totals",
                   "lines"
                 ]
@@ -10942,6 +11005,14 @@
                             }
                           ],
                           "description": "The issue date, as YYYY-MM-DD. null if not printed."
+                        },
+                        "deliveryNotes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "description": "The numbers of the delivery notes (albaranes) the document says it bills, each as printed, in the order printed. An invoice often lists them in its header, in its notes, or above each group of lines. Empty if it lists none, and on a delivery note."
                         },
                         "totals": {
                           "anyOf": [
@@ -11163,6 +11234,7 @@
                         "supplier",
                         "number",
                         "issueDate",
+                        "deliveryNotes",
                         "totals",
                         "lines"
                       ],
@@ -11531,6 +11603,14 @@
                     ],
                     "description": "The issue date, as YYYY-MM-DD. null if not printed."
                   },
+                  "deliveryNotes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": "The numbers of the delivery notes (albaranes) the document says it bills, each as printed, in the order printed. An invoice often lists them in its header, in its notes, or above each group of lines. Empty if it lists none, and on a delivery note."
+                  },
                   "totals": {
                     "anyOf": [
                       {
@@ -11748,6 +11828,7 @@
                   "supplier",
                   "number",
                   "issueDate",
+                  "deliveryNotes",
                   "totals",
                   "lines"
                 ]
@@ -16185,6 +16266,14 @@
                               ],
                               "description": "The issue date, as YYYY-MM-DD. null if not printed."
                             },
+                            "deliveryNotes": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "description": "The numbers of the delivery notes (albaranes) the document says it bills, each as printed, in the order printed. An invoice often lists them in its header, in its notes, or above each group of lines. Empty if it lists none, and on a delivery note."
+                            },
                             "totals": {
                               "anyOf": [
                                 {
@@ -16405,6 +16494,7 @@
                             "supplier",
                             "number",
                             "issueDate",
+                            "deliveryNotes",
                             "totals",
                             "lines"
                           ],
@@ -16495,6 +16585,14 @@
                               ],
                               "description": "The issue date, as YYYY-MM-DD. null if not printed."
                             },
+                            "deliveryNotes": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "description": "The numbers of the delivery notes (albaranes) the document says it bills, each as printed, in the order printed. An invoice often lists them in its header, in its notes, or above each group of lines. Empty if it lists none, and on a delivery note."
+                            },
                             "totals": {
                               "anyOf": [
                                 {
@@ -16715,6 +16813,7 @@
                             "supplier",
                             "number",
                             "issueDate",
+                            "deliveryNotes",
                             "totals",
                             "lines"
                           ],

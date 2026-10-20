@@ -10,6 +10,14 @@ exports[`the JSON Schema given to models for structured output > only changes on
       "description": "Always EUR.",
       "type": "string",
     },
+    "deliveryNotes": {
+      "description": "The numbers of the delivery notes (albaranes) the document says it bills, each as printed, in the order printed. An invoice often lists them in its header, in its notes, or above each group of lines. Empty if it lists none, and on a delivery note.",
+      "items": {
+        "minLength": 1,
+        "type": "string",
+      },
+      "type": "array",
+    },
     "documentType": {
       "description": "delivery-note for a delivery note (albarán); invoice for an invoice (factura), including credit notes (facturas rectificativas), whose amounts are negative.",
       "enum": [
@@ -298,6 +306,7 @@ exports[`the JSON Schema given to models for structured output > only changes on
     "supplier",
     "number",
     "issueDate",
+    "deliveryNotes",
     "totals",
     "lines",
   ],

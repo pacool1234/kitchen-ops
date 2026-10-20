@@ -1,6 +1,7 @@
 import { randomUUIDv7 } from "node:crypto";
+import type { ExtractedDocument } from "@kitchen-ops/shared";
 import { sql } from "drizzle-orm";
-import { timestamp, uuid } from "drizzle-orm/pg-core";
+import { customType, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Primary key for every table (decision 0011): a UUID v7, safe to show in URLs and time-ordered
@@ -28,3 +29,22 @@ export function updatedAt() {
     .defaultNow()
     .$onUpdate(() => new Date());
 }
+
+/**
+ * A draft as stored (`documents.draft` and `corrected`): jsonb, read and written as Drizzle's own
+ * jsonb is. A draft saved before drafts listed the delivery notes they bill (#120) has no list,
+ * and is read as listing none: drafts of posted documents can't be updated to add one.
+ */
+export const storedDraft = customType<{
+  data: ExtractedDocument;
+  driverData: string | ExtractedDocument;
+}>({
+  dataType: () => "jsonb",
+  toDriver: (value) => JSON.stringify(value),
+  fromDriver: (value) => {
+    const draft = (
+      typeof value === "string" ? JSON.parse(value) : value
+    ) as Partial<ExtractedDocument> & Omit<ExtractedDocument, "deliveryNotes">;
+    return { ...draft, deliveryNotes: draft.deliveryNotes ?? [] };
+  },
+});

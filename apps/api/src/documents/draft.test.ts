@@ -131,10 +131,14 @@ describe("a draft saved before it listed delivery notes (#120)", () => {
         corrected: sql`${documents.draft} - 'deliveryNotes'`,
       })
       .where(eq(documents.id, id));
-    // As stored: the key isn't there.
-    expect("deliveryNotes" in (await stored(id)).draft!).toBe(false);
+    // As Postgres holds it: the key isn't there.
+    const { rows } = await db.execute<{ listed: boolean }>(
+      sql`select ${documents.draft} ? 'deliveryNotes' as listed from ${documents} where ${documents.id} = ${id}`,
+    );
+    expect(rows[0]?.listed).toBe(false);
 
-    // As answered, before any client-side parsing.
+    // As read, and as answered before any client-side parsing.
+    expect((await stored(id)).draft!.deliveryNotes).toEqual([]);
     const answered = (await office.send("GET", `/api/documents/${id}`)).json();
     expect(answered.draft.deliveryNotes).toEqual([]);
     expect(answered.corrected.deliveryNotes).toEqual([]);
