@@ -360,7 +360,7 @@ describe("GET /api/documents", () => {
   });
 
   it("refuses a status it doesn't know: 400", async () => {
-    const response = await read("/api/documents?status=posted");
+    const response = await read("/api/documents?status=archived");
     expect(response.json()).toEqual({
       error: "invalid_input",
       fields: { status: "invalid" },

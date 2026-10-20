@@ -470,11 +470,11 @@ describe("the database keeps posted records as they are (decision 0034)", () => 
     );
   });
 
-  it("a unit cost comes back exactly, from €0.000001 to the column's largest, €999 999 999 999.999999", async () => {
+  it("a unit cost comes back exactly, from €0.000001 (€0.01 for 10 kg) to the column's largest, €999 999 999 999.999999", async () => {
     const id = await documentToReview(db, c);
     await posted(
       id,
-      reviewed(c, [reviewedLine(c.tomatoes, "1", "g", "0.000001")]),
+      reviewed(c, [reviewedLine(c.tomatoes, "10", "kg", "0.001")]),
     );
     const [line] = await linesOf(id);
     await db.insert(movements).values({
