@@ -18,10 +18,11 @@ function setFolder(documents: Record<string, string>): string {
 }
 
 describe("loadSet: the documents a run goes through", () => {
-  it("the gold set is every gold folder, sent without restrictions, with results in eval/results", () => {
+  it("the gold set is every gold folder, sent with client routing, with results in eval/results", () => {
     const set = loadSet("gold", {});
     expect(set.name).toBe("gold");
-    expect(set.source).toBe("own-or-public");
+    // The providers a run measures are the ones client documents can reach (decision 0031).
+    expect(set.source).toBe("client");
     expect(set.documents.map((d) => d.id)).toEqual(goldIds(GOLD_DIRECTORY));
     expect(set.resultsDirectory).toBe(fileURLToPath(RESULTS_DIRECTORY));
     for (const document of set.documents) {

@@ -5,8 +5,7 @@
       "id": "google/gemini-3.8-flash",
       "structuredOutput": true,
       "vision": true,
-      "temperature": 0,
-      "note": "0.75/3.75"
+      "note": "0.75/3.75. Temperature not set: with zero retention only Google Vertex serves it, and Vertex doesn't take the parameter (404 No endpoints found that can handle the requested parameters, 2026-10-20). Decision 0031."
     },
     {
       "id": "openai/gpt-6-luna",
