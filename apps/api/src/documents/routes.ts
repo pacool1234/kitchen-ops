@@ -2,10 +2,12 @@ import { createHash, randomUUIDv7 } from "node:crypto";
 import "@fastify/multipart";
 import {
   endpoints,
+  seesReadingCost,
   UPLOAD_LIMITS,
   type Document,
   type DocumentPage,
   type FieldErrorCode,
+  type Role,
 } from "@kitchen-ops/shared";
 import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import type { FastifyRequest } from "fastify";
@@ -131,15 +133,26 @@ const toSummary = (row: SummaryRow) => ({
   uploadedAt: row.createdAt.toISOString(),
 });
 
-/** One document with its files in order, each with a fresh link, and what reading it cost. */
+/**
+ * One document with its files in order, each with a fresh link; its draft and the checks it
+ * failed, by name and field; and, for the owner, what reading it cost (#106).
+ */
 async function readDocument(
   db: Db,
   storage: Storage,
   id: string,
+  role: Role,
 ): Promise<Document | undefined> {
   const [row] = await withNames(db).where(eq(documents.id, id));
   if (!row) return undefined;
-  const [files, [spent]] = await Promise.all([
+  const [[read], files, [spent]] = await Promise.all([
+    db
+      .select({
+        draft: documents.draft,
+        checkFailures: documents.checkFailures,
+      })
+      .from(documents)
+      .where(eq(documents.id, id)),
     db
       .select()
       .from(documentFiles)
@@ -154,7 +167,15 @@ async function readDocument(
   ]);
   return {
     ...toSummary(row),
-    costMicroUsd: spent?.costMicroUsd ?? 0,
+    draft: read?.draft ?? null,
+    // Each check's message stays in the database: it may quote the document.
+    checkFailures: (read?.checkFailures ?? []).map(({ check, path }) => ({
+      check,
+      path,
+    })),
+    ...(seesReadingCost(role)
+      ? { costMicroUsd: spent?.costMicroUsd ?? 0 }
+      : {}),
     files: await Promise.all(
       files.map(async (f) => {
         const link = await storage.signedUrl(f.storageKey, LINK_SECONDS);
@@ -258,7 +279,9 @@ export const documentRoutes: FastifyPluginAsyncZod<{
         await Promise.allSettled(stored.map((key) => store.delete(key)));
         throw error;
       }
-      return reply.code(201).send((await readDocument(db, store, id))!);
+      return reply
+        .code(201)
+        .send((await readDocument(db, store, id, request.user!.role))!);
     },
   });
 
@@ -287,8 +310,13 @@ export const documentRoutes: FastifyPluginAsyncZod<{
 
   app.route({
     ...routeFor(endpoints.getDocument),
-    handler: async ({ params }) => {
-      const found = await readDocument(db, needStorage(), params.id);
+    handler: async ({ params, user }) => {
+      const found = await readDocument(
+        db,
+        needStorage(),
+        params.id,
+        user!.role,
+      );
       if (!found) throw notFound();
       return found;
     },
@@ -333,7 +361,7 @@ export const documentRoutes: FastifyPluginAsyncZod<{
           ],
         };
       });
-      return (await readDocument(db, store, id))!;
+      return (await readDocument(db, store, id, request.user!.role))!;
     },
   });
 };
