@@ -140,7 +140,8 @@ export const supplierProducts = pgTable(
     supplierId: uuid("supplier_id")
       .notNull()
       .references(() => suppliers.id),
-    code: text("code").notNull(),
+    /** Null when the supplier prints no code (decision 0035). Unique per supplier when set. */
+    code: text("code"),
     description: text("description").notNull(),
     productId: uuid("product_id")
       .notNull()

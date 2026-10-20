@@ -85,6 +85,13 @@
       "when": 1792514209039,
       "tag": "0011_stored_movements_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792517670066,
+      "tag": "0012_supplier_product_code_optional",
+      "breakpoints": true
     }
   ]
 }

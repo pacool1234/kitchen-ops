@@ -58,7 +58,11 @@ const columns = computed<Column<SupplierProduct>[]>(() => [
     label: t("supplierProducts.supplier"),
     value: (s) => s.supplier.name,
   },
-  { key: "code", label: t("supplierProducts.code"), value: (s) => s.code },
+  {
+    key: "code",
+    label: t("supplierProducts.code"),
+    value: (s) => s.code ?? "—",
+  },
   {
     key: "description",
     label: t("supplierProducts.description"),
@@ -118,7 +122,7 @@ const columns = computed<Column<SupplierProduct>[]>(() => [
             </RouterLink>
             <span class="text-sm">{{ row.description }}</span>
             <span class="text-sm text-fg-muted tabular">
-              {{ row.code }} · {{ pack(row) }}
+              {{ [row.code, pack(row)].filter(Boolean).join(" · ") }}
             </span>
           </div>
           <UiBadge v-if="!row.active">{{ t("catalogue.inactive") }}</UiBadge>

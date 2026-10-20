@@ -145,7 +145,8 @@ describe("POST /api/supplier-products", () => {
     [{ pack: { quantity: "2,5", unit: "kg" } }, { "pack.quantity": "invalid" }],
     [{ supplierId: MISSING }, { supplierId: "not_found" }],
     [{ productId: MISSING }, { productId: "not_found" }],
-    [{ code: "  " }, { code: "required" }],
+    [{ code: "x".repeat(51) }, { code: "too_long" }],
+    [{ description: "  " }, { description: "required" }],
   ])("refuses %j, naming the field: 400", async (change, fields) => {
     const response = await api.send(
       "POST",
@@ -172,6 +173,29 @@ describe("POST /api/supplier-products", () => {
 
     await create(offer({ supplierId: granja.id }));
     expect((await list()).total).toBe(2);
+  });
+});
+
+describe("a supplier that prints no codes (decision 0035)", () => {
+  it("a code left out, blank or null is none, and many supplier products can have none", async () => {
+    const created = await Promise.all([
+      create(offer({ code: undefined })),
+      create(offer({ code: "  ", description: "Tomate pera, kilo" })),
+      create(offer({ code: null, description: "Tomate pera, granel" })),
+    ]);
+    expect(created.map((s) => s.code)).toEqual([null, null, null]);
+    expect((await list()).total).toBe(3);
+  });
+
+  it("a change can clear a code, or give one", async () => {
+    const tomatoes = await create(offer());
+    const url = `/api/supplier-products/${tomatoes.id}`;
+    expect(
+      (await api.updated(url, { code: "" }, SupplierProduct)).code,
+    ).toBeNull();
+    expect(
+      (await api.updated(url, { code: " TP-6 " }, SupplierProduct)).code,
+    ).toBe("TP-6");
   });
 });
 

@@ -64,7 +64,11 @@ function open(row?: SupplierProduct) {
 const pack = (s: SupplierProduct) =>
   packText(s.pack, s.product.baseUnit, s.packBaseUnits);
 const columns = computed<Column<SupplierProduct>[]>(() => [
-  { key: "code", label: t("supplierProducts.code"), value: (s) => s.code },
+  {
+    key: "code",
+    label: t("supplierProducts.code"),
+    value: (s) => s.code ?? "—",
+  },
   {
     key: "description",
     label: t("supplierProducts.description"),
@@ -117,7 +121,7 @@ const columns = computed<Column<SupplierProduct>[]>(() => [
       @retry="load"
     >
       <template #cell-code="{ row }">
-        <span class="font-medium tabular">{{ row.code }}</span>
+        <span class="font-medium tabular">{{ row.code ?? "—" }}</span>
       </template>
       <template #cell-product="{ row }">
         <RouterLink
@@ -139,7 +143,9 @@ const columns = computed<Column<SupplierProduct>[]>(() => [
         <UiButton
           variant="ghost"
           size="sm"
-          :aria-label="t('supplierProducts.edit', { code: row.code })"
+          :aria-label="
+            t('supplierProducts.edit', { name: row.code ?? row.description })
+          "
           @click="open(row)"
         >
           <Pencil class="size-4" aria-hidden="true" />
@@ -156,7 +162,7 @@ const columns = computed<Column<SupplierProduct>[]>(() => [
               {{ row.product.name }}
             </RouterLink>
             <span class="text-sm text-fg-muted tabular">
-              {{ row.code }} · {{ pack(row) }}
+              {{ [row.code, pack(row)].filter(Boolean).join(" · ") }}
             </span>
             <UiBadge v-if="!row.active" class="self-start">
               {{ t("catalogue.inactive") }}
@@ -166,7 +172,9 @@ const columns = computed<Column<SupplierProduct>[]>(() => [
             v-if="canEdit"
             variant="ghost"
             size="sm"
-            :aria-label="t('supplierProducts.edit', { code: row.code })"
+            :aria-label="
+              t('supplierProducts.edit', { name: row.code ?? row.description })
+            "
             @click="open(row)"
           >
             <Pencil class="size-4" aria-hidden="true" />

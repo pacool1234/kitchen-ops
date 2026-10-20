@@ -1,0 +1,1 @@
+ALTER TABLE "supplier_products" ALTER COLUMN "code" DROP NOT NULL;

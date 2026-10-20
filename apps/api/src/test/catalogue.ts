@@ -21,7 +21,7 @@ export function syntheticCif(n: number): string {
 /** Calls the API as one signed-in user: `send` any request, or expect a create or a read to work. */
 export function apiAs(app: FastifyInstance, cookie: string) {
   const send = (
-    method: "GET" | "POST" | "PATCH",
+    method: "GET" | "POST" | "PATCH" | "PUT",
     url: string,
     payload?: object,
   ) =>

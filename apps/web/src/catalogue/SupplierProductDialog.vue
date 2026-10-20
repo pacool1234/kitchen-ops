@@ -85,7 +85,7 @@ watch(open, async (isOpen) => {
   form.reset(
     s
       ? {
-          code: s.code,
+          code: s.code ?? "",
           description: s.description,
           productId: s.product.id,
           pack: { ...s.pack },
@@ -216,7 +216,9 @@ async function save() {
     v-model:open="shown"
     :title="
       editing
-        ? t('supplierProducts.edit', { code: editing.code })
+        ? t('supplierProducts.edit', {
+            name: editing.code ?? editing.description,
+          })
         : t('supplierProducts.addTitle')
     "
   >
@@ -230,6 +232,7 @@ async function save() {
         <UiTextField
           v-model="values.code"
           :label="t('supplierProducts.code')"
+          :hint="t('supplierProducts.codeHint')"
           :error="message('code')"
           autocomplete="off"
           @blur="touch('code')"

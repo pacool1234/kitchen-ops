@@ -58,6 +58,15 @@ describe("NewSupplierProduct and SupplierProductChanges", () => {
     });
   });
 
+  it("a code is optional: left out, blank or null is none (decision 0035)", () => {
+    expect(
+      NewSupplierProduct.parse({ ...body, code: undefined }).code,
+    ).toBeUndefined();
+    expect(NewSupplierProduct.parse({ ...body, code: "  " }).code).toBeNull();
+    expect(NewSupplierProduct.parse({ ...body, code: null }).code).toBeNull();
+    expect(SupplierProductChanges.parse({ code: "" })).toEqual({ code: null });
+  });
+
   it("a change can't move a supplier product to another supplier", () => {
     const result = SupplierProductChanges.safeParse({
       supplierId: body.supplierId,
