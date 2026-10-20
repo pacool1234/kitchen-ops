@@ -3,6 +3,7 @@ import type { ExtractedDocument, ExtractionFailure } from "@kitchen-ops/shared";
 import * as Sentry from "@sentry/node";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { FastifyBaseLogger } from "fastify";
+import type { Tx } from "../audit/audited";
 import type { Db } from "../db/client";
 import { documentFiles, documents, extractionAttempts } from "../db/schema";
 import type { Storage } from "../storage/storage";
@@ -109,9 +110,12 @@ async function tryAgain(
   throw new TryAgain(reason);
 }
 
-/** The draft, checked: its supplier by tax ID, and that supplier's numbers already received. */
-async function checked(
-  db: Db,
+/**
+ * The draft, checked: its supplier by tax ID, and that supplier's numbers already received. The
+ * seed's demo documents are checked with it too (#119).
+ */
+export async function checked(
+  db: Db | Tx,
   documentId: string,
   draft: ExtractedDocument,
   now: Date,

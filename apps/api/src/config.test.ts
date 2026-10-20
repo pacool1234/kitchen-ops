@@ -253,6 +253,29 @@ describe("loadSeedConfig", () => {
     ).toEqual({ DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL });
   });
 
+  it("reads the storage variables too, for the demo documents' files (#119)", () => {
+    const storage = {
+      S3_ENDPOINT: "http://127.0.0.1:9000",
+      S3_REGION: "fr-par",
+      S3_BUCKET: "kitchen-ops-documents",
+      S3_ACCESS_KEY_ID: "local-only-key",
+      S3_SECRET_ACCESS_KEY: "local-only-secret",
+    };
+    const config = loadSeedConfig({
+      DATABASE_URL,
+      BETTER_AUTH_SECRET,
+      BETTER_AUTH_URL,
+      ...storage,
+    });
+    expect(storageConfig(config)).toEqual({
+      endpoint: storage.S3_ENDPOINT,
+      region: storage.S3_REGION,
+      bucket: storage.S3_BUCKET,
+      accessKeyId: storage.S3_ACCESS_KEY_ID,
+      secretAccessKey: storage.S3_SECRET_ACCESS_KEY,
+    });
+  });
+
   it("fails fast when one of them is missing", () => {
     expect(() => loadSeedConfig({ DATABASE_URL })).toThrow(
       /BETTER_AUTH_SECRET: is required/,

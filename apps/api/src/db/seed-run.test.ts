@@ -54,25 +54,27 @@ describe("runSeed (#100)", () => {
     );
     const auth = createAuth(db, config);
 
-    await runSeed(db, auth, demo, quiet);
+    await runSeed(db, auth, demo, null, quiet);
     const first = await counts();
     expect(first).toEqual({
       storerooms: 3,
-      suppliers: 8,
-      products: 44,
+      // With the demo documents' suppliers and products (#119), though not the documents: no
+      // storage here.
+      suppliers: 10,
+      products: 60,
       unitConversions: expect.any(Number),
-      supplierProducts: 48,
+      supplierProducts: 52,
       users: 3,
     });
 
-    await runSeed(db, auth, demo, quiet);
+    await runSeed(db, auth, demo, null, quiet);
     expect(await counts()).toEqual(first);
   });
 
   it("keeps what was created since: a table with rows is left as it is", async () => {
     await db.execute(sql`truncate ${storerooms} cascade`);
     await db.insert(storerooms).values({ name: "Terraza", type: "bar" });
-    await runSeed(db, createAuth(db, config), demo, quiet);
+    await runSeed(db, createAuth(db, config), demo, null, quiet);
     expect(
       (await db.select({ name: storerooms.name }).from(storerooms)).map(
         (s) => s.name,

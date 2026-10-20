@@ -2,6 +2,8 @@
 
 For everyone who receives deliveries; what each role may do is said at each step. The words on screen are given in Spanish, with English in brackets. Sending a document and watching it being read is in [Receiving a document](receiving-documents.md).
 
+**To try it on staging:** **Documentos** (Documents) has three made-up delivery notes waiting for review. One photo has prices and a supplier we know; another has no prices and a supplier to create; the PDF is long, with one line where nothing was delivered.
+
 ## Reviewing what was read
 
 Once a document is **Listo para revisar** (Ready for review), its page opens on **Revisar lo leído** (Review what was read): the original on one side (above it on a phone), and what was read on the other.
