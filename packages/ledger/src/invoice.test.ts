@@ -512,21 +512,35 @@ describe("reverseDocument: an invoice", () => {
     ]);
   });
 
-  it("reversing the delivery note after its invoice fails: reverse the invoice first", () => {
-    const result = post(i1, before);
-    if (!result.ok) throw new Error(JSON.stringify(result.errors));
-    const all = [...before, ...result.movements];
-    expect(errorsOf(reverse(history.posted[0]!, all))).toEqual([
+  it("reversing a delivery note after its invoice takes the goods out as they stand: the €2.00 correction is reversed, leaving no stock and no purchase", () => {
+    const { posted, movements } = postAll(deliveryNote("dn1", [n1]), i1);
+    const result = reverse(posted[0]!, movements);
+    expect(movementsOf(result)).toEqual([
       {
-        lineId: "n1",
-        message: expect.stringMatching(
-          /corrected by .*v1.*reverse that document first/,
-        ),
+        id: "r-dn1.2",
+        productId: "tomatoes",
+        storeroomId: "cold-room",
+        quantity: -10_000,
+        unitCost: cost("0.002"),
+        documentLineId: "r-dn1.1",
+        kind: "receipt",
+        reverses: "i1.1",
       },
+    ]);
+    const after = [...movements, ...movementsOf(result)];
+    expect(stockOnHand(after, "tomatoes", "cold-room")).toBe(0);
+    expect(latestPurchasePrice(after, "tomatoes")).toBeUndefined();
+  });
+
+  it("after its invoice is reversed, a delivery note can still be reversed: its goods go out at €1.80 again", () => {
+    const { posted, movements } = postAll(deliveryNote("dn1", [n1]), i1);
+    const all = [...movements, ...movementsOf(reverse(posted[1]!, movements))];
+    expect(movementsOf(reverse(posted[0]!, all))).toMatchObject([
+      { quantity: -10_000, unitCost: cost("0.0018"), reverses: "r-i1.2" },
     ]);
   });
 
-  it("reversing an invoice that a rectifying invoice corrected again fails the same way", () => {
+  it("reversing an invoice after a rectifying one puts back the price the first one replaced, €1.80, over the rectified €1.90 (the API reverses the later invoice first, decision 0032)", () => {
     const first = post(i1, before);
     if (!first.ok) throw new Error(JSON.stringify(first.errors));
     const afterFirst = [...before, ...first.movements];
@@ -538,16 +552,15 @@ describe("reverseDocument: an invoice", () => {
         afterFirst,
       ),
     );
-    expect(
-      errorsOf(reverse(first.document, [...afterFirst, ...second])),
-    ).toEqual([
-      {
-        lineId: "v1",
-        message: expect.stringMatching(
-          /corrected by .*v9.*reverse that document first/,
-        ),
-      },
+    const all = [...afterFirst, ...second];
+    const undone = movementsOf(reverse(first.document, all));
+    expect(undone).toMatchObject([
+      { id: "r-i1.2", unitCost: cost("0.0018"), corrects: "i2.1" },
+      { id: "r-i1.3", unitCost: cost("0.0019"), reverses: "i2.1" },
     ]);
+    expect(averageCost([...all, ...undone], "tomatoes", "cold-room")).toBe(
+      cost("0.00215"),
+    );
   });
 });
 
