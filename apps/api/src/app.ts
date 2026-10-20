@@ -15,6 +15,7 @@ import { catalogueRoutes } from "./catalogue/routes";
 import { extractionConfig, storageConfig, type Config } from "./config";
 import { openApiRoutes, registerOpenApi } from "./contract";
 import { createDb } from "./db/client";
+import { draftRoutes } from "./documents/draft";
 import { documentRoutes } from "./documents/routes";
 import { registerErrors } from "./errors";
 import { matchingRoutes } from "./matching/routes";
@@ -132,6 +133,7 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   app.register(auditRoutes, { db });
   app.register(catalogueRoutes, { db });
   app.register(documentRoutes, { db, storage, jobs });
+  app.register(draftRoutes, { db });
   app.register(matchingRoutes, { db });
 
   return app;

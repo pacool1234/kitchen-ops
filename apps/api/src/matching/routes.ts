@@ -3,45 +3,27 @@ import {
   fieldErrors,
   NewSupplierProduct,
 } from "@kitchen-ops/shared";
-import { and, eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
-import { audited, auditContext, type Tx } from "../audit/audited";
+import { audited, auditContext } from "../audit/audited";
 import { createSupplierProduct } from "../catalogue/supplier-products";
 import { routeFor } from "../contract";
 import type { Db } from "../db/client";
 import { documents, suppliers } from "../db/schema";
+import { currentDraft, documentInReview } from "../documents/review";
 import { HttpError, notFound } from "../errors";
+import { checksOf } from "../extraction/checks";
+import { today } from "../extraction/read";
 import { mappingRefusal } from "./match";
 import { offersOf, readMatching } from "./matching";
 
 // Matching a document to the catalogue (#117, decision 0035): its matching, read by everyone;
 // choosing its supplier, and remembering one of its lines as a supplier product, by office and
-// owner, while it's in review. Both writes are audited with the document.
+// owner, while it's in review. Both writes are audited with the document. Both read the draft
+// as it stands, corrected or as read (#118), and a supplier chosen has it checked again.
 
 /** A line's code and description, checked as a supplier product's are. */
 const LineNaming = NewSupplierProduct.pick({ code: true, description: true });
-
-/**
- * The document, locked until the transaction ends, so a supplier chosen and a line remembered
- * at the same moment can't cross. 404 if there's none (a reversal is none), 409 if it isn't in
- * review.
- */
-async function documentInReview(tx: Tx, id: string) {
-  const [document] = await tx
-    .select({
-      status: documents.status,
-      supplierId: documents.supplierId,
-      draft: documents.draft,
-    })
-    .from(documents)
-    .where(and(eq(documents.id, id), isNull(documents.reverses)))
-    .for("update");
-  if (!document) throw notFound();
-  if (document.status !== "ready_for_review") {
-    throw new HttpError(409, "not_in_review");
-  }
-  return document;
-}
 
 export const matchingRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
   app,
@@ -75,9 +57,19 @@ export const matchingRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
         if (!supplier.active) {
           throw new HttpError(400, "invalid_input", { supplierId: "invalid" });
         }
+        // The duplicate check compares the number with this supplier's: run them all again.
+        const draft = currentDraft(before);
+        const checkFailures = draft
+          ? await checksOf(tx, {
+              documentId: id,
+              supplierId,
+              draft,
+              today: today(new Date()),
+            })
+          : null;
         await tx
           .update(documents)
-          .set({ supplierId })
+          .set({ supplierId, checkFailures })
           .where(eq(documents.id, id));
         return {
           result: undefined,
@@ -104,7 +96,7 @@ export const matchingRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
       const { productId, pack } = request.body;
       await audited(db, auditContext(request), async (tx) => {
         const document = await documentInReview(tx, id);
-        const line = document.draft?.lines[position - 1];
+        const line = currentDraft(document)?.lines[position - 1];
         if (!line) throw notFound();
         if (!document.supplierId) throw new HttpError(409, "no_supplier");
         const supplierId = document.supplierId;

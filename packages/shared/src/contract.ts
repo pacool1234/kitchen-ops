@@ -6,8 +6,11 @@ import {
   Document,
   DocumentPage,
   DocumentQuery,
+  DraftChecks,
+  SavedDraft,
   UPLOAD_LIMITS,
 } from "./documents";
+import { ExtractedDocument } from "./extraction";
 import { IdParams } from "./lists";
 import {
   DocumentMatching,
@@ -326,6 +329,32 @@ export const endpoints = {
     response: Document,
     conflict: true,
     needsStorage: true,
+  }),
+
+  // Correcting a document in review (#118, decision 0037): everyone receives deliveries and
+  // confirms their quantities, so everyone may; the API lets a counter user change only a
+  // delivery note's quantities.
+  saveDocumentDraft: endpoint({
+    method: "PUT",
+    path: "/api/documents/:id/draft",
+    summary:
+      "Save a document's draft as corrected, keeping what was read, and check it again; 409 not_in_review if it isn't in review",
+    access: "signed-in",
+    params: IdParams,
+    body: ExtractedDocument,
+    response: SavedDraft,
+    conflict: true,
+  }),
+  checkDocumentDraft: endpoint({
+    method: "POST",
+    path: "/api/documents/:id/draft/checks",
+    summary:
+      "The checks a version of a document's draft would fail, without saving it",
+    access: "signed-in",
+    params: IdParams,
+    body: ExtractedDocument,
+    response: DraftChecks,
+    conflict: true,
   }),
 
   // Matching a document to the catalogue (#117, decision 0035): everyone who reads documents
