@@ -2,40 +2,27 @@ import { createHash, randomUUIDv7 } from "node:crypto";
 import "@fastify/multipart";
 import {
   endpoints,
-  seesReadingCost,
   UPLOAD_LIMITS,
-  type Document,
   type DocumentPage,
   type FieldErrorCode,
-  type Role,
 } from "@kitchen-ops/shared";
-import { and, asc, count, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import type { FastifyRequest } from "fastify";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { audited, auditContext } from "../audit/audited";
 import { routeFor } from "../contract";
 import type { Db } from "../db/client";
-import {
-  documentFiles,
-  documents,
-  extractionAttempts,
-  suggestionCalls,
-  suppliers,
-  users,
-} from "../db/schema";
+import { documentFiles, documents } from "../db/schema";
 import { HttpError, notFound } from "../errors";
-import { withoutMessages } from "../extraction/checks";
 import type { Jobs } from "../extraction/jobs";
 import type { Storage } from "../storage/storage";
+import { readDocument, toSummaries, withNames } from "./read";
 import { checkUpload } from "./upload";
 
 // Supplier documents (#102): uploaded as one PDF or Facturae file or up to 10 photos, each file
 // kept in object storage (decision 0029), and read back with links that last 5 minutes. A file
 // already received, by its sha256, is refused, naming the document that has it. Saving one queues
 // the job that reads it (#104), in the same transaction; a failed one can be queued again.
-
-/** How long a link to a file works. */
-export const LINK_SECONDS = 5 * 60;
 
 const sha256 = (bytes: Uint8Array) =>
   createHash("sha256").update(bytes).digest("hex");
@@ -93,117 +80,6 @@ async function findDuplicates(db: Db, hashes: string[]): Promise<Duplicates> {
     }
   });
   return { fields, ...(of ? { of } : {}) };
-}
-
-const summary = {
-  id: documents.id,
-  status: documents.status,
-  failureReason: documents.failureReason,
-  type: documents.type,
-  supplierId: suppliers.id,
-  supplierName: suppliers.name,
-  number: documents.number,
-  date: documents.date,
-  uploadedById: users.id,
-  uploadedByName: users.name,
-  createdAt: documents.createdAt,
-  fileCount: sql<number>`(select count(*)::int from ${documentFiles} where ${documentFiles.documentId} = ${documents.id})`,
-};
-
-const withNames = (db: Db) =>
-  db
-    .select(summary)
-    .from(documents)
-    .innerJoin(users, eq(users.id, documents.uploadedBy))
-    .leftJoin(suppliers, eq(suppliers.id, documents.supplierId));
-
-type SummaryRow = Awaited<ReturnType<typeof withNames>>[number];
-
-const toSummary = (row: SummaryRow) => ({
-  id: row.id,
-  status: row.status,
-  failureReason: row.failureReason,
-  type: row.type,
-  supplier:
-    row.supplierId && row.supplierName
-      ? { id: row.supplierId, name: row.supplierName }
-      : null,
-  number: row.number,
-  date: row.date,
-  fileCount: row.fileCount,
-  uploadedBy: { id: row.uploadedById, name: row.uploadedByName },
-  uploadedAt: row.createdAt.toISOString(),
-});
-
-/**
- * One document with its files in order, each with a fresh link; its draft and the checks it
- * failed, by name and field; and, for the owner, what reading it cost (#106).
- */
-async function readDocument(
-  db: Db,
-  storage: Storage,
-  id: string,
-  role: Role,
-): Promise<Document | undefined> {
-  // A reversal has no files: it's shown with the document it reverses (#119), not on its own.
-  const [row] = await withNames(db).where(
-    and(eq(documents.id, id), isNull(documents.reverses)),
-  );
-  if (!row) return undefined;
-  const [[read], files, [reading], [suggesting]] = await Promise.all([
-    db
-      .select({
-        draft: documents.draft,
-        corrected: documents.corrected,
-        checkFailures: documents.checkFailures,
-      })
-      .from(documents)
-      .where(eq(documents.id, id)),
-    db
-      .select()
-      .from(documentFiles)
-      .where(eq(documentFiles.documentId, id))
-      .orderBy(asc(documentFiles.position)),
-    // What it cost: reading it, every try, and asking for its lines' products (decision 0036).
-    db
-      .select({
-        costMicroUsd: sql<number>`coalesce(sum(${extractionAttempts.costMicroUsd}), 0)::int`,
-      })
-      .from(extractionAttempts)
-      .where(eq(extractionAttempts.documentId, id)),
-    db
-      .select({
-        costMicroUsd: sql<number>`coalesce(sum(${suggestionCalls.costMicroUsd}), 0)::int`,
-      })
-      .from(suggestionCalls)
-      .where(eq(suggestionCalls.documentId, id)),
-  ]);
-  return {
-    ...toSummary(row),
-    draft: read?.draft ?? null,
-    corrected: read?.corrected ?? null,
-    checkFailures: withoutMessages(read?.checkFailures ?? []),
-    ...(seesReadingCost(role)
-      ? {
-          costMicroUsd:
-            (reading?.costMicroUsd ?? 0) + (suggesting?.costMicroUsd ?? 0),
-        }
-      : {}),
-    files: await Promise.all(
-      files.map(async (f) => {
-        const link = await storage.signedUrl(f.storageKey, LINK_SECONDS);
-        return {
-          id: f.id,
-          position: f.position,
-          kind: f.kind,
-          contentType: f.contentType,
-          sizeBytes: f.sizeBytes,
-          url: link.url,
-          urlExpiresAt: link.expiresAt,
-        };
-      }),
-    ),
-  };
 }
 
 export const documentRoutes: FastifyPluginAsyncZod<{
@@ -314,7 +190,7 @@ export const documentRoutes: FastifyPluginAsyncZod<{
         db.select({ total: count() }).from(documents).where(matching),
       ]);
       return {
-        items: rows.map(toSummary),
+        items: await toSummaries(db, rows),
         total: counted?.total ?? 0,
         page: query.page,
         pageSize: query.pageSize,

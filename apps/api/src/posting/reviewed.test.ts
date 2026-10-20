@@ -265,7 +265,7 @@ describe("ledgerLines: a reviewed document's lines as the ledger takes them", ()
       productId: TOMATOES,
       quantity: "3",
       unit: "kg",
-      unitPrice: 0n,
+      unitPrice: ledger.parseUnitCost("0"),
     };
     const { lines, conversions } = ledgerLines(
       { ...reviewed, lines: [...reviewed.lines, plain] },

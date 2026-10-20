@@ -731,6 +731,16 @@ const WRITE_CASES: Record<string, () => Promise<void>> = {
     const id = await postedFrom(db, office.id, supplier.id, {
       reversed: true,
     });
+    // Its photo, which the copy is shown with.
+    await db.insert(documentFiles).values({
+      documentId: id,
+      position: 1,
+      kind: "image",
+      contentType: "image/jpeg",
+      sizeBytes: 1,
+      sha256: id,
+      storageKey: `documents/${id}/1.jpg`,
+    });
     const owner = await ownerUser();
     const copyIt = () => owner.send("POST", `/api/documents/${id}/copy`);
 

@@ -8,7 +8,8 @@ import {
   type DocumentCheckFailure,
   type ExtractedDocument,
 } from "@kitchen-ops/shared";
-import { and, eq, isNotNull, ne } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, ne, notExists } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { Tx } from "../audit/audited";
 import type { Db } from "../db/client";
 import { documents, suppliers } from "../db/schema";
@@ -16,7 +17,8 @@ import { documents, suppliers } from "../db/schema";
 // The checks a draft is put through (spec section 5, stage 4), with what they need from the
 // database: the numbers already received from the document's supplier. Run when a document is
 // read (#104), and again when it's corrected or its supplier is chosen in review (#118), so the
-// failures stored are always those of the draft as it stands.
+// failures stored are always those of the draft as it stands. A reversed document, and its
+// reversal, no longer count as received (#119): a corrected copy has the same number.
 
 type Reader = Db | Tx;
 
@@ -32,6 +34,8 @@ export async function supplierByTaxId(
     .where(eq(suppliers.taxId, normalizeTaxId(taxId)));
   return supplier?.id ?? null;
 }
+
+const reversal = alias(documents, "reversal");
 
 /** The checks `draft` fails as document `documentId`, from `supplierId`, on `today` (YYYY-MM-DD). */
 export async function checksOf(
@@ -57,6 +61,13 @@ export async function checksOf(
             eq(documents.supplierId, supplierId),
             ne(documents.id, documentId),
             isNotNull(documents.number),
+            isNull(documents.reverses),
+            notExists(
+              db
+                .select({ id: reversal.id })
+                .from(reversal)
+                .where(eq(reversal.reverses, documents.id)),
+            ),
           ),
         )
     : [];
