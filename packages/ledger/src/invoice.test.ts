@@ -408,19 +408,27 @@ describe("postDocument: invoice lines that can't be posted", () => {
     ).toEqual([{ lineId: "v1", message: expect.stringContaining("n9") }]);
   });
 
-  it("a delivery note that was reversed: there's no received stock to bill", () => {
+  it("a delivery note that was reversed: there's no received stock to bill, at a new price or at its own", () => {
     const { posted, movements } = postAll(deliveryNote("dn1", [n1]));
     const all = [...movements, ...movementsOf(reverse(posted[0]!, movements))];
-    expect(
-      errorsOf(
-        post(
-          invoice("i1", [
-            invoiceLine("v1", "n1", "tomatoes", "10", "kg", "2.00"),
-          ]),
-          all,
+    for (const price of ["2.00", "1.80"]) {
+      expect(
+        errorsOf(
+          post(
+            invoice("i1", [
+              invoiceLine("v1", "n1", "tomatoes", "10", "kg", price),
+            ]),
+            all,
+          ),
         ),
-      ),
-    ).toEqual([{ lineId: "v1", message: expect.stringContaining("reversed") }]);
+      ).toEqual([
+        {
+          lineId: "v1",
+          message:
+            "delivery-note line n1 was reversed: there is no received stock to bill",
+        },
+      ]);
+    }
   });
 
   it("every failing line is reported, and a good line among them posts nothing", () => {
