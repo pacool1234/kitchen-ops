@@ -113,12 +113,12 @@ const LEGAL_NAME_RULE =
 const model = (id: string) => ({ id, structuredOutput: true, vision: true });
 
 describe("the default model and prompt (#70)", () => {
-  it("the committed default is decision 0018's: Gemini 3.8 Flash with prompt v2, at temperature 0", () => {
+  it("the committed default is decision 0018's: Gemini 3.8 Flash with prompt v2, at the provider's temperature (0031)", () => {
     const { model, prompt } = defaultExtraction(MODELS_FILE);
-    expect(model).toMatchObject({
-      id: "google/gemini-3.8-flash",
-      temperature: 0,
-    });
+    expect(model.id).toBe("google/gemini-3.8-flash");
+    // With zero retention only Vertex serves it, and Vertex doesn't take a temperature: with
+    // one set, OpenRouter finds no endpoint and every client document fails (decision 0031).
+    expect(model.temperature).toBeUndefined();
     expect(prompt.version).toBe("v2");
     expect(prompt.text).toBe(loadPrompt("v2").text);
   });
