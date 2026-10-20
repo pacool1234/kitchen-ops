@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalText } from "./fields";
 import { ListStatus, PageQuery, pageOf, SearchText } from "./lists";
 import { BaseUnit, UnitName } from "./products";
 
@@ -50,14 +51,15 @@ export const PackQuantity = z
 export const Pack = z.strictObject({ quantity: PackQuantity, unit: UnitName });
 export type Pack = z.infer<typeof Pack>;
 
-const Code = z.string().trim().min(1).max(50);
+/** The supplier's code, if it prints one: blank is none (decision 0035). */
+const Code = optionalText(50);
 const Description = z.string().trim().min(1).max(200);
 
 export const SupplierProduct = z.object({
   id: z.uuid(),
   supplier: z.object({ id: z.uuid(), name: z.string() }),
-  /** The supplier's own code, unique per supplier. */
-  code: z.string(),
+  /** The supplier's own code, unique per supplier; null if it prints none (decision 0035). */
+  code: z.string().nullable(),
   description: z.string(),
   product: z.object({ id: z.uuid(), name: z.string(), baseUnit: BaseUnit }),
   pack: z.object({ quantity: z.string(), unit: z.string() }),
@@ -70,7 +72,7 @@ export type SupplierProduct = z.infer<typeof SupplierProduct>;
 /** Body of `POST /api/supplier-products`. */
 export const NewSupplierProduct = z.strictObject({
   supplierId: z.uuid(),
-  code: Code,
+  code: Code.optional(),
   description: Description,
   productId: z.uuid(),
   pack: Pack,

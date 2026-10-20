@@ -36,16 +36,14 @@ const offer = {
   baseUnit: products.baseUnit,
 };
 
-type OfferRow = {
-  [K in keyof typeof offer]: (typeof offer)[K]["_"]["data"];
-};
-
 const withNames = (db: Db | Tx) =>
   db
     .select(offer)
     .from(supplierProducts)
     .innerJoin(suppliers, eq(suppliers.id, supplierProducts.supplierId))
     .innerJoin(products, eq(products.id, supplierProducts.productId));
+
+type OfferRow = Awaited<ReturnType<typeof withNames>>[number];
 
 /** As the API answers it, with the pack in base units from the product's conversions. */
 function toSupplierProduct(
