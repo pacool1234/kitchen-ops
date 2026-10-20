@@ -10,6 +10,7 @@ export * from "./matching";
 export * from "./products";
 export * from "./storerooms";
 export * from "./supplier-products";
+export * from "./suggestions";
 export * from "./suppliers";
 export * from "./tax-id";
 export * from "./extraction";

@@ -19,6 +19,7 @@ import {
   documentFiles,
   documents,
   extractionAttempts,
+  suggestionCalls,
   suppliers,
   users,
 } from "../db/schema";
@@ -148,7 +149,7 @@ async function readDocument(
     and(eq(documents.id, id), isNull(documents.reverses)),
   );
   if (!row) return undefined;
-  const [[read], files, [spent]] = await Promise.all([
+  const [[read], files, [reading], [suggesting]] = await Promise.all([
     db
       .select({
         draft: documents.draft,
@@ -161,12 +162,19 @@ async function readDocument(
       .from(documentFiles)
       .where(eq(documentFiles.documentId, id))
       .orderBy(asc(documentFiles.position)),
+    // What it cost: reading it, every try, and asking for its lines' products (decision 0036).
     db
       .select({
         costMicroUsd: sql<number>`coalesce(sum(${extractionAttempts.costMicroUsd}), 0)::int`,
       })
       .from(extractionAttempts)
       .where(eq(extractionAttempts.documentId, id)),
+    db
+      .select({
+        costMicroUsd: sql<number>`coalesce(sum(${suggestionCalls.costMicroUsd}), 0)::int`,
+      })
+      .from(suggestionCalls)
+      .where(eq(suggestionCalls.documentId, id)),
   ]);
   return {
     ...toSummary(row),
@@ -177,7 +185,10 @@ async function readDocument(
       path,
     })),
     ...(seesReadingCost(role)
-      ? { costMicroUsd: spent?.costMicroUsd ?? 0 }
+      ? {
+          costMicroUsd:
+            (reading?.costMicroUsd ?? 0) + (suggesting?.costMicroUsd ?? 0),
+        }
       : {}),
     files: await Promise.all(
       files.map(async (f) => {

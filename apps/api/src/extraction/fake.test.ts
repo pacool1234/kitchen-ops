@@ -1,8 +1,10 @@
 import {
   CLIENT_ROUTING,
   defaultExtraction,
+  defaultSuggestion,
   extractFiles,
   MAX_AGE_DAYS,
+  suggestProducts,
   validate,
 } from "@kitchen-ops/extract";
 import { ExtractedDocument } from "@kitchen-ops/shared";
@@ -66,6 +68,41 @@ describe("the fake model", () => {
   });
 });
 
+describe("the fake model's suggestions (#117)", () => {
+  it("suggests the product whose name is in the line's description, ignoring case, the longest if several; none otherwise", async () => {
+    const reader = readerFor({ model: "fake" });
+    const product = (id: string, name: string) => ({
+      id,
+      name,
+      baseUnit: "g",
+      category: "produce",
+    });
+    const line = (description: string) => ({
+      supplierCode: null,
+      description,
+      unit: "kg",
+    });
+    const result = await suggestProducts(reader.client, {
+      ...reader.suggestion,
+      products: [
+        product("tomate", "Tomate"),
+        product("tomate-pera", "Tomate pera"),
+        product("aceite", "Aceite de oliva virgen extra"),
+      ],
+      lines: [
+        line("TOMATE PERA extra"),
+        line("Aceite de oliva virgen extra 5 l"),
+        line("Servilletas"),
+      ],
+    });
+    expect(result).toMatchObject({
+      status: "suggested",
+      productIds: ["tomate-pera", "aceite", null],
+      record: { model: "fake", costMicroUsd: 0 },
+    });
+  });
+});
+
 describe("the default model", () => {
   it("is decision 0018's, with the key, and each call gives up after its timeout", async () => {
     const calls: { url: string; init: RequestInit }[] = [];
@@ -84,6 +121,7 @@ describe("the default model", () => {
     );
     expect(reader.model).toEqual(defaultExtraction().model);
     expect(reader.prompt).toEqual(defaultExtraction().prompt);
+    expect(reader.suggestion).toEqual(defaultSuggestion());
     await reader.client.complete({ messages: [] });
     expect(calls).toHaveLength(1);
     expect(new Headers(calls[0]!.init.headers).get("authorization")).toBe(

@@ -17,6 +17,10 @@ import {
   auditLog,
   documents,
   extractionAttempts,
+  lineSuggestions,
+  products,
+  suggestionCalls,
+  supplierProducts,
   suppliers,
   users,
 } from "../db/schema";
@@ -47,6 +51,7 @@ const model: ModelConfig = {
   vision: true,
 };
 const prompt: Prompt = { version: "v1", text: "Extract the document." };
+const suggestionPrompt: Prompt = { version: "v1", text: "Suggest products." };
 /** Tries again at once and looks for jobs often, so a test waits a second, not minutes. */
 const FAST = {
   retryDelaySeconds: 0,
@@ -87,7 +92,9 @@ function appReadingWith(
   client: OpenRouterClient | null,
   options: { storage?: Storage; logs?: Writable } = {},
 ) {
-  const reader: Reader | null = client ? { client, model, prompt } : null;
+  const reader: Reader | null = client
+    ? { client, model, prompt, suggestion: { model, prompt: suggestionPrompt } }
+    : null;
   const app = buildApp(
     options.logs ? testConfig({ LOG_LEVEL: "info" }) : config,
     {
@@ -103,7 +110,7 @@ function appReadingWith(
 
 beforeEach(async () => {
   await db.execute(
-    sql`truncate ${users}, ${documents}, ${suppliers}, verifications cascade`,
+    sql`truncate ${users}, ${documents}, ${suppliers}, ${products}, verifications cascade`,
   );
   // Jobs left by other test files, for documents that no longer exist.
   await db.execute(sql`delete from pgboss.job`);
@@ -305,6 +312,152 @@ describe("an uploaded document is read in the background", () => {
         costMicroUsd: 800,
       }),
     ]);
+  });
+});
+
+describe("a model suggests the product of each line nothing matches (#117, decision 0036)", () => {
+  /** Tomatoes, mapped by the supplier's code T-01; oil and an inactive product, not mapped. */
+  async function catalogue() {
+    const known = await supplier();
+    const [tomate, aceite] = await db
+      .insert(products)
+      .values([
+        { name: "Tomate pera", baseUnit: "g", category: "produce" },
+        {
+          name: "Aceite de oliva virgen extra",
+          baseUnit: "ml",
+          category: "dry_goods",
+        },
+        {
+          name: "Aceite de girasol",
+          baseUnit: "ml",
+          category: "dry_goods",
+          active: false,
+        },
+      ])
+      .returning({ id: products.id });
+    await db.insert(supplierProducts).values({
+      supplierId: known.id,
+      code: "T-01",
+      description: "Tomate pera, kilo",
+      productId: tomate!.id,
+      packQuantity: "1",
+      packUnit: "g",
+    });
+    return { known, tomate: tomate!.id, aceite: aceite!.id };
+  }
+
+  const suggested = (...pairs: [number, number | null][]) =>
+    JSON.stringify({
+      suggestions: pairs.map(([line, product]) => ({ line, product })),
+    });
+
+  const calls = (id: string) =>
+    db.select().from(suggestionCalls).where(eq(suggestionCalls.documentId, id));
+
+  it("asks only about the lines nothing matches, with the active products, and stores the answer with what it cost, counted in the document's cost", async () => {
+    const { aceite } = await catalogue();
+    // Products are sent by name: 1 is Aceite de oliva virgen extra, 2 Tomate pera.
+    const { client, requests } = scripted(read(), suggested([1, 1]));
+    const app = appReadingWith(client);
+    const { document, cookie } = await upload(app);
+    expect((await settled(document.id)).status).toBe("ready_for_review");
+
+    expect(requests).toHaveLength(2);
+    const asked = requests[1]!;
+    expect(asked.provider).toMatchObject(CLIENT_ROUTING);
+    const messages = asked.messages as { content: string }[];
+    expect(messages[0]?.content).toBe("Suggest products.");
+    expect(messages[1]?.content).toBe(
+      [
+        "Our products:",
+        "1 | Aceite de oliva virgen extra | ml | dry_goods",
+        "2 | Tomate pera | g | produce",
+        "",
+        "The supplier's lines:",
+        "1 | A-05 | Aceite de oliva virgen extra 5 l | garrafa",
+      ].join("\n"),
+    );
+
+    const [call] = await calls(document.id);
+    expect(call).toMatchObject({
+      outcome: "suggested",
+      model: "vendor/vision",
+      promptVersion: "v1",
+      modelCalls: 1,
+      costMicroUsd: 400,
+    });
+    expect(
+      await db
+        .select({
+          supplierCode: lineSuggestions.supplierCode,
+          description: lineSuggestions.description,
+          productId: lineSuggestions.productId,
+        })
+        .from(lineSuggestions)
+        .where(eq(lineSuggestions.callId, call!.id)),
+    ).toEqual([
+      {
+        supplierCode: "A-05",
+        description: "Aceite de oliva virgen extra 5 l",
+        productId: aceite,
+      },
+    ]);
+    expect((await getDocument(app, document.id, cookie)).costMicroUsd).toBe(
+      800,
+    );
+  });
+
+  it("asks nothing when every line matches, or there's no active product", async () => {
+    const { known, aceite } = await catalogue();
+    await db.insert(supplierProducts).values({
+      supplierId: known.id,
+      code: "A-05",
+      description: "Aceite, garrafa",
+      productId: aceite,
+      packQuantity: "5000",
+      packUnit: "ml",
+    });
+    const { client, requests } = scripted(
+      read(),
+      // No supplier: no line can match, but no product is active either.
+      read({ supplier: { name: "Otro", taxId: null } }),
+    );
+    const app = appReadingWith(client);
+    const everyLine = await upload(app);
+    expect((await settled(everyLine.document.id)).status).toBe(
+      "ready_for_review",
+    );
+    expect(requests).toHaveLength(1);
+
+    await db.update(products).set({ active: false });
+    const noProducts = await upload(app);
+    expect((await settled(noProducts.document.id)).status).toBe(
+      "ready_for_review",
+    );
+    expect(requests).toHaveLength(2);
+    expect(await db.select().from(suggestionCalls)).toEqual([]);
+  });
+
+  it("a call that fails doesn't fail the reading: ready for review, read once, the call recorded as failed with its cost", async () => {
+    await catalogue();
+    const { client, requests } = scripted(
+      read(),
+      new OpenRouterError("the provider is down", 503),
+    );
+    const app = appReadingWith(client);
+    const { document, cookie } = await upload(app);
+    expect((await settled(document.id)).status).toBe("ready_for_review");
+    expect(requests).toHaveLength(2);
+    expect(await attempts(document.id)).toEqual([
+      expect.objectContaining({ try: 1, outcome: "extracted" }),
+    ]);
+    expect(await calls(document.id)).toEqual([
+      expect.objectContaining({ outcome: "failed", modelCalls: 1 }),
+    ]);
+    expect((await getDocument(app, document.id, cookie)).costMicroUsd).toBe(
+      400,
+    );
   });
 });
 

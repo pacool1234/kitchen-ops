@@ -4,7 +4,12 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { defaultExtraction, loadModels, MODELS_FILE } from "./config";
+import {
+  defaultExtraction,
+  defaultSuggestion,
+  loadModels,
+  MODELS_FILE,
+} from "./config";
 import { loadPrompt } from "./prompts";
 
 function fileWith(content: string): URL {
@@ -18,6 +23,7 @@ function fileWith(content: string): URL {
 function withDefault(config: {
   models: Record<string, unknown>[];
   default?: unknown;
+  suggestion?: unknown;
 }): string {
   return JSON.stringify({
     default: { model: config.models[0]?.["id"] ?? "a/b", prompt: "v1" },
@@ -187,7 +193,43 @@ describe("the default model and prompt (#70)", () => {
   });
 });
 
+describe("the model and prompt that suggest products (#117, decision 0036)", () => {
+  it("the committed one is reading's model, Gemini 3.8 Flash, with the suggestions prompt v1", () => {
+    const { model, prompt } = defaultSuggestion(MODELS_FILE);
+    expect(model).toEqual(defaultExtraction(MODELS_FILE).model);
+    expect(prompt.version).toBe("v1");
+    expect(prompt.text).toBe(loadPrompt("v1", "suggestions").text);
+  });
+
+  it("is optional in a models file, but asking for it then fails, naming it", () => {
+    const file = fileWith(withDefault({ models: [model("a/b")] }));
+    expect(() => loadModels(file)).not.toThrow();
+    expect(() => defaultSuggestion(file)).toThrow("suggestion");
+  });
+
+  it("one naming a model that isn't in the list is refused, naming the model", () => {
+    const file = fileWith(
+      withDefault({
+        models: [model("a/b")],
+        suggestion: { model: "a/other", prompt: "v1" },
+      }),
+    );
+    expect(() => loadModels(file)).toThrow(
+      "suggestion.model: a/other isn't one of the models",
+    );
+  });
+});
+
 describe("loadPrompt: prompts are versioned files", () => {
+  it("the suggestions prompt v1 is its own file, and asks for null rather than a guess", () => {
+    const prompt = loadPrompt("v1", "suggestions");
+    expect(prompt).toEqual({
+      version: "v1",
+      text: expect.stringMatching(/null/),
+    });
+    expect(prompt.text).not.toBe(loadPrompt("v1").text);
+  });
+
   it("v1 exists and asks for nulls instead of guesses", () => {
     const prompt = loadPrompt("v1");
     expect(prompt.version).toBe("v1");

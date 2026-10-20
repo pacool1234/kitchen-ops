@@ -408,6 +408,58 @@ export const extractionAttempts = pgTable(
   ],
 );
 
+/** How a call suggesting products went (decision 0036): answered, or not, with what it cost. */
+export const suggestionOutcome = pgEnum("suggestion_outcome", [
+  "suggested",
+  "failed",
+]);
+
+/**
+ * Each call asking a model which of our products a document's unmatched lines are (#117,
+ * decision 0036), made once when the document is read, with what it cost. Its cost is the
+ * document's, like its reading's.
+ */
+export const suggestionCalls = pgTable(
+  "suggestion_calls",
+  {
+    id: primaryId(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id),
+    outcome: suggestionOutcome("outcome").notNull(),
+    model: text("model").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    /** 2 when the first answer didn't match the schema. */
+    modelCalls: integer("model_calls").notNull(),
+    promptTokens: integer("prompt_tokens").notNull().default(0),
+    completionTokens: integer("completion_tokens").notNull().default(0),
+    /** Millionths of a US dollar, a whole number; null if OpenRouter didn't report it. */
+    costMicroUsd: integer("cost_micro_usd"),
+    latencyMs: integer("latency_ms"),
+    createdAt: createdAt(),
+  },
+  (table) => [index("suggestion_calls_document_idx").on(table.documentId)],
+);
+
+/**
+ * What the model answered for each line asked about: found again by the line's code and
+ * description as read, not its position, so lines moved in review keep theirs.
+ */
+export const lineSuggestions = pgTable(
+  "line_suggestions",
+  {
+    id: primaryId(),
+    callId: uuid("call_id")
+      .notNull()
+      .references(() => suggestionCalls.id),
+    supplierCode: text("supplier_code"),
+    description: text("description"),
+    /** null: the model found none of our products clearly is the line. */
+    productId: uuid("product_id").references(() => products.id),
+  },
+  (table) => [index("line_suggestions_call_idx").on(table.callId)],
+);
+
 /**
  * The request field each unique index guards: a duplicate answers 409 naming it
  * (src/errors.ts).

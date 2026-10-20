@@ -12,7 +12,14 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../app";
 import { createAuth } from "../auth/auth";
 import { createDb } from "../db/client";
-import { documents, products, suppliers, users } from "../db/schema";
+import {
+  documents,
+  lineSuggestions,
+  products,
+  suggestionCalls,
+  suppliers,
+  users,
+} from "../db/schema";
 import { signedInAs } from "../test/auth";
 import { apiAs, syntheticCif } from "../test/catalogue";
 import { testConfig } from "../test/helpers";
@@ -410,8 +417,8 @@ describe("POST /api/documents/:id/lines/:line/mapping", () => {
     const next = await fromHuerto([
       { supplierCode: "C-07", description: "Cebolla dulce, malla" },
     ]);
-    expect((await matching(next)).lines[0]?.match?.supplierProduct.id).toBe(
-      after.lines[2]?.match?.supplierProduct.id,
+    expect((await matching(next)).lines[0]?.match).toEqual(
+      after.lines[2]?.match,
     );
   });
 
@@ -527,5 +534,128 @@ describe("POST /api/documents/:id/lines/:line/mapping", () => {
     ]);
     const counter = apiAs(app, await signedInAs(app, auth, "counter"));
     expect((await remember(id, 1, mapping(), counter)).statusCode).toBe(403);
+  });
+});
+
+describe("a model's suggestion (#117, decision 0036)", () => {
+  /** What the reading job stores when the model answers. */
+  async function suggestedFor(
+    documentId: string,
+    answers: {
+      supplierCode: string | null;
+      description: string | null;
+      productId: string | null;
+    }[],
+  ) {
+    const [call] = await db
+      .insert(suggestionCalls)
+      .values({
+        documentId,
+        outcome: "suggested",
+        model: "fake",
+        promptVersion: "v1",
+        modelCalls: 1,
+      })
+      .returning({ id: suggestionCalls.id });
+    await db
+      .insert(lineSuggestions)
+      .values(answers.map((answer) => ({ callId: call!.id, ...answer })));
+  }
+
+  const oil = () => ({
+    id: aceite.id,
+    name: aceite.name,
+    baseUnit: aceite.baseUnit,
+  });
+
+  it("shows on a line nothing matches, found by its code and description wherever the line is now; the line still needs a person", async () => {
+    const id = await documentRead(db, {
+      uploadedBy: officeId,
+      supplierId: huerto.id,
+      draft: draftWith([
+        { supplierCode: "L-02", description: "Lechuga" },
+        { supplierCode: "C-07", description: "CEBOLLA  dulce" },
+        { supplierCode: "T-01", description: "Tomate pera" },
+      ]),
+    });
+    // Suggested in the order read, before review moved the lines.
+    await suggestedFor(id, [
+      {
+        supplierCode: "C-07",
+        description: "Cebolla dulce",
+        productId: aceite.id,
+      },
+      { supplierCode: "L-02", description: "Lechuga", productId: null },
+    ]);
+    expect(await matching(id)).toMatchObject({
+      lines: [
+        { line: 1, match: null },
+        { line: 2, match: { by: "suggestion", product: oil() } },
+        { line: 3, match: { by: "code" } },
+      ],
+      reviewReasons: ["new_supplier", "unmapped_lines"],
+    });
+  });
+
+  it("a line whose code or description changed loses it, and so does a product made inactive", async () => {
+    const id = await documentRead(db, {
+      uploadedBy: officeId,
+      supplierId: huerto.id,
+      draft: draftWith([
+        { supplierCode: "C-08", description: "Cebolla dulce" },
+        { supplierCode: "C-07", description: "Cebolla roja" },
+        { supplierCode: null, description: "Lechuga" },
+      ]),
+    });
+    await suggestedFor(id, [
+      {
+        supplierCode: "C-07",
+        description: "Cebolla dulce",
+        productId: aceite.id,
+      },
+      { supplierCode: null, description: "Lechuga", productId: tomate.id },
+    ]);
+    await office.updated(
+      `/api/products/${tomate.id}`,
+      { active: false },
+      Product,
+    );
+    expect((await matching(id)).lines.map((l) => l.match)).toEqual([
+      null,
+      null,
+      null,
+    ]);
+  });
+
+  it("a suggested line still needs a person; once it's remembered, it matches by its code instead", async () => {
+    await establish(huerto.id);
+    const id = await documentRead(db, {
+      uploadedBy: officeId,
+      supplierId: huerto.id,
+      draft: draftWith([
+        { supplierCode: "T-01", description: "Tomate pera" },
+        { supplierCode: "C-07", description: "Cebolla" },
+      ]),
+    });
+    await suggestedFor(id, [
+      { supplierCode: "C-07", description: "Cebolla", productId: aceite.id },
+    ]);
+    expect(await matching(id)).toMatchObject({
+      lines: [{ match: { by: "code" } }, { match: { by: "suggestion" } }],
+      reviewReasons: ["unmapped_lines"],
+    });
+
+    const response = await office.send(
+      "POST",
+      `/api/documents/${id}/lines/2/mapping`,
+      { productId: aceite.id, pack: { quantity: "5", unit: "l" } },
+    );
+    expect(response.statusCode).toBe(201);
+    const after = DocumentMatching.parse(response.json());
+    expect(after.lines[1]?.match).toMatchObject({
+      by: "code",
+      supplierProduct: { product: { id: aceite.id } },
+    });
+    expect(after.reviewReasons).toEqual([]);
   });
 });
