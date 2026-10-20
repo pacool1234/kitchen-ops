@@ -2,6 +2,7 @@ import { count } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
 import type { Auth } from "../auth/auth";
 import { createUser } from "../auth/users";
+import type { Storage } from "../storage/storage";
 import type { Db } from "./client";
 import {
   products,
@@ -17,18 +18,25 @@ import {
   seedSupplierProducts,
   seedSuppliers,
 } from "./seed-catalogue";
+import { seedDemoDocuments } from "./seed-documents";
 import type { SeedPlan } from "./seed-plan";
 
 // Fills a database with the fictional restaurant (#88) and the plan's logins (#100). Each table
 // only if it's empty, so running it again changes nothing and keeps whatever was created since:
-// staging runs it on every start.
+// staging runs it on every start. Then the demo documents (#119), with what they need of the
+// catalogue, each row only if it isn't there: staging's tables have rows already.
 
-/** Seeds what's empty, saying what it did or skipped with `log`. */
+/**
+ * Seeds what's empty, then the demo documents that are missing, their files kept in `storage`.
+ * Says what it did or skipped with `log`.
+ */
 export async function runSeed(
   db: Db,
   auth: Auth,
   plan: SeedPlan,
+  storage: Storage | null,
   log: (line: string) => void = console.log,
+  now: Date = new Date(),
 ): Promise<void> {
   // Each table only if it's empty, so running the seed again changes nothing.
   const seedTable = async (name: string, table: PgTable, rows: object[]) => {
@@ -106,4 +114,6 @@ export async function runSeed(
       `Created ${plan.users.length} ${plan.mode} users: ${plan.users.map((u) => u.email).join(", ")}.`,
     );
   }
+
+  await seedDemoDocuments(db, storage, log, now);
 }

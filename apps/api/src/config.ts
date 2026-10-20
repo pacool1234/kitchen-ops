@@ -97,7 +97,9 @@ const CheckedConfig = ConfigSchema.superRefine((config, ctx) => {
 });
 
 /** The storage settings, if all are set. */
-export function storageConfig(config: Config) {
+export function storageConfig(
+  config: Pick<Config, (typeof STORAGE_VARIABLES)[number]>,
+) {
   const {
     S3_ENDPOINT,
     S3_REGION,
@@ -195,6 +197,12 @@ export function loadSeedConfig(env: Record<string, string | undefined>) {
       DATABASE_URL: true,
       BETTER_AUTH_SECRET: true,
       BETTER_AUTH_URL: true,
+      // For the demo documents' files (#119): without them, the documents are skipped.
+      S3_ENDPOINT: true,
+      S3_REGION: true,
+      S3_BUCKET: true,
+      S3_ACCESS_KEY_ID: true,
+      S3_SECRET_ACCESS_KEY: true,
     }),
     env,
   );
