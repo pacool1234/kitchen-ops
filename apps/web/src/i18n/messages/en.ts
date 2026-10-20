@@ -485,6 +485,7 @@ export const en: Messages = {
       in_use: "This is in use and can't be changed like this.",
       unknown_unit: "This isn't one of the product's units.",
       not_whole_base_units: "This isn't a whole number of the base unit.",
+      below_zero: "There isn't that much in stock.",
       too_many: "There are too many files.",
       unsupported_type:
         "Only PDF, Facturae XML, JPEG or PNG files are accepted.",

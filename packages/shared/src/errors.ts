@@ -29,6 +29,8 @@ export const FIELD_ERROR_CODES = [
   "unknown_unit",
   /** A pack that isn't a whole number of base units: 0.0001 kg is 0.1 g. */
   "not_whole_base_units",
+  /** A line that would take stock below zero (invariant 6, #119). */
+  "below_zero",
   /** More files than an upload may hold. */
   "too_many",
   /** A file that isn't a PDF, a Facturae XML, a JPEG or a PNG, by its bytes. */

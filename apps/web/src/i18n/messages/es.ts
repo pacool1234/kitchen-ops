@@ -498,6 +498,7 @@ export const es = {
       in_use: "Está en uso y no se puede cambiar así.",
       unknown_unit: "No es una de las unidades del producto.",
       not_whole_base_units: "No da un número entero de la unidad base.",
+      below_zero: "No hay tanto en stock.",
       too_many: "Son demasiados archivos.",
       unsupported_type: "Solo se admiten PDF, XML Facturae, JPEG o PNG.",
       mixed_kinds: "Un PDF o un XML va solo, sin fotos ni otros archivos.",

@@ -18,6 +18,7 @@ import {
   LineParams,
   NewMapping,
 } from "./matching";
+import { DocumentPosting, PostDocument } from "./posting";
 import {
   NewProduct,
   Product,
@@ -390,6 +391,54 @@ export const endpoints = {
     status: 201,
     response: DocumentMatching,
     conflict: true,
+  }),
+
+  // Posting a reviewed delivery note, and reversing a posted document (#119, decision 0038).
+  // Everyone receives deliveries, so everyone may post one; the API decides by what's left
+  // before posting it (`mayPost`). Reversing, and a corrected copy of what's reversed, are the
+  // owner's (spec section 6).
+  postDocument: endpoint({
+    method: "POST",
+    path: "/api/documents/:id/post",
+    summary:
+      "Post a reviewed delivery note into stock: each line into its storeroom, all or nothing",
+    access: "signed-in",
+    params: IdParams,
+    body: PostDocument,
+    response: DocumentPosting,
+    conflict: true,
+  }),
+  getDocumentPosting: endpoint({
+    method: "GET",
+    path: "/api/documents/:id/posting",
+    summary:
+      "A posted document's lines and their movements, and its reversal's; 409 not_posted otherwise",
+    access: "signed-in",
+    params: IdParams,
+    response: DocumentPosting,
+    conflict: true,
+  }),
+  reverseDocument: endpoint({
+    method: "POST",
+    path: "/api/documents/:id/reverse",
+    summary:
+      "Reverse a posted document today: its movements undone by a reversal of its own",
+    access: { roles: ["owner"] },
+    params: IdParams,
+    response: DocumentPosting,
+    conflict: true,
+  }),
+  createDocumentCopy: endpoint({
+    method: "POST",
+    path: "/api/documents/:id/copy",
+    summary:
+      "A corrected copy of a reversed document, in review, to post again; at most one",
+    access: { roles: ["owner"] },
+    params: IdParams,
+    status: 201,
+    response: Document,
+    conflict: true,
+    needsStorage: true,
   }),
 } as const;
 
