@@ -33,10 +33,11 @@ test("axe checks the colours a transition ends on, never ones halfway (#127)", a
   page,
 }) => {
   await openGallery(page);
-  // Every colour change slowed to 3 seconds, so a check made too soon lands in the middle of one.
+  // The colour fades the app has (the buttons'), slowed to 3 seconds, so a check made too soon
+  // lands in the middle of one. Only those: slowing every element's would chain without end,
+  // each child's inherited colour changing again as its parent's does.
   await page.addStyleTag({
-    content:
-      "*, *::before, *::after { transition-duration: 3s !important; transition-delay: 0s !important; }",
+    content: ".transition-colors { transition-duration: 3s !important; }",
   });
   await page.emulateMedia({ colorScheme: "dark" });
   await expectAccessible(page);
