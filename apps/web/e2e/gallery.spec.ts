@@ -29,6 +29,19 @@ test("the gallery passes axe, in light and in dark", async ({ page }) => {
   await expectAccessible(page);
 });
 
+test("axe checks the colours a transition ends on, never ones halfway (#127)", async ({
+  page,
+}) => {
+  await openGallery(page);
+  // Every colour change slowed to 3 seconds, so a check made too soon lands in the middle of one.
+  await page.addStyleTag({
+    content:
+      "*, *::before, *::after { transition-duration: 3s !important; transition-delay: 0s !important; }",
+  });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expectAccessible(page);
+});
+
 test("Tab reaches every control, and each shows the focus ring", async ({
   page,
 }) => {
