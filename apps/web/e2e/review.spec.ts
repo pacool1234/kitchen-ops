@@ -29,6 +29,11 @@ const line = (page: Page, n: number) =>
   page.getByRole("group", { name: `Línea ${n}`, exact: true });
 const checks = (page: Page) =>
   page.getByRole("region", { name: "Comprobaciones" });
+// Reka names the notices' region with its key too: "Avisos (F8)".
+const toast = (page: Page, text: string) =>
+  page
+    .getByRole("region", { name: /^Avisos/ })
+    .getByText(text, { exact: true });
 const LINE_TOTAL_FAILS =
   "Línea 1: el importe no cuadra con la cantidad, el precio y el descuento";
 
@@ -63,7 +68,7 @@ test("a misread quantity is caught, corrected next to the original, checked agai
   await expect(total).not.toHaveAttribute("aria-invalid");
 
   await page.getByRole("button", { name: "Guardar correcciones" }).click();
-  await expect(page.getByText("Correcciones guardadas")).toBeVisible();
+  await expect(toast(page, "Correcciones guardadas")).toBeVisible();
 
   // Kept: the correction, and apart from it, what the model read.
   await page.reload();
@@ -108,7 +113,7 @@ test("a counter user corrects only quantities: the rest of the delivery note is 
     "Ha pasado todas las comprobaciones.",
   );
   await page.getByRole("button", { name: "Guardar correcciones" }).click();
-  await expect(page.getByText("Correcciones guardadas")).toBeVisible();
+  await expect(toast(page, "Correcciones guardadas")).toBeVisible();
   await page.reload();
   await expect(quantity).toHaveValue("5");
 });
