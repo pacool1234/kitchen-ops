@@ -1,19 +1,28 @@
 import {
   NEW_SUPPLIER_DOCUMENTS,
+  type BaseUnit,
   type DocumentMatching,
   type ReviewReason,
 } from "@kitchen-ops/shared";
-import { and, count, eq, isNull, notExists } from "drizzle-orm";
+import { and, count, desc, eq, isNull, notExists } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Tx } from "../audit/audited";
 import { readSupplierProduct } from "../catalogue/supplier-products";
 import type { Db } from "../db/client";
-import { documents, products, supplierProducts, suppliers } from "../db/schema";
-import { matchLine, type Offer } from "./match";
+import {
+  documents,
+  lineSuggestions,
+  products,
+  suggestionCalls,
+  supplierProducts,
+  suppliers,
+} from "../db/schema";
+import { lineKey, matchLine, type Offer } from "./match";
 
 // A document's matching as it stands (#117, decision 0035): worked out each time from its
 // supplier, its draft and the catalogue, never stored, so a supplier chosen or a line
-// remembered in review shows at once.
+// remembered in review shows at once. A line nothing matches shows the product a model
+// suggested when the document was read, if any (decision 0036): that one is stored.
 
 type Reader = Db | Tx;
 
@@ -62,6 +71,51 @@ async function postedCount(db: Reader, supplierId: string): Promise<number> {
   return counted?.total ?? 0;
 }
 
+/**
+ * The products a model suggested for the document's lines (decision 0036), by each line's key:
+ * the latest call's answer for a line, and only an active product.
+ */
+async function suggestionsOf(db: Reader, documentId: string) {
+  const rows = await db
+    .select({
+      supplierCode: lineSuggestions.supplierCode,
+      description: lineSuggestions.description,
+      id: products.id,
+      name: products.name,
+      baseUnit: products.baseUnit,
+      active: products.active,
+    })
+    .from(lineSuggestions)
+    .innerJoin(suggestionCalls, eq(suggestionCalls.id, lineSuggestions.callId))
+    .leftJoin(products, eq(products.id, lineSuggestions.productId))
+    .where(eq(suggestionCalls.documentId, documentId))
+    .orderBy(desc(suggestionCalls.createdAt), desc(suggestionCalls.id));
+  const byLine = new Map<
+    string,
+    { id: string; name: string; baseUnit: BaseUnit } | null
+  >();
+  for (const {
+    supplierCode,
+    description,
+    id,
+    name,
+    baseUnit,
+    active,
+  } of rows) {
+    const key = lineKey({ supplierCode, description });
+    if (byLine.has(key)) continue;
+    byLine.set(
+      key,
+      id !== null && name !== null && baseUnit !== null && active
+        ? { id, name, baseUnit }
+        : null,
+    );
+  }
+  return {
+    get: (key: string) => byLine.get(key) ?? null,
+  };
+}
+
 /** The document's matching, or undefined if there's no such document (a reversal is none). */
 export async function readMatching(
   db: Reader,
@@ -94,18 +148,28 @@ export async function readMatching(
       ])
     : [[], 0];
   const newSupplier = supplier !== undefined && posted < NEW_SUPPLIER_DOCUMENTS;
+  const suggested = await suggestionsOf(db, documentId);
 
   const lines = await Promise.all(
-    (document.draft?.lines ?? []).map(async (line, i) => {
-      const found = matchLine(line, offers);
-      return {
-        line: i + 1,
-        match: found && {
-          by: found.by,
-          supplierProduct: (await readSupplierProduct(db, found.offerId))!,
-        },
-      };
-    }),
+    (document.draft?.lines ?? []).map(
+      async (line, i): Promise<DocumentMatching["lines"][number]> => {
+        const found = matchLine(line, offers);
+        if (found) {
+          return {
+            line: i + 1,
+            match: {
+              by: found.by,
+              supplierProduct: (await readSupplierProduct(db, found.offerId))!,
+            },
+          };
+        }
+        const product = suggested.get(lineKey(line));
+        return {
+          line: i + 1,
+          match: product ? { by: "suggestion", product } : null,
+        };
+      },
+    ),
   );
 
   const reasons: [ReviewReason, boolean][] = [
@@ -113,7 +177,11 @@ export async function readMatching(
     ["failed_checks", (document.checkFailures ?? []).length > 0],
     ["no_supplier", !supplier],
     ["new_supplier", newSupplier],
-    ["unmapped_lines", lines.some((l) => l.match === null)],
+    // A suggestion waits for a person to confirm it.
+    [
+      "unmapped_lines",
+      lines.some((l) => l.match === null || l.match.by === "suggestion"),
+    ],
   ];
   return {
     supplier: supplier ?? null,

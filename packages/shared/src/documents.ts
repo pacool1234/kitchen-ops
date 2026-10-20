@@ -128,7 +128,8 @@ export const Document = DocumentSummary.extend({
   /** The checks the draft failed: empty when it passed them all, or hasn't been read. */
   checkFailures: z.array(DocumentCheckFailure),
   /**
-   * What reading it has cost so far, every try included, in millionths of a US dollar: a whole
+   * What reading it has cost so far, every try included, and asking a model for its lines'
+   * products (decision 0036), in millionths of a US dollar: a whole
    * number, never a fraction of a dollar. A call whose cost OpenRouter didn't report adds 0.
    * Only in the owner's answers (`seesReadingCost`).
    */
