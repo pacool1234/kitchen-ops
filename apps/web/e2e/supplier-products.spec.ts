@@ -109,6 +109,8 @@ test("counter staff read a supplier's products, and can't add or edit them", asy
   await signedIn(page, accounts.counter);
   await page.goto("/catalogue/suppliers");
   await loadedAt(page, "Proveedores");
+  // Found by searching: other tests' suppliers may push it off the first page.
+  await page.getByLabel("Buscar").fill("pradera");
   await page.getByRole("link", { name: "Lácteos La Pradera, S.L." }).click();
   await arrivedAt(page, "Lácteos La Pradera, S.L.");
   await expect(
