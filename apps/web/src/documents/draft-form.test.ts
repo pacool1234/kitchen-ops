@@ -65,6 +65,8 @@ const draft: fc.Arbitrary<ExtractedDocument> = fc
     }),
     number: nullable(text),
     issueDate: nullable(isoDate),
+    // The delivery notes an invoice lists (#120): kept as read, with no field of their own yet.
+    deliveryNotes: fc.array(text, { maxLength: 3 }),
     totals: nullable(
       fc.record({
         net: nullable(decimal(2)),
@@ -90,6 +92,10 @@ describe("the form's values: a draft as its fields hold it, and back", () => {
         expect(toDraft(toValues(read))).toEqual(read);
       }),
     );
+  });
+
+  it("nothing read lists no delivery notes (#120)", () => {
+    expect(toDraft(toValues(null)).deliveryNotes).toEqual([]);
   });
 
   it("a field left empty is null: not printed. Spaces are kept, so a draft read with them goes back the same", () => {

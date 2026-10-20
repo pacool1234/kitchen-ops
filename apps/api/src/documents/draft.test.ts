@@ -121,6 +121,26 @@ const stored = async (id: string) =>
       .where(eq(documents.id, id))
   )[0]!;
 
+describe("a draft saved before it listed delivery notes (#120)", () => {
+  it("is answered as listing none, what was read and its correction alike", async () => {
+    const id = await inReview(printed());
+    await db
+      .update(documents)
+      .set({
+        draft: sql`${documents.draft} - 'deliveryNotes'`,
+        corrected: sql`${documents.draft} - 'deliveryNotes'`,
+      })
+      .where(eq(documents.id, id));
+    // As stored: the key isn't there.
+    expect("deliveryNotes" in (await stored(id)).draft!).toBe(false);
+
+    // As answered, before any client-side parsing.
+    const answered = (await office.send("GET", `/api/documents/${id}`)).json();
+    expect(answered.draft.deliveryNotes).toEqual([]);
+    expect(answered.corrected.deliveryNotes).toEqual([]);
+  });
+});
+
 describe("PUT /api/documents/:id/draft", () => {
   it("saves the correction apart from what the model read: the document shows both, and the corrected one's checks", async () => {
     const id = await inReview(misread(), { failedChecks: true });

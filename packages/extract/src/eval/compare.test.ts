@@ -5,6 +5,7 @@ import {
   compareDocument,
   HEADER_FIELDS,
   LINE_FIELDS,
+  SCORED_HEADER_FIELDS,
   type HeaderField,
 } from "./compare";
 import { document } from "./testing";
@@ -16,6 +17,7 @@ const gold: ExtractedDocument = {
   supplier: { name: "Huerta Ficticia S.L.", taxId: "B00123455" },
   number: "F-1",
   issueDate: "2026-10-14",
+  deliveryNotes: ["ALB-7", "ALB-9"],
   totals: {
     net: "13.70",
     vat: [
@@ -75,6 +77,23 @@ describe("compareDocument: a result against its gold answer", () => {
     expect(comparison.differences).toEqual([]);
     expect(Object.values(comparison.header).every(Boolean)).toBe(true);
     expect(comparison.lines).toMatchObject({ gold: 3, result: 3, matched: 3 });
+  });
+
+  it("the delivery notes listed are right in any order, written as the duplicate check compares numbers (#120)", () => {
+    const comparison = compareDocument(
+      { ...gold, deliveryNotes: ["alb 9", "ALB/7"] },
+      gold,
+    );
+    expect(comparison.header.deliveryNotes).toBe(true);
+    expect(comparison.correct).toBe(true);
+  });
+
+  it("a delivery note listed twice, or missed, is wrong (#120)", () => {
+    for (const deliveryNotes of [["ALB-7"], ["ALB-7", "ALB-7"], []]) {
+      expect(
+        compareDocument({ ...gold, deliveryNotes }, gold).header.deliveryNotes,
+      ).toBe(false);
+    }
   });
 
   it("lines are matched by code, then description, so their order doesn't matter", () => {
@@ -281,6 +300,8 @@ function changeHeader(
           vat: [...totals.vat, { rate: "4", base: "1", amount: "0.04" }],
         },
       };
+    case "deliveryNotes":
+      return { ...doc, deliveryNotes: [...doc.deliveryNotes, "X-1"] };
   }
 }
 
@@ -328,15 +349,39 @@ describe("compareDocument: properties", () => {
     );
   });
 
-  it("changing any one header field makes the document wrong, naming exactly that field", () => {
+  it("changing any one scored header field makes the document wrong, naming exactly that field", () => {
     fc.assert(
-      fc.property(document, fc.constantFrom(...HEADER_FIELDS), (doc, field) => {
-        const comparison = compareDocument(changeHeader(doc, field), doc);
-        expect(comparison.correct).toBe(false);
-        expect(comparison.differences).toEqual([field]);
-        expect(comparison.header[field]).toBe(false);
+      fc.property(
+        document,
+        fc.constantFrom(...SCORED_HEADER_FIELDS),
+        (doc, field) => {
+          const comparison = compareDocument(changeHeader(doc, field), doc);
+          expect(comparison.correct).toBe(false);
+          expect(comparison.differences).toEqual([field]);
+          expect(comparison.header[field]).toBe(false);
+        },
+      ),
+    );
+  });
+
+  it("the delivery notes listed are reported, and named when wrong, but scored apart: the document stays correct (#120)", () => {
+    fc.assert(
+      fc.property(document, (doc) => {
+        const comparison = compareDocument(
+          changeHeader(doc, "deliveryNotes"),
+          doc,
+        );
+        expect(comparison.header.deliveryNotes).toBe(false);
+        expect(comparison.differences).toEqual(["deliveryNotes"]);
+        expect(comparison.correct).toBe(true);
       }),
     );
+  });
+
+  it("every header field is reported; all but the delivery notes listed are scored", () => {
+    expect(
+      HEADER_FIELDS.filter((f) => !SCORED_HEADER_FIELDS.includes(f as never)),
+    ).toEqual(["deliveryNotes"]);
   });
 
   it("changing any one value on a line makes the document wrong, naming exactly that field", () => {
