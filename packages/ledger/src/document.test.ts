@@ -180,6 +180,39 @@ describe("postDocument: a delivery note adds stock at its received unit cost", (
       { lineId: "l1", message: expect.stringContaining("non-zero") },
     ]);
   });
+  it("a line with a storeroom of its own is received there: 2 dozen eggs into the dry store, the tomatoes into the note's cold room", () => {
+    const note: Document = {
+      ...header,
+      type: "delivery-note",
+      supplierId: "supplier-1",
+      lines: [
+        pricedLine("l1", "tomatoes", "1", "kg", "2.00"),
+        pricedLine("l2", "eggs", "2", "dozen", "2.40", {
+          storeroomId: "dry-store",
+        }),
+      ],
+    };
+    expect(movementsOf(post(note))).toMatchObject([
+      { documentLineId: "l1", storeroomId: "cold-room", quantity: 1000 },
+      { documentLineId: "l2", storeroomId: "dry-store", quantity: 24_000 },
+    ]);
+  });
+
+  it("a return from a line's own storeroom is checked against that storeroom's stock: −1 kg of tomatoes from the dry store, which has none, is rejected (invariant 6)", () => {
+    const note: Document = {
+      ...header,
+      type: "delivery-note",
+      supplierId: "supplier-1",
+      lines: [
+        pricedLine("l1", "tomatoes", "-1", "kg", "2.00", {
+          storeroomId: "dry-store",
+        }),
+      ],
+    };
+    expect(errorsOf(post(note))).toEqual([
+      { lineId: "l1", message: expect.stringContaining("dry-store") },
+    ]);
+  });
 });
 
 describe("postDocument: waste removes stock at the average cost", () => {
@@ -902,6 +935,64 @@ describe("posting properties", () => {
           expect(stockOnHand(after, l.productId, document.storeroomId)).toBe(
             toBaseUnits(l, conversions),
           );
+        }
+      }),
+    );
+  });
+
+  it("every receipt of a delivery note goes to its line's storeroom, or to the note's if the line names none", () => {
+    fc.assert(
+      fc.property(
+        documentArb,
+        stockArb,
+        fc.array(fc.option(fc.constantFrom(...STOREROOMS)), {
+          minLength: 5,
+          maxLength: 5,
+        }),
+        (document, existing, choices) => {
+          if (document.type !== "delivery-note") return;
+          const lines = document.lines.map((l, i) => {
+            const storeroomId = choices[i];
+            return storeroomId === null || storeroomId === undefined
+              ? l
+              : { ...l, storeroomId };
+          });
+          const result = postDocument(
+            { ...document, lines },
+            context(existing),
+          );
+          if (!result.ok) return;
+          for (const l of lines) {
+            const [receipt] = result.movements.filter(
+              (m) => m.documentLineId === l.id,
+            );
+            expect(receipt?.storeroomId).toBe(
+              l.storeroomId ?? document.storeroomId,
+            );
+          }
+        },
+      ),
+    );
+  });
+
+  it("naming the note's own storeroom on every line posts exactly the same movements", () => {
+    fc.assert(
+      fc.property(documentArb, stockArb, (document, existing) => {
+        if (document.type !== "delivery-note") return;
+        const named = {
+          ...document,
+          lines: document.lines.map((l) => ({
+            ...l,
+            storeroomId: document.storeroomId,
+          })),
+        };
+        const plain = postDocument(document, context(existing));
+        const withStorerooms = postDocument(named, context(existing));
+        expect(withStorerooms.ok).toBe(plain.ok);
+        if (plain.ok && withStorerooms.ok) {
+          expect(withStorerooms.movements).toEqual(plain.movements);
+        } else if (!plain.ok && !withStorerooms.ok) {
+          expect(withStorerooms.errors).toEqual(plain.errors);
         }
       }),
     );
