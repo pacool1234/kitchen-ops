@@ -25,6 +25,9 @@ const document = {
   draft: null,
   corrected: null,
   checkFailures: [],
+  reversal: null,
+  copyOf: null,
+  copy: null,
 };
 
 describe("Document (#106)", () => {
@@ -33,6 +36,25 @@ describe("Document (#106)", () => {
     expect(
       Document.parse({ ...document, costMicroUsd: 8954 }).costMicroUsd,
     ).toBe(8954);
+  });
+
+  it("a reversed one names the document reversing it and its date; a corrected copy and its original name each other (#119)", () => {
+    const reversed = {
+      ...document,
+      status: "posted",
+      reversal: {
+        id: "0199a000-0000-7000-8000-000000000003",
+        date: "2026-10-21",
+      },
+      copy: "0199a000-0000-7000-8000-000000000004",
+    };
+    expect(Document.parse(reversed)).toEqual(reversed);
+    const copied = { ...document, copyOf: reversed.id };
+    expect(Document.parse(copied)).toEqual(copied);
+    expect(
+      Document.safeParse({ ...document, reversal: { id: "x", date: "today" } })
+        .success,
+    ).toBe(false);
   });
 
   it("a check failure is a known check and a field: never the check's own message, which may quote the document", () => {
