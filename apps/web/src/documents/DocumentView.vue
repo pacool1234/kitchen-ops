@@ -8,6 +8,7 @@ import {
 } from "@kitchen-ops/shared";
 import { computed, ref, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { RouterLink } from "vue-router";
 import { ApiError, call } from "../api";
 import UiAlert from "../components/ui/UiAlert.vue";
 import UiButton from "../components/ui/UiButton.vue";
@@ -20,6 +21,7 @@ import { formatDateTime, formatReadingCost } from "../i18n/format";
 import { currentUser } from "../session";
 import { usePageTitle } from "../shell/title";
 import DocumentOriginal from "./DocumentOriginal.vue";
+import DocumentPosted from "./DocumentPosted.vue";
 import DocumentReview from "./DocumentReview.vue";
 import { editing } from "./draft-form";
 import DraftReadOnly from "./DraftReadOnly.vue";
@@ -31,7 +33,9 @@ import { documentName } from "./text";
 // One document (#106): its originals, its status, which updates by itself while it's being
 // read, and a failed one says why and can be read again. Once read, and in review, its draft is
 // corrected next to its original (#118); otherwise the draft shows read-only, with the checks
-// it failed. Its reading cost shows only to the owner: the API sends it to no one else.
+// it failed. Its reading cost shows only to the owner: the API sends it to no one else. Once
+// posted, it shows what it put in stock, read-only (#119); a reversed one and its corrected copy
+// link to each other.
 const props = defineProps<{ id: string }>();
 const t = useT();
 const { locale } = useI18n();
@@ -144,7 +148,10 @@ function failureText(failure: DocumentCheckFailure): string {
     <div class="flex flex-col gap-3">
       <div class="flex flex-wrap items-center gap-3">
         <p data-testid="document-status">
-          <StatusBadge :status="document.status" />
+          <StatusBadge
+            :status="document.status"
+            :reversed="document.reversal !== null"
+          />
         </p>
         <p class="text-sm text-fg-muted">
           {{
@@ -155,6 +162,23 @@ function failureText(failure: DocumentCheckFailure): string {
           }}
         </p>
       </div>
+      <p v-if="document.copyOf" class="text-sm">
+        {{ t("documents.posted.copyOf") }}
+        <RouterLink
+          :to="{ name: 'document', params: { id: document.copyOf } }"
+          class="text-primary underline underline-offset-4"
+        >
+          {{ t("documents.posted.seeOriginal") }}
+        </RouterLink>
+      </p>
+      <p v-if="document.copy" class="text-sm">
+        <RouterLink
+          :to="{ name: 'document', params: { id: document.copy } }"
+          class="text-primary underline underline-offset-4"
+        >
+          {{ t("documents.posted.seeCopy") }}
+        </RouterLink>
+      </p>
       <!-- Says each new status to a screen reader as it changes by itself. -->
       <p class="sr-only" aria-live="polite">
         {{
@@ -210,6 +234,12 @@ function failureText(failure: DocumentCheckFailure): string {
         :mode="mode"
         @saved="saved"
         @reload="reload"
+        @posted="reload"
+      />
+      <DocumentPosted
+        v-else-if="document.status === 'posted'"
+        :document="document"
+        @changed="reload"
       />
       <section
         v-else

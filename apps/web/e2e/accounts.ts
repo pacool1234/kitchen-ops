@@ -11,6 +11,9 @@ export const accounts = {
   // A second owner, for the one test that needs an owner's view of documents (#106): it sets up
   // this account's 2FA itself, leaving `owner` to the 2FA test.
   manager: { email: "manager@example.test", password: "local-only-manager" }, // gitleaks:allow
+  // A third owner, for the one test that reverses a posted document (#119): it sets up this
+  // account's 2FA itself, as the manager's test does.
+  director: { email: "director@example.test", password: "local-only-director" }, // gitleaks:allow
 };
 
 export async function signIn(

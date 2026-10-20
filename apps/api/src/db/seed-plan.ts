@@ -36,6 +36,9 @@ const LOCAL_USERS: SeedUser[] = [
   // A second owner, so a browser test can see an owner's view of documents (#106): it sets up
   // this one's 2FA, leaving the first owner's to the 2FA test.
   ["manager", "owner", "local-only-manager"], // gitleaks:allow
+  // A third owner, for the browser test that reverses a posted document (#119): it sets up this
+  // one's 2FA too.
+  ["director", "owner", "local-only-director"], // gitleaks:allow
 ].map(([name, role, password]) => ({
   email: `${name}@example.test`,
   name: `Local ${name}`,

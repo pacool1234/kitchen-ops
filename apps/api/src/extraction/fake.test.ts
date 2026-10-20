@@ -92,6 +92,25 @@ describe("the fake model", () => {
       }).failures.map(({ check, path }) => ({ check, path })),
     ).toEqual([{ check: "line-total", path: "lines.0.lineTotal" }]);
   });
+
+  it(`finds its markers in a photo's own bytes too, as a photo has no text: "${FAKE_MISREAD_MARKER}" in a PNG's text chunk (#119)`, async () => {
+    const reader = readerFor(
+      { model: "fake" },
+      () => new Date(`${TODAY}T10:00:00Z`),
+    );
+    const read = (bytes: Uint8Array) =>
+      extractFiles(reader.client, [bytes], {
+        model: reader.model,
+        prompt: reader.prompt,
+        source: "client",
+      });
+    expect((await read(photo(2, FAKE_MISREAD_MARKER))).result).toMatchObject({
+      document: fakeMisread(TODAY),
+    });
+    expect((await read(photo(3, "nothing to see"))).result).toMatchObject({
+      document: fakeDocument(TODAY),
+    });
+  });
 });
 
 describe("the fake model's suggestions (#117)", () => {

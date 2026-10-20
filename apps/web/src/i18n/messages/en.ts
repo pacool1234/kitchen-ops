@@ -170,6 +170,8 @@ export const en: Messages = {
       failed: "Failed",
       posted: "Posted",
     },
+    // A posted document another one reverses (#119): still posted, but no longer in stock.
+    reversedStatus: "Reversed",
     statusNow: "Status: {status}",
     types: {
       "delivery-note": "Delivery note",
@@ -326,6 +328,54 @@ export const en: Messages = {
       descriptionRequired:
         "The line has no description or code: correct it and save first.",
     },
+    // Posting a reviewed delivery note, from the review screen (#119, decision 0038).
+    posting: {
+      post: "Post the delivery note",
+      blocked: {
+        pending: "First, deal with what's left.",
+        invoice: "Invoices can't be posted yet.",
+        new_supplier: "New supplier: the office posts it.",
+        unsaved: "Save the corrections before posting it.",
+      },
+      confirmTitle: "Post delivery note {number}?",
+      confirmText:
+        "It goes into stock and can't be changed after: only the owner can reverse it.",
+      confirm: "Post",
+      posted: "Delivery note posted",
+      storeroom: "Storeroom",
+      own: "{name} (its own)",
+      chooseStoreroom: "Choose the storeroom.",
+      noPrice: "No price: it goes in at €0 until the invoice arrives.",
+    },
+    // A posted document: what it put in stock, its reversal, and a corrected copy (#119).
+    posted: {
+      heading: "In stock",
+      line: "Line {n}",
+      movement: "{kind}: {quantity} · {storeroom} · {cost}",
+      kinds: {
+        receipt: "In",
+        waste: "Waste",
+        count: "Count",
+        "transfer-out": "Transfer, out",
+        "transfer-in": "Transfer, in",
+        reversal: "Reversal",
+      },
+      loadFailed: "Its movements couldn't be loaded. Reload the page.",
+      reversalHeading: "Reversal",
+      reversedOn: "Reversed on {date} by {name}.",
+      reverse: "Reverse",
+      reverseTitle: {
+        "delivery-note": "Reverse delivery note {number}?",
+        invoice: "Reverse invoice {number}?",
+      },
+      reverseText: "What it brought in leaves stock. This can't be undone.",
+      reversed: "Document reversed",
+      copy: "Correct and post again",
+      copied: "Corrected copy, ready for review",
+      copyOf: "Corrected copy of a reversed document.",
+      seeOriginal: "See the reversed document",
+      seeCopy: "See its corrected copy",
+    },
     // The photo viewer.
     viewer: {
       enlarge: "Enlarge photo {n} of {count}",
@@ -467,6 +517,17 @@ export const en: Messages = {
     not_failed: "It was already being read again.",
     not_in_review: "This document isn't in review any more.",
     no_supplier: "Choose the document's supplier first.",
+    review_pending:
+      "Something changed meanwhile: check what's left before posting it.",
+    not_a_delivery_note: "Invoices can't be posted yet.",
+    cannot_post: "A line can't be posted: check each line.",
+    not_posted: "This document isn't posted.",
+    already_reversed: "It was already reversed.",
+    billed: "An invoice that stands bills it: reverse the invoice first.",
+    cannot_reverse:
+      "It can't be reversed: some of what it brought in has been used.",
+    not_reversed: "It has to be reversed first.",
+    already_copied: "It already has a corrected copy.",
     unknown: "Something went wrong. Try again.",
     // Why a field was refused: one per code in packages/shared (FIELD_ERROR_CODES).
     fields: {

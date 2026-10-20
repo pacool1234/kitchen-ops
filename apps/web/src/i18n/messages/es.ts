@@ -173,6 +173,8 @@ export const es = {
       failed: "Ha fallado",
       posted: "Registrado",
     },
+    // A posted document another one reverses (#119): still posted, but no longer in stock.
+    reversedStatus: "Anulado",
     statusNow: "Estado: {status}",
     types: {
       "delivery-note": "Albarán",
@@ -333,6 +335,55 @@ export const es = {
       descriptionRequired:
         "La línea no tiene descripción ni código: corrígela y guarda antes.",
     },
+    // Posting a reviewed delivery note, from the review screen (#119, decision 0038).
+    posting: {
+      post: "Registrar el albarán",
+      blocked: {
+        pending: "Antes, resuelve lo que falta.",
+        invoice: "Las facturas aún no se registran.",
+        new_supplier: "Proveedor nuevo: lo registra la oficina.",
+        unsaved: "Guarda las correcciones antes de registrarlo.",
+      },
+      confirmTitle: "¿Registrar el albarán {number}?",
+      confirmText:
+        "Entra en stock y ya no se puede cambiar: solo el propietario puede anularlo.",
+      confirm: "Registrar",
+      posted: "Albarán registrado",
+      storeroom: "Almacén",
+      own: "{name} (el suyo)",
+      chooseStoreroom: "Elige el almacén.",
+      noPrice: "Sin precio: entra a 0 € hasta que llegue la factura.",
+    },
+    // A posted document: what it put in stock, its reversal, and a corrected copy (#119).
+    posted: {
+      heading: "En stock",
+      line: "Línea {n}",
+      movement: "{kind}: {quantity} · {storeroom} · {cost}",
+      kinds: {
+        receipt: "Entrada",
+        waste: "Merma",
+        count: "Recuento",
+        "transfer-out": "Traspaso, salida",
+        "transfer-in": "Traspaso, entrada",
+        reversal: "Anulación",
+      },
+      loadFailed:
+        "No se han podido cargar sus movimientos. Vuelve a cargar la página.",
+      reversalHeading: "Anulación",
+      reversedOn: "Anulado el {date} por {name}.",
+      reverse: "Anular",
+      reverseTitle: {
+        "delivery-note": "¿Anular el albarán {number}?",
+        invoice: "¿Anular la factura {number}?",
+      },
+      reverseText: "Sus entradas salen del stock. No se puede deshacer.",
+      reversed: "Documento anulado",
+      copy: "Corregir y volver a registrar",
+      copied: "Copia corregida, lista para revisar",
+      copyOf: "Copia corregida de un documento anulado.",
+      seeOriginal: "Ver el documento anulado",
+      seeCopy: "Ver su copia corregida",
+    },
     // The photo viewer.
     viewer: {
       enlarge: "Ampliar la foto {n} de {count}",
@@ -480,6 +531,16 @@ export const es = {
     not_failed: "Ya se estaba volviendo a leer.",
     not_in_review: "Este documento ya no está en revisión.",
     no_supplier: "Elige antes el proveedor del documento.",
+    review_pending:
+      "Ha cambiado algo mientras tanto: revisa lo que falta antes de registrarlo.",
+    not_a_delivery_note: "Las facturas aún no se registran.",
+    cannot_post: "Alguna línea no se puede registrar: mira cada línea.",
+    not_posted: "Este documento no está registrado.",
+    already_reversed: "Ya estaba anulado.",
+    billed: "Una factura que sigue en pie lo factura: anula antes la factura.",
+    cannot_reverse: "No se puede anular: parte de lo que trajo ya se ha usado.",
+    not_reversed: "Antes hay que anularlo.",
+    already_copied: "Ya tiene una copia corregida.",
     unknown: "Algo ha fallado. Inténtalo de nuevo.",
     // Why a field was refused: one per code in packages/shared (FIELD_ERROR_CODES).
     fields: {

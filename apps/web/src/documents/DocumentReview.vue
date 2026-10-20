@@ -8,6 +8,7 @@ import {
   type DocumentMatching,
   type LineMatch,
   type SavedDraft,
+  type Storeroom,
 } from "@kitchen-ops/shared";
 import {
   computed,
@@ -16,6 +17,7 @@ import {
   reactive,
   ref,
   shallowRef,
+  useId,
   watch,
 } from "vue";
 import { ApiError, call } from "../api";
@@ -24,6 +26,8 @@ import UnsavedDialog from "../catalogue/UnsavedDialog.vue";
 import { useUnsavedGuard } from "../catalogue/unsaved";
 import UiAlert from "../components/ui/UiAlert.vue";
 import UiButton from "../components/ui/UiButton.vue";
+import UiDialog from "../components/ui/UiDialog.vue";
+import type { SelectOption } from "../components/ui/options";
 import { showToast } from "../components/ui/toasts";
 import { useT, type MessageKey } from "../i18n";
 import { errorMessageKey, fieldMessageKey } from "../i18n/errors";
@@ -33,9 +37,12 @@ import DraftForm from "./DraftForm.vue";
 import DraftReadOnly from "./DraftReadOnly.vue";
 import LineMappingDialog from "./LineMappingDialog.vue";
 import LineProduct from "./LineProduct.vue";
+import LineStoreroom from "./LineStoreroom.vue";
 import { failureLine } from "./list";
 import { startLiveChecks } from "./live-checks";
+import { posting, startingStoreroom } from "./posting-state";
 import { mapping, orderedReasons } from "./review-state";
+import { currentUser } from "../session";
 
 // Reviewing a document's draft (#118, decision 0037): the draft as it stands, corrected or as
 // read, to correct. The checks run again a moment after each change, by the API; a value the
@@ -43,11 +50,17 @@ import { mapping, orderedReasons } from "./review-state";
 // Saving keeps the correction apart from what the model read, which shows below once there is
 // one. Leaving with changes not saved asks first. Office and owner also choose the supplier,
 // or create it, and confirm each line's product (#117); everyone sees what's left before posting.
+// A delivery note is posted from here (#119, decision 0038), each line into its product's own
+// storeroom or another one chosen, by whoever may post it with what's left.
 const props = defineProps<{
   document: Document;
   mode: "all" | "quantities";
 }>();
-const emit = defineEmits<{ saved: [saved: SavedDraft]; reload: [] }>();
+const emit = defineEmits<{
+  saved: [saved: SavedDraft];
+  reload: [];
+  posted: [];
+}>();
 const t = useT();
 
 const values = ref<DraftValues>(
@@ -126,6 +139,153 @@ function lineMapping(index: number) {
     dirty: dirty.value,
     match: lineMatch(index) ?? null,
   });
+}
+
+/** Active storerooms, for each line's choice (#119): undefined until they've come. */
+const storerooms = shallowRef<Storeroom[]>();
+onMounted(async () => {
+  try {
+    const page = await call(endpoints.listStorerooms, {
+      query: { status: "active", pageSize: 200 },
+    });
+    storerooms.value = page.items;
+  } catch {
+    // No storeroom to choose: posting then says so on each line.
+    storerooms.value = [];
+  }
+});
+/**
+ * Whether a line's storeroom can be shown: it's matched, and both the storerooms and its
+ * product's own have come. A select keeps the words of the option it first showed, so it
+ * waits for the ones it will keep.
+ */
+function storeroomShown(index: number): boolean {
+  const product = matchedProduct(index);
+  return (
+    product !== undefined &&
+    storerooms.value !== undefined &&
+    ownStoreroom.has(product.id)
+  );
+}
+
+/** The product a saved line is matched to, if it is: what it's posted as. */
+function matchedProduct(index: number) {
+  const match = lineMatch(index);
+  return match && match.by !== "suggestion"
+    ? match.supplierProduct.product
+    : undefined;
+}
+/** Each matched product's own storeroom, by its ID, once fetched. */
+const ownStoreroom = reactive(new Map<string, string | null>());
+watch(matching, async (next) => {
+  for (const line of next?.lines ?? []) {
+    const match = line.match;
+    if (!match || match.by === "suggestion") continue;
+    const { id } = match.supplierProduct.product;
+    if (ownStoreroom.has(id)) continue;
+    try {
+      const product = await call(endpoints.getProduct, { params: { id } });
+      ownStoreroom.set(id, product.defaultStoreroomId);
+    } catch {
+      ownStoreroom.set(id, null);
+    }
+  }
+});
+/** The storerooms chosen, by line, for the product it was chosen for. */
+const chosen = reactive(
+  new Map<number, { productId: string; storeroomId: string }>(),
+);
+/** Where a line goes: chosen for its product, or its product's own to begin with; "" if none. */
+function storeroomOf(index: number): string {
+  const product = matchedProduct(index);
+  if (!product) return "";
+  const kept = chosen.get(index);
+  if (kept?.productId === product.id) return kept.storeroomId;
+  return startingStoreroom(
+    ownStoreroom.get(product.id) ?? null,
+    storerooms.value ?? [],
+  );
+}
+function chooseStoreroom(index: number, storeroomId: string) {
+  const product = matchedProduct(index);
+  if (!product) return;
+  chosen.set(index, { productId: product.id, storeroomId });
+  const path = `lines.${index}.storeroomId`;
+  refused.value = Object.fromEntries(
+    Object.entries(refused.value).filter(([field]) => field !== path),
+  );
+}
+/** The active storerooms, the line's product's own first, and said to be its own. */
+function storeroomOptions(index: number): SelectOption[] {
+  const own = ownStoreroom.get(matchedProduct(index)?.id ?? "") ?? null;
+  return (storerooms.value ?? [])
+    .map((s) => ({
+      value: s.id,
+      label:
+        s.id === own ? t("documents.posting.own", { name: s.name }) : s.name,
+    }))
+    .sort((a, b) => Number(b.value === own) - Number(a.value === own));
+}
+
+/** Whether posting is offered now, and why not (decision 0038). */
+const postState = computed(() =>
+  posting({
+    role: currentUser.value?.role ?? "counter",
+    reasons: matching.value?.reviewReasons ?? [],
+    dirty: dirty.value,
+    // As saved: what's posted is the saved draft, and nothing is unsaved when it's offered.
+    type:
+      props.document.draft || props.document.corrected
+        ? loaded.value.documentType
+        : null,
+  }),
+);
+const postHintId = useId();
+const confirmingPost = ref(false);
+const postingNow = ref(false);
+
+/** Asks first, once every line has a storeroom; a line without one says so. */
+function askToPost() {
+  const missing = values.value.lines.flatMap((_, i) =>
+    storeroomOf(i) === "" ? [`lines.${i}.storeroomId`] : [],
+  );
+  if (missing.length > 0) {
+    refused.value = Object.fromEntries(
+      missing.map((path) => [path, "required"]),
+    );
+    showToast({ tone: "error", title: t("errors.cannot_post") });
+    goTo(missing[0]!);
+    return;
+  }
+  confirmingPost.value = true;
+}
+
+async function post() {
+  postingNow.value = true;
+  try {
+    await call(endpoints.postDocument, {
+      params: { id: props.document.id },
+      body: { storerooms: values.value.lines.map((_, i) => storeroomOf(i)) },
+    });
+    confirmingPost.value = false;
+    showToast({ tone: "success", title: t("documents.posting.posted") });
+    emit("posted");
+  } catch (caught) {
+    confirmingPost.value = false;
+    if (caught instanceof ApiError && caught.fields) {
+      refused.value = { ...caught.fields };
+    }
+    showToast({ tone: "error", title: t(errorMessageKey(caught)) });
+    // Something changed meanwhile: what's left, as it is now.
+    if (caught instanceof ApiError && caught.code === "review_pending") {
+      void loadMatching();
+    }
+    if (caught instanceof ApiError && caught.code === "not_in_review") {
+      emit("reload");
+    }
+  } finally {
+    postingNow.value = false;
+  }
 }
 
 /** The line whose product is being chosen, from 0; null when none is. */
@@ -269,6 +429,22 @@ const guard = useUnsavedGuard(dirty);
         </li>
       </ul>
       <p v-else>{{ t("documents.nothingLeft") }}</p>
+      <div class="flex flex-wrap items-center gap-3 pt-2">
+        <UiButton
+          :disabled="!postState.offered"
+          :aria-describedby="postState.blocked ? postHintId : undefined"
+          @click="askToPost"
+        >
+          {{ t("documents.posting.post") }}
+        </UiButton>
+        <p
+          v-if="postState.blocked"
+          :id="postHintId"
+          class="text-sm text-fg-muted"
+        >
+          {{ t(`documents.posting.blocked.${postState.blocked}`) }}
+        </p>
+      </div>
     </section>
 
     <DocumentSupplier
@@ -314,6 +490,15 @@ const guard = useUnsavedGuard(dirty);
             v-bind="lineMapping(index)"
             @choose="mappingLine = index"
           />
+          <LineStoreroom
+            v-if="storeroomShown(index)"
+            :field="`lines.${index}.storeroomId`"
+            :options="storeroomOptions(index)"
+            :error="errorAt(`lines.${index}.storeroomId`)"
+            :no-price="values.lines[index]?.unitPrice === ''"
+            :model-value="storeroomOf(index)"
+            @update:model-value="(id) => chooseStoreroom(index, id)"
+          />
           <p
             v-else-if="linesMoved"
             class="border-t border-line pt-3 text-sm text-fg-muted"
@@ -352,6 +537,22 @@ const guard = useUnsavedGuard(dirty);
       :suggested="mappingSuggestion"
       @mapped="(next) => (matching = next)"
     />
+    <UiDialog
+      v-model:open="confirmingPost"
+      :title="
+        t('documents.posting.confirmTitle', { number: loaded.number ?? '' })
+      "
+      :description="t('documents.posting.confirmText')"
+    >
+      <template #footer="{ close }">
+        <UiButton variant="secondary" @click="close">
+          {{ t("catalogue.cancel") }}
+        </UiButton>
+        <UiButton :loading="postingNow" @click="post">
+          {{ t("documents.posting.confirm") }}
+        </UiButton>
+      </template>
+    </UiDialog>
     <UnsavedDialog
       v-model:open="guard.asking.value"
       @stay="guard.stay"

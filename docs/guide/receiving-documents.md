@@ -22,7 +22,7 @@ The document's status changes by itself, without reloading the page:
 - **Listo para revisar** (Ready for review): read. Its page shows what was read: the supplier, number, date, totals and lines, and any check it failed, such as a line whose amount doesn't match.
 - **Ha fallado** (Failed): it couldn't be read, and its page says why. Tap **Reintentar** (Try again) to read it again.
 
-Reviewing what was read and correcting it comes later (M7).
+Reviewing what was read, correcting it and posting it into stock: see [Reviewing a document and posting it into stock](reviewing-and-posting.md).
 
 ## For the owner
 
