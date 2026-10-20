@@ -201,6 +201,64 @@ describe("postDocument: a reviewed delivery note into stock", () => {
     expect((await movementsOf(db)).slice(1)).toEqual(result.movements);
   });
 
+  it("an invoice line may only bill a posted delivery note's line: not an invoice's own line, nor a reversal's copy", async () => {
+    const invoice = await documentToReview(db, c);
+    await posted(
+      invoice,
+      reviewed(c, [reviewedLine(c.tomatoes, "10", "kg", "1.80")], {
+        type: "invoice",
+      }),
+    );
+    const note = await documentToReview(db, c);
+    await posted(
+      note,
+      reviewed(c, [reviewedLine(c.tomatoes, "5", "kg", "1.80")]),
+    );
+    const reversal = await reverseDocument(db, context(), note, {
+      date: "2026-10-21",
+    });
+    if (!reversal.ok) throw new Error(JSON.stringify(reversal));
+    const [[own], [copy]] = await Promise.all([
+      linesOf(invoice),
+      linesOf(reversal.documentId),
+    ]);
+
+    const id = await documentToReview(db, c);
+    const before = await snapshot();
+    const result = await postDocument(
+      db,
+      context(),
+      id,
+      reviewed(
+        c,
+        [
+          reviewedLine(c.tomatoes, "10", "kg", "2.00", {
+            billsLineId: own!.id,
+          }),
+          reviewedLine(c.tomatoes, "5", "kg", "2.00", {
+            billsLineId: copy!.id,
+          }),
+        ],
+        { type: "invoice" },
+      ),
+    );
+    expect(result).toEqual({
+      ok: false,
+      reason: "lines",
+      errors: [
+        {
+          line: 1,
+          message: expect.stringContaining("not a posted delivery note's line"),
+        },
+        {
+          line: 2,
+          message: expect.stringContaining("not a posted delivery note's line"),
+        },
+      ],
+    });
+    expect(await snapshot()).toEqual(before);
+  });
+
   it("refuses a document that isn't ready for review, or doesn't exist, and writes nothing", async () => {
     const queued = await documentToReview(db, c, "queued");
     const done = await documentToReview(db, c);
