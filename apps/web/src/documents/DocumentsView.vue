@@ -174,7 +174,7 @@ const columns = computed<Column<DocumentSummary>[]>(() => [
       </template>
       <template #cell-status="{ row }">
         <span data-testid="list-status"
-          ><StatusBadge :status="row.status"
+          ><StatusBadge :status="row.status" :reversed="row.reversal !== null"
         /></span>
       </template>
       <template #card="{ row }">
@@ -192,7 +192,9 @@ const columns = computed<Column<DocumentSummary>[]>(() => [
             <span class="text-sm text-fg-muted">{{ uploaded(row) }}</span>
           </div>
           <span data-testid="list-status"
-            ><StatusBadge :status="row.status"
+            ><StatusBadge
+              :status="row.status"
+              :reversed="row.reversal !== null"
           /></span>
         </div>
       </template>
