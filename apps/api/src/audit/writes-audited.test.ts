@@ -25,6 +25,7 @@ import { createMemoryStorage } from "../storage/memory";
 import { syntheticCif } from "../test/catalogue";
 import { multipart, sample } from "../test/documents";
 import { testConfig } from "../test/helpers";
+import { documentRead, draftWith } from "../test/matching";
 
 // Every write endpoint records its changes in the audit log (#87). A new write endpoint fails
 // the first test until it has a case here: the audit log can't be forgotten.
@@ -77,7 +78,7 @@ async function officeUser() {
   );
   return {
     id: me.id,
-    send: (method: "POST" | "PATCH", url: string, payload: object) =>
+    send: (method: "POST" | "PATCH" | "PUT", url: string, payload: object) =>
       app.inject({ method, url, headers: { cookie }, payload }),
   };
 }
@@ -535,6 +536,70 @@ const WRITE_CASES: Record<string, () => Promise<void>> = {
     // Not failed any more: 409, and nothing recorded.
     expect((await retry()).statusCode).toBe(409);
     expect(await updatesOf("document", document.id)).toHaveLength(1);
+  },
+
+  async setDocumentSupplier() {
+    const office = await officeUser();
+    const { supplier } = await supplierAndProduct(office);
+    const id = await documentRead(db, { uploadedBy: office.id });
+    const choose = (supplierId: string) =>
+      office.send("PUT", `/api/documents/${id}/supplier`, { supplierId });
+
+    const response = await choose(supplier.id);
+    expect(response.statusCode).toBe(200);
+    expect(await updatesOf("document", id)).toEqual([
+      expect.objectContaining({
+        userId: office.id,
+        action: "update",
+        requestId: response.headers["x-request-id"],
+        documentId: id,
+        changes: { supplierId: { before: null, after: supplier.id } },
+      }),
+    ]);
+
+    // The same supplier again changes nothing; one that doesn't exist is refused.
+    expect((await choose(supplier.id)).statusCode).toBe(200);
+    expect(
+      (await choose("0199a000-0000-7000-8000-000000000000")).statusCode,
+    ).toBe(400);
+    expect(await updatesOf("document", id)).toHaveLength(1);
+  },
+
+  async createLineMapping() {
+    const office = await officeUser();
+    const { supplier, product } = await supplierAndProduct(office);
+    const id = await documentRead(db, {
+      uploadedBy: office.id,
+      supplierId: supplier.id,
+      draft: draftWith([{ supplierCode: "T-01", description: "Tomate pera" }]),
+    });
+    const remember = () =>
+      office.send("POST", `/api/documents/${id}/lines/1/mapping`, {
+        productId: product.id,
+        pack: { quantity: "6", unit: "kg" },
+      });
+
+    const response = await remember();
+    expect(response.statusCode).toBe(201);
+    const created = await allEntries("supplier_product");
+    expect(created).toEqual([
+      expect.objectContaining({
+        userId: office.id,
+        action: "create",
+        requestId: response.headers["x-request-id"],
+        documentId: id,
+        changes: expect.objectContaining({
+          code: { before: null, after: "T-01" },
+          description: { before: null, after: "Tomate pera" },
+          productId: { before: null, after: product.id },
+          pack: { before: null, after: { quantity: "6", unit: "kg" } },
+        }),
+      }),
+    ]);
+
+    // The line is remembered now: a second time is refused, and records nothing.
+    expect((await remember()).statusCode).toBe(409);
+    expect(await allEntries("supplier_product")).toHaveLength(1);
   },
 };
 
