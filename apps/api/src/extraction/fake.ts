@@ -12,8 +12,9 @@ import { today } from "./read";
 // calling OpenRouter, for tests, local development and the browser tests. Hand-written, not a
 // model's answer, and dated the day it's asked, so the date check passes. Asked to suggest
 // products (#117), it names the one whose name is in the line's description. Markers in a
-// document make it fail, or misread a quantity (#118). src/config.ts
-// refuses it in production.
+// document make it fail, or misread a quantity (#118): in a PDF's text, or in a photo's own
+// bytes, as a test photo carries one in a PNG text chunk (#119). src/config.ts refuses it in
+// production.
 
 export const FAKE_MODEL: ModelConfig = {
   id: "fake",
@@ -107,6 +108,18 @@ function fakeSuggestions(question: string) {
   };
 }
 
+/**
+ * What a document says to the fake model: the messages' text, and each photo's own bytes,
+ * decoded from its data URL. A photo has no text, so a test's carries its marker in them.
+ */
+function whatItSays(messages: unknown): string {
+  const asked = JSON.stringify(messages ?? []);
+  const photos = [
+    ...asked.matchAll(/data:image\/\w+;base64,([A-Za-z0-9+/=]+)/g),
+  ].map(([, base64]) => Buffer.from(base64!, "base64").toString("latin1"));
+  return [asked, ...photos].join("\n");
+}
+
 const isSuggestion = (body: Record<string, unknown>) =>
   (body.response_format as { json_schema?: { name?: string } } | undefined)
     ?.json_schema?.name === SUGGESTION_SCHEMA_NAME;
@@ -114,7 +127,7 @@ const isSuggestion = (body: Record<string, unknown>) =>
 export function createFakeClient(now: () => Date): OpenRouterClient {
   return {
     complete: async (body): Promise<ChatReply> => {
-      const asked = JSON.stringify(body.messages ?? []);
+      const asked = whatItSays(body.messages);
       if (asked.includes(FAKE_FAILURE_MARKER)) {
         throw new OpenRouterError("the fake model was told to fail", 503);
       }

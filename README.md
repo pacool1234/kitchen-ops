@@ -68,7 +68,7 @@ pnpm --filter @kitchen-ops/api db:seed  # synthetic products and users; each ski
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-The seed creates one **local-only** login per role, a second counter and a second owner. The passwords are deliberately fake; never use them anywhere real. They don't work on staging, which has logins of its own (below, "Deploying"). The seed refuses to run in production unless `SEED_DEMO=true` says it's staging's demo (decision 0028).
+The seed creates one **local-only** login per role, a second counter and two more owners. The passwords are deliberately fake; never use them anywhere real. They don't work on staging, which has logins of its own (below, "Deploying"). The seed refuses to run in production unless `SEED_DEMO=true` says it's staging's demo (decision 0028).
 
 | Email                  | Password             | Role    |
 | ---------------------- | -------------------- | ------- |
@@ -77,8 +77,9 @@ The seed creates one **local-only** login per role, a second counter and a secon
 | `owner@example.test`   | `local-only-owner`   | owner   |
 | `staff@example.test`   | `local-only-staff`   | counter |
 | `manager@example.test` | `local-only-manager` | owner   |
+| `director@example.test` | `local-only-director` | owner   |
 
-The second counter is for trying what changes a user's own settings, such as their language, without changing the others'. The browser tests use it that way. The second owner is for the browser test that needs an owner's view of documents: it sets up this account's 2FA, leaving the first owner's to the 2FA test.
+The second counter is for trying what changes a user's own settings, such as their language, without changing the others'. The browser tests use it that way. The second owner is for the browser test that needs an owner's view of documents: it sets up this account's 2FA, leaving the first owner's to the 2FA test. The third is for the browser test that reverses a posted document, which sets up its 2FA the same way.
 
 Owners must use 2FA: until the owner sets up an authenticator app (`POST /api/auth/two-factor/enable`, then `/two-factor/verify-totp`), every protected route answers `403 two_factor_required`.
 
