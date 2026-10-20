@@ -47,17 +47,21 @@ export async function documentRead(
   return row!.id;
 }
 
-/** A posted delivery note from this supplier, and, if asked, its reversal. Returns its ID. */
+/**
+ * A posted delivery note from this supplier, with this number if given, and, if asked, its
+ * reversal. Returns its ID.
+ */
 export async function postedFrom(
   db: Db,
   uploadedBy: string,
   supplierId: string,
-  { reversed = false } = {},
+  { reversed = false, number = null as string | null } = {},
 ): Promise<string> {
   const posted = {
     status: "posted" as const,
     type: "delivery-note" as const,
     supplierId,
+    number,
     date: "2026-10-20",
     uploadedBy,
   };
