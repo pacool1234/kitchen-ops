@@ -1,6 +1,7 @@
 import * as ledger from "@kitchen-ops/ledger";
 import {
   Document,
+  DocumentPage,
   DocumentPosting,
   MeResponse,
   NEW_SUPPLIER_DOCUMENTS,
@@ -580,6 +581,25 @@ describe("POST /api/documents/:id/copy", () => {
     const made = Document.parse((await copy(id)).json());
     expect((await post(made.id)).statusCode).toBe(200);
     expect(await stock(tomate.id, coldRoom.id)).toBe(5000);
+  });
+
+  it("a copy of a copy, reversed in its turn, is still shown with the files first uploaded, and in the list too", async () => {
+    const { id } = await reversed();
+    const first = Document.parse((await copy(id)).json());
+    await posted(first.id);
+    expect((await reverse(first.id)).statusCode).toBe(200);
+    const second = Document.parse((await copy(first.id)).json());
+
+    const original = await getDocument(id);
+    expect(second.copyOf).toBe(first.id);
+    expect(second.files.map((f) => f.id)).toEqual(
+      original.files.map((f) => f.id),
+    );
+    const list = await office.read(
+      "/api/documents?status=ready_for_review",
+      DocumentPage,
+    );
+    expect(list.items.find((d) => d.id === second.id)?.fileCount).toBe(1);
   });
 
   it("refuses a second copy, a document that isn't reversed, and anyone but the owner", async () => {
