@@ -364,6 +364,37 @@ describe("postDocument: an invoice line billing nothing is received like a deliv
   });
 });
 
+describe("postDocument: an invoice line's own storeroom", () => {
+  it("an invoice's own line is received into the storeroom it names", () => {
+    const result = post(
+      invoice("i1", [
+        invoiceLine("v1", undefined, "eggs", "1", "dozen", "2.40", {
+          storeroomId: "dry-store",
+        }),
+      ]),
+      before,
+    );
+    expect(movementsOf(result)).toMatchObject([
+      { storeroomId: "dry-store", quantity: 12_000 },
+    ]);
+  });
+
+  it("a billed line's correction stays where the goods were received, whatever storeroom the line names", () => {
+    const result = post(
+      invoice("i1", [
+        invoiceLine("v1", "n1", "tomatoes", "10", "kg", "2.00", {
+          storeroomId: "dry-store",
+        }),
+      ]),
+      before,
+    );
+    expect(movementsOf(result)).toMatchObject([
+      { storeroomId: "cold-room", corrects: "dn1.1" },
+      { storeroomId: "cold-room", reverses: "dn1.1" },
+    ]);
+  });
+});
+
 describe("postDocument: invoice lines that can't be posted", () => {
   function failing(...lines: InvoiceLine[]) {
     return errorsOf(post(invoice("i1", lines), before));
