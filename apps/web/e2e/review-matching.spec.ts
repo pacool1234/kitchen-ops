@@ -139,6 +139,47 @@ test("an existing supplier is chosen by typing; a product can't be chosen while 
   );
   await page.getByRole("button", { name: "Guardar correcciones" }).click();
   await expect(confirm).toBeEnabled();
+
+  // A line added, not saved: the saved lines' products can't be put on the lines on screen.
+  await page.getByRole("button", { name: "Añadir línea" }).click();
+  await expect(line(page, 1)).not.toContainText("Sugerido");
+  await expect(line(page, 3)).toContainText(
+    "Guarda las correcciones para elegir productos.",
+  );
+});
+
+test("a tax ID corrected to a supplier's finds it once saved; a number already received from the supplier chosen fails the duplicate check at once", async ({
+  page,
+}, testInfo) => {
+  await signedIn(page, accounts.office);
+  const name = unique(testInfo, "Proveedor por NIF");
+  const taxId = syntheticCif();
+  const created = await page.request.post("/api/suppliers", {
+    data: { name, taxId },
+  });
+  expect(created.status()).toBe(201);
+
+  // The first document: the tax ID corrected to the supplier's, and saved.
+  await readDocument(page, unique(testInfo, "Primer albaran"));
+  await page.getByRole("textbox", { name: "NIF/CIF" }).fill(taxId);
+  await page.getByRole("button", { name: "Guardar correcciones" }).click();
+  await expect(supplier(page)).toContainText(name);
+  await expect(left(page)).not.toContainText("Falta el proveedor.");
+
+  // The second, with the same number: chosen, the duplicate check fails before anything is saved.
+  await readDocument(page, unique(testInfo, "Segundo albaran"));
+  await expect(
+    page.getByRole("region", { name: "Comprobaciones" }),
+  ).toContainText("Ha pasado todas las comprobaciones.");
+  await supplier(page)
+    .getByRole("combobox", { name: "Elegir un proveedor" })
+    .fill(name);
+  await page.getByRole("option", { name, exact: true }).click();
+  await expect(
+    page.getByRole("region", { name: "Comprobaciones" }).getByRole("button", {
+      name: "Este número ya se recibió de este proveedor",
+    }),
+  ).toBeVisible();
 });
 
 test("a counter user sees no supplier or product to choose", async ({
