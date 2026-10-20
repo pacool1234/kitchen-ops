@@ -10,6 +10,9 @@ import { mainNav } from "./shell.ts";
 /** Text in a document that makes the fake model fail (the API's src/extraction/fake.ts). */
 export const FAIL = "fake-model:fail";
 
+/** Text in a document that makes the fake model read line 1's 5 kg as 50 (#118). */
+export const MISREAD = "fake-model:misread";
+
 /**
  * A one-page PDF whose text layer says `text`, written out by hand: the fake model is sent the
  * text of a PDF that has one, and never a photo's pixels. At least 20 characters, or extraction
