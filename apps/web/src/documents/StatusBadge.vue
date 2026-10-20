@@ -12,6 +12,7 @@ const tones = {
   reading: "info",
   ready_for_review: "success",
   failed: "danger",
+  posted: "primary",
 } as const;
 </script>
 

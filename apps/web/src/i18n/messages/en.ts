@@ -167,6 +167,7 @@ export const en: Messages = {
       reading: "Reading",
       ready_for_review: "Ready for review",
       failed: "Failed",
+      posted: "Posted",
     },
     statusNow: "Status: {status}",
     types: {

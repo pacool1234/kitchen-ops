@@ -170,6 +170,7 @@ export const es = {
       reading: "Leyendo",
       ready_for_review: "Listo para revisar",
       failed: "Ha fallado",
+      posted: "Registrado",
     },
     statusNow: "Estado: {status}",
     types: {

@@ -71,6 +71,20 @@
       "when": 1792429033619,
       "tag": "0009_extraction",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792514208239,
+      "tag": "0010_stored_movements",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792514209039,
+      "tag": "0011_stored_movements_append_only",
+      "breakpoints": true
     }
   ]
 }

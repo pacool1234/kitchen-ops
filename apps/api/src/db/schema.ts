@@ -10,8 +10,11 @@ import {
   type ExtractedDocument,
 } from "@kitchen-ops/shared";
 import type { CheckFailure } from "@kitchen-ops/extract";
+import type { MovementKind } from "@kitchen-ops/ledger";
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
+  bigint,
   boolean,
   check,
   date,
@@ -197,6 +200,11 @@ export const documents = pgTable(
     reviewNote: text("review_note"),
     /** Set exactly when the status is `failed`. */
     failureReason: extractionFailure("failure_reason"),
+    /**
+     * The posted document this one reverses (decision 0034): a reversal is a posted document of
+     * its own, with no files. At most one reversal per document.
+     */
+    reverses: uuid("reverses").references((): AnyPgColumn => documents.id),
     // No cascade: a user who uploaded documents can't be deleted, only deactivated.
     uploadedBy: uuid("uploaded_by")
       .notNull()
@@ -211,6 +219,17 @@ export const documents = pgTable(
       "documents_failure_reason_when_failed",
       sql`(${table.status} = 'failed') = (${table.failureReason} is not null)`,
     ),
+    // What posting needs to know, kept with the posted document. Compared as text: the
+    // migration that adds `posted` can't use it as an enum value in the same transaction.
+    check(
+      "documents_posted_complete",
+      sql`${table.status}::text <> 'posted' or (${table.type} is not null and ${table.supplierId} is not null and ${table.date} is not null)`,
+    ),
+    check(
+      "documents_reversal_posted",
+      sql`${table.reverses} is null or ${table.status}::text = 'posted'`,
+    ),
+    uniqueIndex("documents_reverses_unique").on(table.reverses),
   ],
 );
 
@@ -243,6 +262,105 @@ export const documentFiles = pgTable(
       table.position,
     ),
     check("document_files_position_positive", sql`${table.position} > 0`),
+  ],
+);
+
+/**
+ * One line of a posted document (spec section 3, decision 0034), written when it's posted and
+ * never changed: a trigger refuses updates and deletes (migration 0011). Its ID is the ledger's
+ * document line ID, which its movements point to (invariant 2).
+ */
+export const documentLines = pgTable(
+  "document_lines",
+  {
+    id: uuid("id").primaryKey(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id),
+    /** From 1, in the document's order. */
+    position: integer("position").notNull(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    /** As printed, in `unit`: "1.5" boxes. A decimal read and written as text. */
+    quantity: numeric("quantity", { precision: 18, scale: 6 }).notNull(),
+    unit: text("unit").notNull(),
+    /** Per purchase unit, before discount, excluding VAT (decision 0015). */
+    unitPrice: numeric("unit_price", { precision: 18, scale: 6 }).notNull(),
+    discountPercent: numeric("discount_percent", { precision: 5, scale: 2 }),
+    vatRate: numeric("vat_rate", { precision: 5, scale: 2 }),
+    /** Where the line was received, if not the document's storeroom (decision 0033). */
+    storeroomId: uuid("storeroom_id").references(() => storerooms.id),
+    /** For an invoice line: the delivery-note line it bills (decision 0032). */
+    billsLineId: uuid("bills_line_id").references(
+      (): AnyPgColumn => documentLines.id,
+    ),
+    /** A flagged adjustment: it may take stock below zero (invariant 6). */
+    adjustment: boolean("adjustment").notNull().default(false),
+  },
+  (table) => [
+    uniqueIndex("document_lines_document_position_unique").on(
+      table.documentId,
+      table.position,
+    ),
+    index("document_lines_bills_line_idx").on(table.billsLineId),
+    check("document_lines_position_positive", sql`${table.position} > 0`),
+  ],
+);
+
+/** What caused a movement: packages/ledger's MovementKind, every one (schema.test.ts). */
+export const MOVEMENT_KINDS = [
+  "receipt",
+  "waste",
+  "count",
+  "transfer-out",
+  "transfer-in",
+] as const satisfies readonly MovementKind[];
+export const movementKind = pgEnum("movement_kind", MOVEMENT_KINDS);
+
+/**
+ * One append-only change to stock (spec section 3, decision 0034): a ledger movement, stored.
+ * Never changed: a trigger refuses updates and deletes (migration 0011). `sequence` is the
+ * ledger's list order: read movements back ordered by it.
+ */
+export const movements = pgTable(
+  "movements",
+  {
+    /** The ledger's movement ID. */
+    id: uuid("id").primaryKey(),
+    sequence: bigint("sequence", { mode: "number" })
+      .generatedAlwaysAsIdentity()
+      .notNull(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    storeroomId: uuid("storeroom_id")
+      .notNull()
+      .references(() => storerooms.id),
+    /** Whole base units, signed: positive into the storeroom, negative out of it. */
+    quantity: bigint("quantity", { mode: "number" }).notNull(),
+    /** Per base unit, 6 decimals (decision 0015), read and written as text. */
+    unitCost: numeric("unit_cost", { precision: 18, scale: 6 }).notNull(),
+    documentLineId: uuid("document_line_id")
+      .notNull()
+      .references(() => documentLines.id),
+    kind: movementKind("kind").notNull(),
+    reverses: uuid("reverses").references((): AnyPgColumn => movements.id),
+    /** The receipt this one corrects at an invoice's price (decision 0032). */
+    corrects: uuid("corrects").references((): AnyPgColumn => movements.id),
+    adjustment: boolean("adjustment").notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("movements_sequence_unique").on(table.sequence),
+    uniqueIndex("movements_reverses_unique").on(table.reverses),
+    uniqueIndex("movements_corrects_unique").on(table.corrects),
+    index("movements_product_storeroom_idx").on(
+      table.productId,
+      table.storeroomId,
+      table.sequence,
+    ),
+    index("movements_document_line_idx").on(table.documentLineId),
   ],
 );
 

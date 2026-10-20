@@ -1,7 +1,8 @@
+import type { MovementKind } from "@kitchen-ops/ledger";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import * as schema from "./schema";
-import { products } from "./schema";
+import { MOVEMENT_KINDS, products } from "./schema";
 
 const UUID_V7 =
   /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -47,5 +48,14 @@ describe("product IDs (decision 0011)", () => {
       .toSQL();
 
     expect(query.params[0]).toBe(id);
+  });
+});
+
+describe("movement kinds (decision 0034)", () => {
+  it("are exactly packages/ledger's", () => {
+    expectTypeOf<
+      (typeof MOVEMENT_KINDS)[number]
+    >().toEqualTypeOf<MovementKind>();
+    expect(MOVEMENT_KINDS).toHaveLength(5);
   });
 });
