@@ -10,6 +10,12 @@ import {
 } from "./documents";
 import { IdParams } from "./lists";
 import {
+  DocumentMatching,
+  DocumentSupplier,
+  LineParams,
+  NewMapping,
+} from "./matching";
+import {
   NewProduct,
   Product,
   ProductChanges,
@@ -320,6 +326,41 @@ export const endpoints = {
     response: Document,
     conflict: true,
     needsStorage: true,
+  }),
+
+  // Matching a document to the catalogue (#117, decision 0035): everyone who reads documents
+  // reads it; office and owner choose the supplier and confirm mappings (spec section 6).
+  getDocumentMatching: endpoint({
+    method: "GET",
+    path: "/api/documents/:id/matching",
+    summary:
+      "A document's supplier, each line's supplier product, and why it needs review",
+    access: "signed-in",
+    params: IdParams,
+    response: DocumentMatching,
+  }),
+  setDocumentSupplier: endpoint({
+    method: "PUT",
+    path: "/api/documents/:id/supplier",
+    summary:
+      "Choose a document's supplier while it's in review; 409 not_in_review otherwise",
+    access: CATALOGUE_WRITERS,
+    params: IdParams,
+    body: DocumentSupplier,
+    response: DocumentMatching,
+    conflict: true,
+  }),
+  createLineMapping: endpoint({
+    method: "POST",
+    path: "/api/documents/:id/lines/:line/mapping",
+    summary:
+      "Remember a line as one of our products: a supplier product with the line's code and description",
+    access: CATALOGUE_WRITERS,
+    params: LineParams,
+    body: NewMapping,
+    status: 201,
+    response: DocumentMatching,
+    conflict: true,
   }),
 } as const;
 
