@@ -37,6 +37,12 @@ export interface DeliveryNoteLine extends DocumentLine {
   readonly discountPercent?: string;
   /** Kept with the line, but unused: costs exclude VAT (spec section 4). */
   readonly vatRate?: string;
+  /**
+   * Where this line's goods are received, if not the document's storeroom: each product's own,
+   * say (#116). An invoice line that bills a delivery-note line ignores it: its correction stays
+   * where the goods were received. Decision 0033.
+   */
+  readonly storeroomId?: string;
 }
 
 /**
@@ -57,8 +63,9 @@ interface DocumentHeader {
   readonly number?: string;
   readonly status: DocumentStatus;
   /**
-   * Where the stock is: received into, wasted from, counted in, or transferred from. An
-   * invoice's own lines are received into it; its corrections stay where the goods were received.
+   * Where the stock is: received into, wasted from, counted in, or transferred from. A received
+   * line may name its own (decision 0033). An invoice's corrections stay where the goods were
+   * received.
    */
   readonly storeroomId: string;
   /** The posted document this one reverses, if it is a reversal. */
@@ -172,7 +179,8 @@ function postLines<L extends DocumentLine>(
  * points to its line (invariant 2), and the document passed in is never changed (invariant 7);
  * the result has a posted copy.
  *
- * - Delivery note: a receipt of the line's quantity, at its received unit cost.
+ * - Delivery note: a receipt of the line's quantity, at its received unit cost, into the line's
+ *   storeroom if it names one.
  * - Invoice: for a line billing a delivery-note line at another unit cost, a receipt at the
  *   invoice's cost correcting the delivery note's, and that one's reversal; nothing at the same
  *   cost. A line billing nothing is received like a delivery-note line (decision 0032).
@@ -230,7 +238,8 @@ export function postDocument(
   const receive = (line: DeliveryNoteLine): Movement[] => {
     const quantity = baseUnits(line);
     const cost = receivedUnitCost(lineTotalOf(line), quantity);
-    return [movement(line, storeroomId, quantity, cost, "receipt")];
+    const into = line.storeroomId ?? storeroomId;
+    return [movement(line, into, quantity, cost, "receipt")];
   };
 
   const outcome = ((): LinesOutcome => {
