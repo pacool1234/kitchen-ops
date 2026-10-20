@@ -53,7 +53,8 @@ async function confirmSuggestion(
   await dialog.getByRole("combobox", { name: "Unidad del envase" }).click();
   await page.getByRole("option", { name: pack.unit, exact: true }).click();
   await dialog.getByRole("button", { name: "Guardar" }).click();
-  await expect(toast(page, "Producto confirmado")).toBeVisible();
+  // The last line's may still show: one of them.
+  await expect(toast(page, "Producto confirmado").first()).toBeVisible();
   await expect(dialog).toHaveCount(0);
 }
 
