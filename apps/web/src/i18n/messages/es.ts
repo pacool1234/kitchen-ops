@@ -156,6 +156,110 @@ export const es = {
     empty: "Este proveedor aún no tiene productos",
     emptyDescription: "Añade cómo llama y envasa cada producto que te vende.",
   },
+  // Supplier documents (#106): receiving them, and what reading each one found.
+  documents: {
+    title: "Documentos",
+    description: "Albaranes y facturas recibidos.",
+    item: "Documento",
+    caption: "Documentos",
+    upload: "Subir documento",
+    status: "Estado",
+    allStatuses: "Todos",
+    statuses: {
+      queued: "En cola",
+      reading: "Leyendo",
+      ready_for_review: "Listo para revisar",
+      failed: "Ha fallado",
+    },
+    statusNow: "Estado: {status}",
+    types: {
+      "delivery-note": "Albarán",
+      invoice: "Factura",
+    },
+    titled: "{type} {number}",
+    document: "Documento",
+    supplier: "Proveedor",
+    date: "Fecha",
+    uploaded: "Subido",
+    unread: "Sin leer",
+    uploadedBy: "Subido por {name} el {when}",
+    empty: "Todavía no hay documentos",
+    emptyDescription:
+      "Sube la foto de un albarán o una factura, o su PDF o XML Facturae.",
+    noMatches: "Ningún documento con este estado",
+    noMatchesDescription: "Elige otro estado o mira todos.",
+    loadFailed:
+      "No se han podido cargar los documentos. Comprueba la conexión y vuelve a intentarlo.",
+    // The upload page.
+    uploadIntro:
+      "Haz una foto de cada hoja, en orden, o elige el PDF o el XML Facturae que te ha mandado el proveedor.",
+    takePhoto: "Hacer foto",
+    chooseFiles: "Elegir archivos",
+    dropHere: "Arrastra aquí el PDF, el XML o las fotos",
+    or: "o",
+    chosen: "Lo que vas a enviar",
+    photo: "Foto {n}",
+    remove: "Quitar {name}",
+    send: "Enviar",
+    sent: "Documento recibido",
+    chooseSomething: "Haz una foto o elige un archivo.",
+    fileProblem: "Archivo {n}: {problem}",
+    duplicate: "Este archivo ya se había recibido.",
+    seeDuplicate: "Ver el documento",
+    // A document's page.
+    original: "Original",
+    photoOf: "Foto {n} de {count}",
+    openPdf: "Abrir el PDF",
+    openXml: "Abrir el XML Facturae",
+    readHeading: "Lo leído",
+    beingRead: "Se está leyendo. Esta página se actualiza sola.",
+    noDraft:
+      "No se ha podido pasar a un borrador. Se introducirá a mano al revisarlo.",
+    failedTitle: "No se ha podido leer",
+    retry: "Reintentar",
+    retried: "Se vuelve a leer",
+    taxId: "NIF/CIF",
+    number: "Número",
+    net: "Base imponible",
+    vat: "IVA {rate}",
+    total: "Total",
+    noTotals: "Sin importes",
+    lines: "Líneas",
+    code: "Código",
+    lineDescription: "Descripción",
+    quantity: "Cantidad",
+    unit: "Unidad",
+    unitPrice: "Precio",
+    discount: "Dto.",
+    vatRate: "IVA",
+    lineTotal: "Importe",
+    checksHeading: "Comprobaciones",
+    allPassed: "Ha pasado todas las comprobaciones.",
+    onLine: "Línea {line}: {check}",
+    checks: {
+      "missing-value": "falta un dato",
+      "line-total":
+        "el importe no cuadra con la cantidad, el precio y el descuento",
+      "lines-sum": "las líneas no suman la base imponible",
+      vat: "el IVA no cuadra",
+      total: "el total no cuadra con la base y el IVA",
+      "tax-id": "el NIF/CIF no es válido",
+      date: "la fecha falta, es futura o tiene más de un año",
+      duplicate: "este número ya se recibió de este proveedor",
+    },
+    failures: {
+      model_error:
+        "El servicio que lee los documentos ha respondido con un error.",
+      model_unreachable:
+        "No se ha podido contactar con el servicio que lee los documentos.",
+      storage_error: "No se han podido recuperar sus archivos.",
+      unreadable:
+        "Sus archivos no se pueden leer: una foto dañada o un PDF demasiado largo.",
+      interrupted: "La lectura se interrumpió.",
+      unexpected: "Algo ha fallado al leerlo.",
+    },
+    cost: "Coste de la lectura",
+  },
   // The catalogue (#89): its sections, and what every list and form in it shares.
   catalogue: {
     title: "Catálogo",
@@ -289,6 +393,7 @@ export const es = {
     not_found: "No existe, o ya no está disponible.",
     storage_unavailable:
       "Los documentos no están disponibles ahora mismo. Inténtalo más tarde.",
+    not_failed: "Ya se estaba volviendo a leer.",
     unknown: "Algo ha fallado. Inténtalo de nuevo.",
     // Why a field was refused: one per code in packages/shared (FIELD_ERROR_CODES).
     fields: {

@@ -109,6 +109,33 @@ export const router = createRouter({
           component: () => import("./views/HomeView.vue"),
           meta: { title: "home.title" },
         },
+        // Supplier documents (#106): the list, the upload page and each document's page. Nested,
+        // so the navigation's "Documentos" stays marked on all three.
+        {
+          path: "documents",
+          children: [
+            {
+              path: "",
+              name: "documents",
+              component: () => import("./documents/DocumentsView.vue"),
+              meta: { title: "documents.title", parent: "home" },
+            },
+            {
+              path: "new",
+              name: "new-document",
+              component: () => import("./documents/UploadView.vue"),
+              meta: { title: "documents.upload", parent: "documents" },
+            },
+            {
+              path: ":id",
+              name: "document",
+              component: () => import("./documents/DocumentView.vue"),
+              props: true,
+              // Until it has been read; then it's titled with its type and number.
+              meta: { title: "documents.item", parent: "documents" },
+            },
+          ],
+        },
         // The catalogue (#89): its sections' lists, and a page for each item.
         {
           path: "catalogue",

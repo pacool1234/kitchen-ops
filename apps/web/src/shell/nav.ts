@@ -1,5 +1,5 @@
 import { ROLES, type Role } from "@kitchen-ops/shared";
-import { BookOpen, House } from "lucide-vue-next";
+import { BookOpen, FileText, House } from "lucide-vue-next";
 import type { Component } from "vue";
 import type { MessageKey } from "../i18n";
 
@@ -19,6 +19,14 @@ export interface NavItem {
 
 export const NAV: NavItem[] = [
   { name: "home", label: "home.title", icon: House, roles: ROLES },
+  // Everyone receives deliveries (spec section 6), so everyone uploads documents (#106).
+  {
+    name: "documents",
+    label: "documents.title",
+    description: "documents.description",
+    icon: FileText,
+    roles: ROLES,
+  },
   // Everyone reads the catalogue; office and owner change it (spec section 6). Its pages
   // show each role what it may do (mayCall), so it's one item for every role.
   {
