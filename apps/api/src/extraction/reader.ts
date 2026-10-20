@@ -1,6 +1,7 @@
 import {
   createOpenRouterClient,
   defaultExtraction,
+  defaultSuggestion,
   type ModelConfig,
   type OpenRouterClient,
   type Prompt,
@@ -10,12 +11,14 @@ import { createFakeClient, FAKE_MODEL } from "./fake";
 import { JOB_SETTINGS, type JobSettings } from "./jobs";
 
 // What reads documents (#104): the default model and prompt (decision 0018) through OpenRouter,
-// or the fake model. Tests pass their own client.
+// or the fake model, and what then suggests products for their unmatched lines (decision 0036).
+// Tests pass their own client.
 
 export interface Reader {
   readonly client: OpenRouterClient;
   readonly model: ModelConfig;
   readonly prompt: Prompt;
+  readonly suggestion: { readonly model: ModelConfig; readonly prompt: Prompt };
 }
 
 /**
@@ -30,8 +33,14 @@ export function readerFor(
   fetch: typeof globalThis.fetch = globalThis.fetch,
 ): Reader {
   const { model, prompt } = defaultExtraction();
+  const suggestion = defaultSuggestion();
   if (config.model === "fake") {
-    return { client: createFakeClient(now), model: FAKE_MODEL, prompt };
+    return {
+      client: createFakeClient(now),
+      model: FAKE_MODEL,
+      prompt,
+      suggestion: { model: FAKE_MODEL, prompt: suggestion.prompt },
+    };
   }
   return {
     client: createOpenRouterClient({
@@ -41,6 +50,7 @@ export function readerFor(
     }),
     model,
     prompt,
+    suggestion,
   };
 }
 

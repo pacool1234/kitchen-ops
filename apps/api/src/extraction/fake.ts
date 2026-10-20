@@ -1,5 +1,6 @@
 import {
   OpenRouterError,
+  SUGGESTION_SCHEMA_NAME,
   type ChatReply,
   type ModelConfig,
   type OpenRouterClient,
@@ -9,8 +10,9 @@ import { today } from "./read";
 
 // The fake model (#104, EXTRACTION_MODEL=fake): it answers a fixed, valid extraction without
 // calling OpenRouter, for tests, local development and the browser tests. Hand-written, not a
-// model's answer, and dated the day it's asked, so the date check passes. src/config.ts refuses
-// it in production.
+// model's answer, and dated the day it's asked, so the date check passes. Asked to suggest
+// products (#117), it names the one whose name is in the line's description. src/config.ts
+// refuses it in production.
 
 export const FAKE_MODEL: ModelConfig = {
   id: "fake",
@@ -62,11 +64,53 @@ export function fakeDocument(issueDate: string): ExtractedDocument {
   };
 }
 
+/** The rows of one numbered list in a suggestion question: "1 | Tomate pera | g | produce". */
+function rowsAfter(question: string, heading: string): string[][] {
+  const [, after = ""] = question.split(`${heading}\n`);
+  const [list = ""] = after.split("\n\n");
+  return list
+    .split("\n")
+    .filter((row) => row !== "")
+    .map((row) => row.split(" | "));
+}
+
+/**
+ * Each line's product: the longest of our products' names found in its description, ignoring
+ * case, by its number; null if none is.
+ */
+function fakeSuggestions(question: string) {
+  const products = rowsAfter(question, "Our products:");
+  const lines = rowsAfter(question, "The supplier's lines:");
+  return {
+    suggestions: lines.map(([line, , description = ""]) => {
+      const found = products
+        .filter(([, name = ""]) =>
+          description.toLowerCase().includes(name.toLowerCase()),
+        )
+        .sort(([, a = ""], [, b = ""]) => b.length - a.length)[0];
+      return { line: Number(line), product: found ? Number(found[0]) : null };
+    }),
+  };
+}
+
+const isSuggestion = (body: Record<string, unknown>) =>
+  (body.response_format as { json_schema?: { name?: string } } | undefined)
+    ?.json_schema?.name === SUGGESTION_SCHEMA_NAME;
+
 export function createFakeClient(now: () => Date): OpenRouterClient {
   return {
     complete: async (body): Promise<ChatReply> => {
       if (JSON.stringify(body.messages ?? []).includes(FAKE_FAILURE_MARKER)) {
         throw new OpenRouterError("the fake model was told to fail", 503);
+      }
+      if (isSuggestion(body)) {
+        const [, question] = body.messages as { content: string }[];
+        return {
+          content: JSON.stringify(fakeSuggestions(question?.content ?? "")),
+          promptTokens: 0,
+          completionTokens: 0,
+          cost: 0,
+        };
       }
       return {
         content: JSON.stringify(fakeDocument(today(now()))),

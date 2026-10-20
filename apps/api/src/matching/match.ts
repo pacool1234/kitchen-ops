@@ -33,6 +33,13 @@ export const codeOf = (line: ReadLine): string | null =>
 const comparable = (description: string | null): string | null =>
   description?.trim().replace(/\s+/g, " ").toLowerCase() || null;
 
+/**
+ * A line's code and description as one key, compared as matching compares them: how a model's
+ * suggestion is found again for a line wherever it is now (decision 0036).
+ */
+export const lineKey = (line: ReadLine): string =>
+  JSON.stringify([codeOf(line), comparable(line.description)]);
+
 const withDescription = (offers: readonly Offer[], line: ReadLine) => {
   const wanted = comparable(line.description);
   return wanted === null

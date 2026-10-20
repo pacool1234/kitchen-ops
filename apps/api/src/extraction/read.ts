@@ -22,11 +22,13 @@ import {
 import type { Storage } from "../storage/storage";
 import type { FailedRead, ReadTry } from "./jobs";
 import type { Reader } from "./reader";
+import { storeSuggestions, suggestionsFor, type Suggested } from "./suggest";
 
 // One try at reading a document (#104, spec section 5): its files from storage, through routing
 // and the model with client routing, then the checks, with the numbers already received from
-// that supplier. It ends ready for review whether the checks pass or not (M7 reviews them), or
-// failed. Each try is recorded with what it cost. Logs and Sentry get IDs and reason codes only:
+// that supplier. A model then suggests products for the lines nothing matches (decision 0036).
+// It ends ready for review whether the checks pass or not (M7 reviews them), or failed. Each try
+// and each suggestion call is recorded with what it cost. Logs and Sentry get IDs and reason codes only:
 // never the document's contents, which the model's answers and check messages may quote.
 
 /** Today in Madrid, as YYYY-MM-DD: what a document's date is checked against. */
@@ -88,6 +90,7 @@ async function finish(
   failureReason: ExtractionFailure | null,
   record: CallRecord | null,
   changes: DocumentChanges,
+  suggested: Suggested | null = null,
 ) {
   await db.transaction(async (tx) => {
     await tx.insert(extractionAttempts).values({
@@ -98,6 +101,7 @@ async function finish(
       failureReason,
       ...spent(record),
     });
+    if (suggested) await storeSuggestions(tx, job.documentId, suggested);
     await tx
       .update(documents)
       .set(changes)
@@ -233,16 +237,40 @@ async function readOnce(context: ReadContext, job: ReadTry): Promise<void> {
         result.document,
         (context.now ?? (() => new Date()))(),
       );
+      const suggested = await suggestionsFor(
+        db,
+        reader,
+        changes.supplierId ?? null,
+        result.document,
+      );
       log.info(
         {
           ...job,
           outcome: "extracted",
           ...logged(result.record),
           checksFailed: changes.checkFailures?.length ?? 0,
+          ...(suggested && {
+            suggestion: {
+              outcome: suggested.result.status,
+              ...(suggested.result.status === "failed" && {
+                reason: suggested.result.reason,
+              }),
+              linesAsked: suggested.lines.length,
+              ...logged(suggested.result.record),
+            },
+          }),
         },
         "document read",
       );
-      return finish(db, job, "extracted", null, result.record, changes);
+      return finish(
+        db,
+        job,
+        "extracted",
+        null,
+        result.record,
+        changes,
+        suggested,
+      );
     }
   }
 }
