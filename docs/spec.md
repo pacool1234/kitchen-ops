@@ -406,4 +406,14 @@ Each is settled by a decision record at the start of the milestone that first ne
 - Native mobile apps: the PWA covers phones.
 - The non-goals in section 1 still hold: no invoices or tickets issued, no accounting, no POS.
 
-**Budget:** the background worker adds about $7 a month in production (section 7). About 300 documents a month cost about $4 in model calls (decisions 0018 and 0031). Both fit the €30 budget, checked again at M6.
+**Budget, checked at M6 (2026-10-20):**
+- **No worker cost for now:** extraction runs inside the API process (decision 0030), not as a separate service, which would have cost about $7 a month.
+- **Model calls:** about 300 documents a month cost about $4 (decisions 0018 and 0031). Each environment's OpenRouter key has a monthly limit, $2 for staging and $5 for production, so they can't cost more than $7.
+- **In all, at section 7's prices:**
+  - production's API, about $7;
+  - the two databases, from about $6 each;
+  - the OpenRouter limits, at most $7;
+  - Scaleway storage, well under €1;
+  - the weekly backup job, a few minutes a month.
+
+  That's about $27 a month at most, within the €30 budget. Confirm it against the providers' bills, as prices change.
