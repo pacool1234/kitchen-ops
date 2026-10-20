@@ -6388,7 +6388,8 @@
                         "queued",
                         "reading",
                         "ready_for_review",
-                        "failed"
+                        "failed",
+                        "posted"
                       ]
                     },
                     "failureReason": {
@@ -7229,7 +7230,8 @@
                 "queued",
                 "reading",
                 "ready_for_review",
-                "failed"
+                "failed",
+                "posted"
               ]
             },
             "in": "query",
@@ -7261,7 +7263,8 @@
                               "queued",
                               "reading",
                               "ready_for_review",
-                              "failed"
+                              "failed",
+                              "posted"
                             ]
                           },
                           "failureReason": {
@@ -7604,7 +7607,8 @@
                         "queued",
                         "reading",
                         "ready_for_review",
-                        "failed"
+                        "failed",
+                        "posted"
                       ]
                     },
                     "failureReason": {
@@ -8426,7 +8430,8 @@
                         "queued",
                         "reading",
                         "ready_for_review",
-                        "failed"
+                        "failed",
+                        "posted"
                       ]
                     },
                     "failureReason": {
