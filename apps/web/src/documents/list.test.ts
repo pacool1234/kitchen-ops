@@ -18,7 +18,7 @@ describe("readDocumentQuery and writeDocumentQuery", () => {
   });
 
   it("a status it doesn't know, or a page that isn't one, is the default", () => {
-    expect(readDocumentQuery({ status: "posted", page: "0" })).toEqual({
+    expect(readDocumentQuery({ status: "archived", page: "0" })).toEqual({
       status: "",
       page: 1,
     });

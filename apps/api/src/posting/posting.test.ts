@@ -369,9 +369,14 @@ describe("reverseDocument: a posted document's reversal, stored", () => {
       linesOf(id),
       linesOf(result.documentId),
     ]);
-    expect(copies.map(({ id: _, documentId: __, ...l }) => l)).toEqual(
-      originalLines.map(({ id: _, documentId: __, ...l }) => l),
-    );
+    // The same lines under new IDs, in the reversal.
+    const content = (l: (typeof copies)[number]) => ({
+      ...l,
+      id: undefined,
+      documentId: undefined,
+    });
+    expect(copies.map(content)).toEqual(originalLines.map(content));
+    expect(copies.every((l) => l.documentId === result.documentId)).toBe(true);
 
     const stored = await movementsOf(db);
     expect(stored.slice(2)).toEqual(result.movements);
