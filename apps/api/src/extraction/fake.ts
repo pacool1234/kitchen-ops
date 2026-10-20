@@ -11,7 +11,8 @@ import { today } from "./read";
 // The fake model (#104, EXTRACTION_MODEL=fake): it answers a fixed, valid extraction without
 // calling OpenRouter, for tests, local development and the browser tests. Hand-written, not a
 // model's answer, and dated the day it's asked, so the date check passes. Asked to suggest
-// products (#117), it names the one whose name is in the line's description. src/config.ts
+// products (#117), it names the one whose name is in the line's description. Markers in a
+// document make it fail, or misread a quantity (#118). src/config.ts
 // refuses it in production.
 
 export const FAKE_MODEL: ModelConfig = {
@@ -64,6 +65,19 @@ export function fakeDocument(issueDate: string): ExtractedDocument {
   };
 }
 
+/**
+ * Text in a document that makes the fake model misread it (#118): the delivery note, with line
+ * 1's 5 kg read as 50, so its line total fails the checks and review has something to correct.
+ */
+export const FAKE_MISREAD_MARKER = "fake-model:misread";
+
+/** The delivery note, with line 1's quantity misread. */
+export function fakeMisread(issueDate: string): ExtractedDocument {
+  const document = fakeDocument(issueDate);
+  const [first, ...rest] = document.lines;
+  return { ...document, lines: [{ ...first!, quantity: "50" }, ...rest] };
+}
+
 /** The rows of one numbered list in a suggestion question: "1 | Tomate pera | g | produce". */
 function rowsAfter(question: string, heading: string): string[][] {
   const [, after = ""] = question.split(`${heading}\n`);
@@ -100,7 +114,8 @@ const isSuggestion = (body: Record<string, unknown>) =>
 export function createFakeClient(now: () => Date): OpenRouterClient {
   return {
     complete: async (body): Promise<ChatReply> => {
-      if (JSON.stringify(body.messages ?? []).includes(FAKE_FAILURE_MARKER)) {
+      const asked = JSON.stringify(body.messages ?? []);
+      if (asked.includes(FAKE_FAILURE_MARKER)) {
         throw new OpenRouterError("the fake model was told to fail", 503);
       }
       if (isSuggestion(body)) {
@@ -112,8 +127,11 @@ export function createFakeClient(now: () => Date): OpenRouterClient {
           cost: 0,
         };
       }
+      const read = asked.includes(FAKE_MISREAD_MARKER)
+        ? fakeMisread
+        : fakeDocument;
       return {
-        content: JSON.stringify(fakeDocument(today(now()))),
+        content: JSON.stringify(read(today(now()))),
         promptTokens: 0,
         completionTokens: 0,
         cost: 0,

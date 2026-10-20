@@ -20,6 +20,7 @@ import {
   suppliers,
   users,
 } from "../db/schema";
+import { fakeDocument, fakeMisread } from "../extraction/fake";
 import { signedInAs } from "../test/auth";
 import { createMemoryStorage } from "../storage/memory";
 import { syntheticCif } from "../test/catalogue";
@@ -600,6 +601,56 @@ const WRITE_CASES: Record<string, () => Promise<void>> = {
     // The line is remembered now: a second time is refused, and records nothing.
     expect((await remember()).statusCode).toBe(409);
     expect(await allEntries("supplier_product")).toHaveLength(1);
+  },
+
+  async saveDocumentDraft() {
+    const office = await officeUser();
+    const id = await documentRead(db, {
+      uploadedBy: office.id,
+      draft: fakeMisread("2026-10-20"),
+    });
+    const save = (draft: object) =>
+      office.send("PUT", `/api/documents/${id}/draft`, draft);
+    const corrected = fakeDocument("2026-10-20");
+
+    const response = await save(corrected);
+    expect(response.statusCode).toBe(200);
+    // The correction, and the header it gives the document. Not the checks: they follow from it.
+    expect(await updatesOf("document", id)).toEqual([
+      expect.objectContaining({
+        userId: office.id,
+        action: "update",
+        requestId: response.headers["x-request-id"],
+        documentId: id,
+        changes: {
+          corrected: { before: null, after: corrected },
+          type: { before: null, after: "delivery-note" },
+          number: { before: null, after: "ALB-0001" },
+          date: { before: null, after: "2026-10-20" },
+        },
+      }),
+    ]);
+
+    // The same correction again changes nothing; one the schema doesn't take is refused.
+    expect((await save(corrected)).statusCode).toBe(200);
+    expect((await save({ ...corrected, lines: [] })).statusCode).toBe(400);
+    expect(await updatesOf("document", id)).toHaveLength(1);
+  },
+
+  async checkDocumentDraft() {
+    const office = await officeUser();
+    const id = await documentRead(db, {
+      uploadedBy: office.id,
+      draft: fakeMisread("2026-10-20"),
+    });
+    const response = await office.send(
+      "POST",
+      `/api/documents/${id}/draft/checks`,
+      fakeDocument("2026-10-20"),
+    );
+    // Checking writes nothing, so it records nothing.
+    expect(response.statusCode).toBe(200);
+    expect(await allEntries("document")).toEqual([]);
   },
 };
 

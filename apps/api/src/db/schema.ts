@@ -195,7 +195,15 @@ export const documents = pgTable(
     date: date("date", { mode: "string" }),
     /** What extraction read (#104), for review (M7). Null until read, or if it couldn't be. */
     draft: jsonb("draft").$type<ExtractedDocument>(),
-    /** The checks the draft failed: names and paths, and messages that may quote the document. */
+    /**
+     * The draft as corrected in review (#118, decision 0037), whole. Null until a correction is
+     * saved; `draft` stays what was read.
+     */
+    corrected: jsonb("corrected").$type<ExtractedDocument>(),
+    /**
+     * The checks the draft failed, the corrected one if there is one: names and paths, and
+     * messages that may quote the document.
+     */
     checkFailures: jsonb("check_failures").$type<readonly CheckFailure[]>(),
     /** Why it needs review without a draft: the model's answer didn't match the schema… */
     reviewNote: text("review_note"),

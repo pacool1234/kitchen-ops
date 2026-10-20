@@ -13,8 +13,10 @@ import { photo } from "../test/documents";
 import {
   createFakeClient,
   FAKE_FAILURE_MARKER,
+  FAKE_MISREAD_MARKER,
   FAKE_MODEL,
   fakeDocument,
+  fakeMisread,
 } from "./fake";
 import { JOB_SETTINGS } from "./jobs";
 import { CALL_TIMEOUT_MS, jobSettingsFor, readerFor } from "./reader";
@@ -65,6 +67,30 @@ describe("the fake model", () => {
         ],
       }),
     ).rejects.toMatchObject({ name: "OpenRouterError", status: 503 });
+  });
+
+  it(`misreads line 1's quantity when the document's text says "${FAKE_MISREAD_MARKER}": the line-total check fails on that line, and only it (#118)`, async () => {
+    const client = createFakeClient(() => new Date(`${TODAY}T10:00:00Z`));
+    const reply = await client.complete({
+      provider: CLIENT_ROUTING,
+      messages: [
+        { role: "user", content: `Albarán 12 ${FAKE_MISREAD_MARKER}` },
+      ],
+    });
+    const document = ExtractedDocument.parse(JSON.parse(reply.content ?? ""));
+    expect(document).toEqual(fakeMisread(TODAY));
+    const { lines, ...header } = document;
+    const { lines: printed, ...printedHeader } = fakeDocument(TODAY);
+    expect(header).toEqual(printedHeader);
+    expect(lines.slice(1)).toEqual(printed.slice(1));
+    expect(lines[0]).toEqual({ ...printed[0], quantity: "50" });
+    expect(
+      validate(document, {
+        today: TODAY,
+        maxAgeDays: MAX_AGE_DAYS,
+        knownNumbers: [],
+      }).failures.map(({ check, path }) => ({ check, path })),
+    ).toEqual([{ check: "line-total", path: "lines.0.lineTotal" }]);
   });
 });
 

@@ -1,25 +1,12 @@
-import {
-  extractFiles,
-  MAX_AGE_DAYS,
-  validate,
-  type CallRecord,
-} from "@kitchen-ops/extract";
-import {
-  normalizeTaxId,
-  type ExtractedDocument,
-  type ExtractionFailure,
-} from "@kitchen-ops/shared";
+import { extractFiles, type CallRecord } from "@kitchen-ops/extract";
+import type { ExtractedDocument, ExtractionFailure } from "@kitchen-ops/shared";
 import * as Sentry from "@sentry/node";
-import { and, asc, desc, eq, inArray, isNotNull, ne } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { FastifyBaseLogger } from "fastify";
 import type { Db } from "../db/client";
-import {
-  documentFiles,
-  documents,
-  extractionAttempts,
-  suppliers,
-} from "../db/schema";
+import { documentFiles, documents, extractionAttempts } from "../db/schema";
 import type { Storage } from "../storage/storage";
+import { checksOf, supplierByTaxId } from "./checks";
 import type { FailedRead, ReadTry } from "./jobs";
 import type { Reader } from "./reader";
 import { storeSuggestions, suggestionsFor, type Suggested } from "./suggest";
@@ -129,38 +116,20 @@ async function checked(
   draft: ExtractedDocument,
   now: Date,
 ): Promise<DocumentChanges> {
-  const taxId = draft.supplier.taxId && normalizeTaxId(draft.supplier.taxId);
-  const [supplier] = taxId
-    ? await db
-        .select({ id: suppliers.id })
-        .from(suppliers)
-        .where(eq(suppliers.taxId, taxId))
-    : [];
-  const known = supplier
-    ? await db
-        .select({ number: documents.number })
-        .from(documents)
-        .where(
-          and(
-            eq(documents.supplierId, supplier.id),
-            ne(documents.id, documentId),
-            isNotNull(documents.number),
-          ),
-        )
-    : [];
-  const { failures } = validate(draft, {
-    today: today(now),
-    maxAgeDays: MAX_AGE_DAYS,
-    knownNumbers: known.map((k) => k.number!),
-  });
+  const supplierId = await supplierByTaxId(db, draft.supplier.taxId);
   return {
     status: "ready_for_review",
     type: draft.documentType,
-    supplierId: supplier?.id ?? null,
+    supplierId,
     number: draft.number,
     date: draft.issueDate,
     draft,
-    checkFailures: failures,
+    checkFailures: await checksOf(db, {
+      documentId,
+      supplierId,
+      draft,
+      today: today(now),
+    }),
     reviewNote: null,
   };
 }

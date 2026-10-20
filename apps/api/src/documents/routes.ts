@@ -24,6 +24,7 @@ import {
   users,
 } from "../db/schema";
 import { HttpError, notFound } from "../errors";
+import { withoutMessages } from "../extraction/checks";
 import type { Jobs } from "../extraction/jobs";
 import type { Storage } from "../storage/storage";
 import { checkUpload } from "./upload";
@@ -153,6 +154,7 @@ async function readDocument(
     db
       .select({
         draft: documents.draft,
+        corrected: documents.corrected,
         checkFailures: documents.checkFailures,
       })
       .from(documents)
@@ -179,11 +181,8 @@ async function readDocument(
   return {
     ...toSummary(row),
     draft: read?.draft ?? null,
-    // Each check's message stays in the database: it may quote the document.
-    checkFailures: (read?.checkFailures ?? []).map(({ check, path }) => ({
-      check,
-      path,
-    })),
+    corrected: read?.corrected ?? null,
+    checkFailures: withoutMessages(read?.checkFailures ?? []),
     ...(seesReadingCost(role)
       ? {
           costMicroUsd:

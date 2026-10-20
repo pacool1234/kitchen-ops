@@ -17,11 +17,12 @@ import {
   supplierProducts,
   suppliers,
 } from "../db/schema";
+import { currentDraft } from "../documents/review";
 import { lineKey, matchLine, type Offer } from "./match";
 
 // A document's matching as it stands (#117, decision 0035): worked out each time from its
-// supplier, its draft and the catalogue, never stored, so a supplier chosen or a line
-// remembered in review shows at once. A line nothing matches shows the product a model
+// supplier, its draft as it stands (corrected in review, #118, or as read) and the catalogue,
+// never stored, so a supplier chosen, a line corrected or a line remembered shows at once. A line nothing matches shows the product a model
 // suggested when the document was read, if any (decision 0036): that one is stored.
 
 type Reader = Db | Tx;
@@ -125,11 +126,13 @@ export async function readMatching(
     .select({
       supplierId: documents.supplierId,
       draft: documents.draft,
+      corrected: documents.corrected,
       checkFailures: documents.checkFailures,
     })
     .from(documents)
     .where(and(eq(documents.id, documentId), isNull(documents.reverses)));
   if (!document) return undefined;
+  const draft = currentDraft(document);
 
   const [supplier] = document.supplierId
     ? await db
@@ -151,7 +154,7 @@ export async function readMatching(
   const suggested = await suggestionsOf(db, documentId);
 
   const lines = await Promise.all(
-    (document.draft?.lines ?? []).map(
+    (draft?.lines ?? []).map(
       async (line, i): Promise<DocumentMatching["lines"][number]> => {
         const found = matchLine(line, offers);
         if (found) {
@@ -173,7 +176,7 @@ export async function readMatching(
   );
 
   const reasons: [ReviewReason, boolean][] = [
-    ["no_draft", document.draft === null],
+    ["no_draft", draft === null],
     ["failed_checks", (document.checkFailures ?? []).length > 0],
     ["no_supplier", !supplier],
     ["new_supplier", newSupplier],
