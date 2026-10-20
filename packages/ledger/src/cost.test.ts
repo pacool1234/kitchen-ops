@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { averageCost, latestPurchasePrice, receivedUnitCost } from "./cost";
 import {
+  formatUnitCost,
   parseMoney,
   parseUnitCost,
   unitCostFromMillionths,
@@ -301,6 +302,66 @@ describe("latestPurchasePrice: for recipe costing, a separate function from the 
 
   it("never bought: undefined, so an uncosted recipe shows up instead of looking free", () => {
     expect(latestPurchasePrice([], "tomatoes")).toBeUndefined();
+  });
+});
+
+describe("corrections (decision 0032): a receipt correcting another counts in its place", () => {
+  // 10 kg at €1.80/kg, 6 kg used, 4 kg at €2.50/kg; then an invoice says €2.00/kg for the first
+  // 10 kg: a receipt at €0.002 correcting m1 (m4), and m1's reversal (m5).
+  const corrected = history(
+    { kind: "receipt", quantity: 10_000, cost: "0.0018" },
+    { kind: "waste", quantity: -6000, cost: "0.0018" },
+    { kind: "receipt", quantity: 4000, cost: "0.0025" },
+    { kind: "receipt", quantity: 10_000, cost: "0.002", corrects: "m1" },
+    { kind: "receipt", quantity: -10_000, cost: "0.0018", reverses: "m1" },
+  );
+
+  it("the average is (4000 × 0.002 + 4000 × 0.0025) ÷ 8000 = €0.002250, as if m1 had been €0.002; counted last it would be €0.002000", () => {
+    expect(cost(corrected)).toBe(parseUnitCost("0.00225"));
+  });
+
+  it("the latest purchase price stays m3's €0.0025: a correction takes the place of an older receipt", () => {
+    expect(latestPurchasePrice(corrected, "tomatoes")).toBe(
+      parseUnitCost("0.0025"),
+    );
+  });
+
+  it("a correction of the correction: the last in the chain counts, still in m1's place, (4000 × 0.0019 + 4000 × 0.0025) ÷ 8000 = €0.0022", () => {
+    const again = history(
+      ...corrected.map(({ unitCost, ...m }) => ({
+        ...m,
+        cost: formatUnitCost(unitCost),
+      })),
+      { kind: "receipt", quantity: 10_000, cost: "0.0019", corrects: "m4" },
+      { kind: "receipt", quantity: -10_000, cost: "0.002", reverses: "m4" },
+    );
+    expect(cost(again)).toBe(parseUnitCost("0.0022"));
+  });
+
+  it("a correction whose receipt isn't in the list counts where it is", () => {
+    const ms = history(
+      { kind: "receipt", quantity: 10_000, cost: "0.002" },
+      {
+        kind: "receipt",
+        quantity: 10_000,
+        cost: "0.004",
+        corrects: "elsewhere",
+      },
+    );
+    expect(cost(ms)).toBe(parseUnitCost("0.003"));
+    expect(latestPurchasePrice(ms, "tomatoes")).toBe(parseUnitCost("0.004"));
+  });
+
+  it("a receipt whose correction was itself reversed with nothing after it counts nothing", () => {
+    const ms = history(
+      { kind: "receipt", quantity: 10_000, cost: "0.002" },
+      { kind: "receipt", quantity: 10_000, cost: "0.003" },
+      { kind: "receipt", quantity: 10_000, cost: "0.004", corrects: "m2" },
+      { kind: "receipt", quantity: -10_000, cost: "0.003", reverses: "m2" },
+      { kind: "receipt", quantity: -10_000, cost: "0.004", reverses: "m3" },
+    );
+    expect(cost(ms)).toBe(parseUnitCost("0.002"));
+    expect(latestPurchasePrice(ms, "tomatoes")).toBe(parseUnitCost("0.002"));
   });
 });
 

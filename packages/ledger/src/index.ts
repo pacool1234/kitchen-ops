@@ -6,3 +6,4 @@ export * from "./cost";
 export * from "./document";
 export * from "./recipe";
 export * from "./variance";
+export * from "./invoice";

@@ -31,6 +31,12 @@ export interface Movement {
   /** The id of the movement this one reverses, if it is a reversal. */
   readonly reverses?: string;
   /**
+   * The id of the receipt this one replaces at a corrected price, if it is a correction (an
+   * invoice's, decision 0032). Posted with that receipt's reversal; costs count it where the
+   * receipt it corrects was.
+   */
+  readonly corrects?: string;
+  /**
    * A flagged adjustment: the only movement allowed to take stock below zero (invariant 6).
    * Reports list them with `flaggedAdjustments`. Any kind can be flagged.
    */
@@ -197,6 +203,32 @@ export function appendMovements(
     balances = applyMovement(balances, m);
   }
   return [...existing, ...added];
+}
+
+/**
+ * For each movement, the one that stands for it now (decision 0032): itself, or if a correction
+ * replaced it, the last correction in its chain. A rectifying invoice corrects the correction, so
+ * chains can be longer than one. Built once for a list, then asked for any movement in it.
+ */
+export function latestVersionOf(
+  movements: readonly Movement[],
+): (movement: Movement) => Movement {
+  const correctedBy = new Map<string, Movement>();
+  for (const m of movements) {
+    if (m.corrects !== undefined && !correctedBy.has(m.corrects)) {
+      correctedBy.set(m.corrects, m);
+    }
+  }
+  return (movement) => {
+    let current = movement;
+    // A chain is at most as long as the list, so a malformed list can't loop forever.
+    for (let step = 0; step < movements.length; step++) {
+      const next = correctedBy.get(current.id);
+      if (next === undefined) break;
+      current = next;
+    }
+    return current;
+  };
 }
 
 /** Every flagged adjustment, in list order, for reports (invariant 6). */
