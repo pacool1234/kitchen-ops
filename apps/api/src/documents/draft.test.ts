@@ -17,11 +17,18 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../app";
 import { createAuth } from "../auth/auth";
 import { createDb } from "../db/client";
-import { auditLog, documents, products, suppliers, users } from "../db/schema";
+import {
+  auditLog,
+  documentFiles,
+  documents,
+  products,
+  suppliers,
+  users,
+} from "../db/schema";
 import { fakeDocument, fakeMisread } from "../extraction/fake";
 import { today } from "../extraction/read";
 import { createMemoryStorage } from "../storage/memory";
-import { signedInAs } from "../test/auth";
+import { signedInAs, signedInAsOwner } from "../test/auth";
 import { apiAs, syntheticCif } from "../test/catalogue";
 import { testConfig } from "../test/helpers";
 import { documentRead, postedFrom } from "../test/matching";
@@ -71,11 +78,23 @@ const printed = () => fakeDocument(today(new Date()));
 /** The same, with line 1's quantity misread: 50 kg for 5 (src/extraction/fake.ts). */
 const misread = () => fakeMisread(today(new Date()));
 
-/** A document in review, as the reading job leaves one that read `draft`. */
-const inReview = (
+/** A document in review, as the reading job leaves one that read `draft`: one photo of it. */
+async function inReview(
   draft: ExtractedDocument | null,
   values: { supplierId?: string; failedChecks?: boolean } = {},
-) => documentRead(db, { uploadedBy: officeId, draft, ...values });
+) {
+  const id = await documentRead(db, { uploadedBy: officeId, draft, ...values });
+  await db.insert(documentFiles).values({
+    documentId: id,
+    position: 1,
+    kind: "image",
+    contentType: "image/jpeg",
+    sizeBytes: 1,
+    sha256: id,
+    storageKey: `documents/${id}/1.jpg`,
+  });
+  return id;
+}
 
 const save = (id: string, draft: object, api = office) =>
   api.send("PUT", `/api/documents/${id}/draft`, draft);
@@ -317,9 +336,13 @@ describe("POST /api/documents/:id/draft/checks", () => {
 
   it("every role may check; it refuses what save refuses: a document not in review, one that doesn't exist, a draft the schema doesn't take", async () => {
     const id = await inReview(misread());
-    for (const role of ["counter", "owner"] as const) {
-      const api = apiAs(app, await signedInAs(app, auth, role));
-      expect((await check(id, printed(), api)).statusCode).toBe(200);
+    for (const cookie of [
+      await signedInAs(app, auth, "counter"),
+      await signedInAsOwner(app, auth),
+    ]) {
+      expect((await check(id, printed(), apiAs(app, cookie))).statusCode).toBe(
+        200,
+      );
     }
     const posted = await postedFrom(db, officeId, huerto.id);
     expect((await check(posted, printed())).statusCode).toBe(409);

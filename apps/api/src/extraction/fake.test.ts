@@ -77,7 +77,7 @@ describe("the fake model", () => {
         { role: "user", content: `Albarán 12 ${FAKE_MISREAD_MARKER}` },
       ],
     });
-    const document = ExtractedDocument.parse(JSON.parse(reply.content));
+    const document = ExtractedDocument.parse(JSON.parse(reply.content ?? ""));
     expect(document).toEqual(fakeMisread(TODAY));
     const { lines, ...header } = document;
     const { lines: printed, ...printedHeader } = fakeDocument(TODAY);
