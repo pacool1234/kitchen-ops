@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { EXTRACTED_DOCUMENT_TYPES } from "./extraction";
+import type { Role } from "./auth";
+import { EXTRACTED_DOCUMENT_TYPES, ExtractedDocument } from "./extraction";
 import { PageQuery, pageOf } from "./lists";
 
 // Supplier documents (spec section 3, #102): a delivery note or an invoice, as one PDF or Facturae
@@ -55,6 +56,38 @@ export const EXTRACTION_FAILURES = [
 export const ExtractionFailure = z.enum(EXTRACTION_FAILURES);
 export type ExtractionFailure = z.infer<typeof ExtractionFailure>;
 
+/**
+ * The checks a read document is put through (spec section 5, stage 4; packages/extract runs
+ * them). Here so the web app can name them in words (#106).
+ */
+export const CHECK_NAMES = [
+  "missing-value",
+  "line-total",
+  "lines-sum",
+  "vat",
+  "total",
+  "tax-id",
+  "date",
+  "duplicate",
+] as const;
+export const CheckName = z.enum(CHECK_NAMES);
+export type CheckName = z.infer<typeof CheckName>;
+
+/**
+ * A check the draft failed, and the field it failed on ("lines.0.lineTotal"). Never the check's
+ * own message: it's for logs, in English, and may quote the document.
+ */
+export const DocumentCheckFailure = z.strictObject({
+  check: CheckName,
+  path: z.string(),
+});
+export type DocumentCheckFailure = z.infer<typeof DocumentCheckFailure>;
+
+/** Who is shown what reading a document cost: costs are the owner's (spec section 6). */
+export function seesReadingCost(role: Role): boolean {
+  return role === "owner";
+}
+
 export const DocumentSummary = z.object({
   id: z.uuid(),
   status: DocumentStatus,
@@ -86,11 +119,16 @@ export type DocumentFile = z.infer<typeof DocumentFile>;
 
 export const Document = DocumentSummary.extend({
   files: z.array(DocumentFile),
+  /** What the model read, once it has; null before, or when its answer didn't fit the schema. */
+  draft: ExtractedDocument.nullable(),
+  /** The checks the draft failed: empty when it passed them all, or hasn't been read. */
+  checkFailures: z.array(DocumentCheckFailure),
   /**
    * What reading it has cost so far, every try included, in millionths of a US dollar: a whole
    * number, never a fraction of a dollar. A call whose cost OpenRouter didn't report adds 0.
+   * Only in the owner's answers (`seesReadingCost`).
    */
-  costMicroUsd: z.number().int().nonnegative(),
+  costMicroUsd: z.number().int().nonnegative().optional(),
 });
 export type Document = z.infer<typeof Document>;
 
