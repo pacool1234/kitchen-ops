@@ -417,8 +417,8 @@ describe("POST /api/documents/:id/lines/:line/mapping", () => {
     const next = await fromHuerto([
       { supplierCode: "C-07", description: "Cebolla dulce, malla" },
     ]);
-    expect((await matching(next)).lines[0]?.match?.supplierProduct.id).toBe(
-      after.lines[2]?.match?.supplierProduct.id,
+    expect((await matching(next)).lines[0]?.match).toEqual(
+      after.lines[2]?.match,
     );
   });
 

@@ -418,19 +418,25 @@ describe("a model suggests the product of each line nothing matches (#117, decis
       packQuantity: "5000",
       packUnit: "ml",
     });
-    const everyLine = scripted(read());
-    const { document } = await upload(appReadingWith(everyLine.client));
-    expect((await settled(document.id)).status).toBe("ready_for_review");
-    expect(everyLine.requests).toHaveLength(1);
-    expect(await calls(document.id)).toEqual([]);
-
-    await db.update(products).set({ active: false });
-    const noProducts = scripted(
+    const { client, requests } = scripted(
+      read(),
+      // No supplier: no line can match, but no product is active either.
       read({ supplier: { name: "Otro", taxId: null } }),
     );
-    const other = await upload(appReadingWith(noProducts.client));
-    expect((await settled(other.document.id)).status).toBe("ready_for_review");
-    expect(noProducts.requests).toHaveLength(1);
+    const app = appReadingWith(client);
+    const everyLine = await upload(app);
+    expect((await settled(everyLine.document.id)).status).toBe(
+      "ready_for_review",
+    );
+    expect(requests).toHaveLength(1);
+
+    await db.update(products).set({ active: false });
+    const noProducts = await upload(app);
+    expect((await settled(noProducts.document.id)).status).toBe(
+      "ready_for_review",
+    );
+    expect(requests).toHaveLength(2);
+    expect(await db.select().from(suggestionCalls)).toEqual([]);
   });
 
   it("a call that fails doesn't fail the reading: ready for review, read once, the call recorded as failed with its cost", async () => {
