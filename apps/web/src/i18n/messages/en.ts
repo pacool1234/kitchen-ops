@@ -256,6 +256,43 @@ export const en: Messages = {
       unexpected: "Something went wrong reading it.",
     },
     cost: "Reading cost",
+    // Reviewing a document (#118): its draft corrected next to its original.
+    review: {
+      heading: "Review what was read",
+      quantitiesHint:
+        "Check the quantities against what arrived, and correct any that don't match.",
+      header: "Header",
+      type: "Document type",
+      supplierName: "Supplier",
+      dateHint: "dd/mm/yyyy",
+      dateInvalid: "Write the date as dd/mm/yyyy.",
+      percentInvalid: "A percentage from 0 to 100, with at most 2 decimals.",
+      totals: "Amounts",
+      hasTotals: "With amounts",
+      vatRow: "VAT {n}",
+      vatRate: "Rate",
+      vatBase: "Base",
+      vatAmount: "Amount",
+      addVat: "Add a VAT rate",
+      removeVat: "Remove VAT {n}",
+      line: "Line {n}",
+      addLine: "Add a line",
+      removeLine: "Remove line {n}",
+      save: "Save corrections",
+      saved: "Corrections saved",
+      modelRead: "What the model read",
+      readLines: "Lines read",
+    },
+    // The photo viewer.
+    viewer: {
+      enlarge: "Enlarge photo {n} of {count}",
+      zoomIn: "Zoom in",
+      zoomOut: "Zoom out",
+      fit: "Fit",
+      zoom: "{n}%",
+      previous: "Previous photo",
+      next: "Next photo",
+    },
   },
   // The catalogue (#89): its sections, and what every list and form in it shares.
   catalogue: {
@@ -385,6 +422,7 @@ export const en: Messages = {
     storage_unavailable:
       "Documents aren't available right now. Try again later.",
     not_failed: "It was already being read again.",
+    not_in_review: "This document isn't in review any more.",
     unknown: "Something went wrong. Try again.",
     // Why a field was refused: one per code in packages/shared (FIELD_ERROR_CODES).
     fields: {

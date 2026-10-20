@@ -4,7 +4,7 @@ import {
   Locale,
   type Document,
   type DocumentCheckFailure,
-  type DocumentFile,
+  type SavedDraft,
 } from "@kitchen-ops/shared";
 import { computed, ref, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -16,25 +16,22 @@ import UiLoadingState from "../components/ui/UiLoadingState.vue";
 import { showToast } from "../components/ui/toasts";
 import { useT, type MessageKey } from "../i18n";
 import { errorMessageKey } from "../i18n/errors";
-import {
-  formatDate,
-  formatDateTime,
-  formatMoney,
-  formatPercent,
-  formatPrice,
-  formatPrintedDecimal,
-  formatReadingCost,
-} from "../i18n/format";
+import { formatDateTime, formatReadingCost } from "../i18n/format";
+import { currentUser } from "../session";
 import { usePageTitle } from "../shell/title";
+import DocumentOriginal from "./DocumentOriginal.vue";
+import DocumentReview from "./DocumentReview.vue";
+import { editing } from "./draft-form";
+import DraftReadOnly from "./DraftReadOnly.vue";
 import { failureLine, inProgress } from "./list";
 import { usePolling } from "./polling";
 import StatusBadge from "./StatusBadge.vue";
 import { documentName } from "./text";
 
 // One document (#106): its originals, its status, which updates by itself while it's being
-// read, and once read, its draft and the checks it failed, read-only. A failed one says why
-// and can be read again. Its reading cost shows only to the owner: the API sends it to no one
-// else. Reviewing and posting it are M7's.
+// read, and a failed one says why and can be read again. Once read, and in review, its draft is
+// corrected next to its original (#118); otherwise the draft shows read-only, with the checks
+// it failed. Its reading cost shows only to the owner: the API sends it to no one else.
 const props = defineProps<{ id: string }>();
 const t = useT();
 const { locale } = useI18n();
@@ -76,6 +73,8 @@ watch(
   },
   { immediate: true },
 );
+/** The document again, quietly: with fresh links, or as someone else left it. */
+const reload = () => void load(props.id, true).catch(() => {});
 
 usePageTitle(() =>
   document.value?.number ? documentName(t, document.value) : undefined,
@@ -98,30 +97,29 @@ async function retry() {
   poller.check();
 }
 
-/**
- * A photo that won't load, most likely because its link has expired (they last 5 minutes):
- * the document again, with fresh links. Only for an expired link, so a broken file can't loop.
- */
-function photoFailed(file: DocumentFile) {
-  if (Date.parse(file.urlExpiresAt) - Date.now() < 30_000) {
-    void load(props.id, true).catch(() => {});
-  }
-}
-
-const photos = computed(
-  () => document.value?.files.filter((f) => f.kind === "image") ?? [],
+/** The draft as it stands: as corrected in review, or as read. */
+const draft = computed(
+  () => document.value?.corrected ?? document.value?.draft ?? null,
 );
-const draft = computed(() => document.value?.draft ?? null);
-const lines = computed(() => draft.value?.lines ?? []);
+/** What the signed-in user may correct of it, while it's in review (spec section 6). */
+const mode = computed(() =>
+  document.value?.status === "ready_for_review" && currentUser.value
+    ? editing(currentUser.value.role, draft.value)
+    : "none",
+);
 
-const money = (value: string | null) =>
-  value === null ? "—" : formatMoney(value, language.value);
-const price = (value: string | null) =>
-  value === null ? "—" : formatPrice(value, language.value);
-const decimal = (value: string | null) =>
-  value === null ? "—" : formatPrintedDecimal(value, language.value);
-const percent = (value: string | null) =>
-  value === null ? "—" : formatPercent(value, language.value);
+/** A correction saved: the document as it is now, its header the corrected one's. */
+function saved({ corrected, checkFailures }: SavedDraft) {
+  if (!document.value) return;
+  document.value = {
+    ...document.value,
+    corrected,
+    checkFailures,
+    type: corrected.documentType,
+    number: corrected.number,
+    date: corrected.issueDate,
+  };
+}
 
 /** A failed check in words, with its line if it's on one: "Línea 4: el importe no cuadra…". */
 function failureText(failure: DocumentCheckFailure): string {
@@ -136,7 +134,13 @@ function failureText(failure: DocumentCheckFailure): string {
 <template>
   <UiLoadingState v-if="loading" />
   <UiErrorState v-else-if="loadError" :message="t(loadError)" />
-  <div v-else-if="document" class="flex max-w-4xl flex-col gap-8">
+  <div
+    v-else-if="document"
+    :class="[
+      'flex flex-col gap-8',
+      mode === 'none' ? 'max-w-4xl' : 'max-w-7xl',
+    ]"
+  >
     <div class="flex flex-col gap-3">
       <div class="flex flex-wrap items-center gap-3">
         <p data-testid="document-status">
@@ -181,181 +185,74 @@ function failureText(failure: DocumentCheckFailure): string {
       </dl>
     </div>
 
-    <section class="flex flex-col gap-3" aria-labelledby="original-heading">
-      <h2 id="original-heading" class="text-lg font-semibold">
-        {{ t("documents.original") }}
-      </h2>
-      <ol
-        v-if="photos.length > 0"
-        class="grid grid-cols-2 gap-3 sm:grid-cols-3"
+    <!-- In review on a desktop, the original stays beside the draft while it scrolls. -->
+    <div
+      :class="
+        mode === 'none'
+          ? 'flex flex-col gap-8'
+          : 'grid gap-8 lg:grid-cols-2 lg:items-start'
+      "
+    >
+      <div
+        :class="
+          mode === 'none'
+            ? ''
+            : 'lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-auto'
+        "
       >
-        <li v-for="(file, index) in photos" :key="file.id">
-          <a :href="file.url" target="_blank" rel="noopener">
-            <img
-              :src="file.url"
-              :alt="
-                t('documents.photoOf', { n: index + 1, count: photos.length })
-              "
-              class="w-full rounded-md border border-line bg-surface-muted"
-              @error="photoFailed(file)"
-            />
-          </a>
-        </li>
-      </ol>
-      <ul v-else class="flex flex-col gap-2">
-        <li v-for="file in document.files" :key="file.id">
-          <a
-            :href="file.url"
-            target="_blank"
-            rel="noopener"
-            class="font-medium text-primary underline underline-offset-4"
-          >
-            {{
-              t(file.kind === "xml" ? "documents.openXml" : "documents.openPdf")
-            }}
-          </a>
-        </li>
-      </ul>
-    </section>
+        <DocumentOriginal :document="document" @expired="reload" />
+      </div>
 
-    <section class="flex flex-col gap-4" aria-labelledby="read-heading">
-      <h2 id="read-heading" class="text-lg font-semibold">
-        {{ t("documents.readHeading") }}
-      </h2>
-      <p
-        v-if="document.status === 'queued' || document.status === 'reading'"
-        class="text-fg-muted"
+      <DocumentReview
+        v-if="mode !== 'none'"
+        :key="document.id"
+        :document="document"
+        :mode="mode"
+        @saved="saved"
+        @reload="reload"
+      />
+      <section
+        v-else
+        class="flex flex-col gap-4"
+        aria-labelledby="read-heading"
       >
-        {{ t("documents.beingRead") }}
-      </p>
-      <UiAlert
-        v-else-if="document.status === 'ready_for_review' && !draft"
-        tone="info"
-      >
-        {{ t("documents.noDraft") }}
-      </UiAlert>
-
-      <template v-if="draft">
-        <dl
-          class="grid gap-x-6 gap-y-3 rounded-lg border border-line bg-surface p-5 sm:grid-cols-[12rem_1fr]"
+        <h2 id="read-heading" class="text-lg font-semibold">
+          {{ t("documents.readHeading") }}
+        </h2>
+        <p
+          v-if="document.status === 'queued' || document.status === 'reading'"
+          class="text-fg-muted"
         >
-          <dt class="font-medium text-fg-muted">
-            {{ t("documents.document") }}
-          </dt>
-          <dd>{{ t(`documents.types.${draft.documentType}`) }}</dd>
-          <dt class="font-medium text-fg-muted">
-            {{ t("documents.supplier") }}
-          </dt>
-          <dd>{{ draft.supplier.name ?? "—" }}</dd>
-          <dt class="font-medium text-fg-muted">{{ t("documents.taxId") }}</dt>
-          <dd class="tabular">{{ draft.supplier.taxId ?? "—" }}</dd>
-          <dt class="font-medium text-fg-muted">{{ t("documents.number") }}</dt>
-          <dd class="tabular">{{ draft.number ?? "—" }}</dd>
-          <dt class="font-medium text-fg-muted">{{ t("documents.date") }}</dt>
-          <dd class="tabular">
-            {{ draft.issueDate ? formatDate(draft.issueDate, language) : "—" }}
-          </dd>
-          <template v-if="draft.totals">
-            <dt class="font-medium text-fg-muted">{{ t("documents.net") }}</dt>
-            <dd class="tabular">{{ money(draft.totals.net) }}</dd>
-            <template v-for="(vat, index) in draft.totals.vat" :key="index">
-              <dt class="font-medium text-fg-muted">
-                {{ t("documents.vat", { rate: percent(vat.rate) }) }}
-              </dt>
-              <dd class="tabular">{{ money(vat.amount) }}</dd>
-            </template>
-            <dt class="font-medium text-fg-muted">
-              {{ t("documents.total") }}
-            </dt>
-            <dd class="tabular font-semibold">
-              {{ money(draft.totals.total) }}
-            </dd>
-          </template>
-          <template v-else>
-            <dt class="font-medium text-fg-muted">
-              {{ t("documents.total") }}
-            </dt>
-            <dd>{{ t("documents.noTotals") }}</dd>
-          </template>
-        </dl>
-
-        <!-- Wider than a phone: it scrolls sideways, and a keyboard can scroll it too. -->
-        <div
-          class="overflow-x-auto rounded-lg border border-line"
-          tabindex="0"
-          role="region"
-          :aria-label="t('documents.lines')"
+          {{ t("documents.beingRead") }}
+        </p>
+        <UiAlert
+          v-else-if="document.status === 'ready_for_review' && !draft"
+          tone="info"
         >
-          <table class="w-full text-sm">
-            <caption class="sr-only">
-              {{
-                t("documents.lines")
-              }}
-            </caption>
-            <thead class="bg-surface-muted text-start">
-              <tr>
-                <th scope="col" class="px-3 py-2 text-start">
-                  {{ t("documents.code") }}
-                </th>
-                <th scope="col" class="px-3 py-2 text-start">
-                  {{ t("documents.lineDescription") }}
-                </th>
-                <th scope="col" class="px-3 py-2 text-end">
-                  {{ t("documents.quantity") }}
-                </th>
-                <th scope="col" class="px-3 py-2 text-start">
-                  {{ t("documents.unit") }}
-                </th>
-                <th scope="col" class="px-3 py-2 text-end">
-                  {{ t("documents.unitPrice") }}
-                </th>
-                <th scope="col" class="px-3 py-2 text-end">
-                  {{ t("documents.discount") }}
-                </th>
-                <th scope="col" class="px-3 py-2 text-end">
-                  {{ t("documents.vatRate") }}
-                </th>
-                <th scope="col" class="px-3 py-2 text-end">
-                  {{ t("documents.lineTotal") }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(line, index) in lines"
+          {{ t("documents.noDraft") }}
+        </UiAlert>
+
+        <template v-if="draft">
+          <DraftReadOnly :draft="draft" />
+          <section class="flex flex-col gap-2" aria-labelledby="checks-heading">
+            <h3 id="checks-heading" class="font-semibold">
+              {{ t("documents.checksHeading") }}
+            </h3>
+            <ul
+              v-if="document.checkFailures.length > 0"
+              class="flex list-disc flex-col gap-1 ps-5"
+            >
+              <li
+                v-for="(failure, index) in document.checkFailures"
                 :key="index"
-                class="border-t border-line"
               >
-                <td class="px-3 py-2">{{ line.supplierCode ?? "—" }}</td>
-                <td class="px-3 py-2">{{ line.description ?? "—" }}</td>
-                <td class="px-3 py-2 text-end">{{ decimal(line.quantity) }}</td>
-                <td class="px-3 py-2">{{ line.unit ?? "—" }}</td>
-                <td class="px-3 py-2 text-end">{{ price(line.unitPrice) }}</td>
-                <td class="px-3 py-2 text-end">
-                  {{ percent(line.discountPercent) }}
-                </td>
-                <td class="px-3 py-2 text-end">{{ percent(line.vatRate) }}</td>
-                <td class="px-3 py-2 text-end">{{ money(line.lineTotal) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <section class="flex flex-col gap-2" aria-labelledby="checks-heading">
-          <h3 id="checks-heading" class="font-semibold">
-            {{ t("documents.checksHeading") }}
-          </h3>
-          <ul
-            v-if="document.checkFailures.length > 0"
-            class="flex list-disc flex-col gap-1 ps-5"
-          >
-            <li v-for="(failure, index) in document.checkFailures" :key="index">
-              {{ failureText(failure) }}
-            </li>
-          </ul>
-          <p v-else>{{ t("documents.allPassed") }}</p>
-        </section>
-      </template>
-    </section>
+                {{ failureText(failure) }}
+              </li>
+            </ul>
+            <p v-else>{{ t("documents.allPassed") }}</p>
+          </section>
+        </template>
+      </section>
+    </div>
   </div>
 </template>
