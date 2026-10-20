@@ -14,6 +14,7 @@ import { createAuth } from "../auth/auth";
 import { createDb } from "../db/client";
 import {
   auditLog,
+  documentFiles,
   documents,
   products,
   storerooms,
@@ -21,12 +22,12 @@ import {
   users,
 } from "../db/schema";
 import { fakeDocument, fakeMisread } from "../extraction/fake";
-import { signedInAs } from "../test/auth";
+import { signedInAs, signedInAsOwner } from "../test/auth";
 import { createMemoryStorage } from "../storage/memory";
 import { syntheticCif } from "../test/catalogue";
 import { multipart, sample } from "../test/documents";
 import { testConfig } from "../test/helpers";
-import { documentRead, draftWith } from "../test/matching";
+import { documentRead, draftWith, postedFrom } from "../test/matching";
 
 // Every write endpoint records its changes in the audit log (#87). A new write endpoint fails
 // the first test until it has a case here: the audit log can't be forgotten.
@@ -652,7 +653,175 @@ const WRITE_CASES: Record<string, () => Promise<void>> = {
     expect(response.statusCode).toBe(200);
     expect(await allEntries("document")).toEqual([]);
   },
+
+  async postDocument() {
+    const office = await officeUser();
+    const id = await postable(office);
+    const postIt = () =>
+      office.send("POST", `/api/documents/${id}/post`, { storerooms: [null] });
+
+    const response = await postIt();
+    expect(response.statusCode).toBe(200);
+    // The document posted with its header; its lines and movements are records of their own.
+    expect(await updatesOf("document", id)).toEqual([
+      expect.objectContaining({
+        userId: office.id,
+        action: "update",
+        requestId: response.headers["x-request-id"],
+        documentId: id,
+        changes: {
+          status: { before: "ready_for_review", after: "posted" },
+          type: { before: null, after: "delivery-note" },
+          number: { before: null, after: "ALB-0001" },
+          date: { before: null, after: "2026-10-20" },
+        },
+      }),
+    ]);
+
+    // Posted already: refused, and nothing recorded.
+    expect((await postIt()).statusCode).toBe(409);
+    expect(await updatesOf("document", id)).toHaveLength(1);
+  },
+
+  async reverseDocument() {
+    const office = await officeUser();
+    const id = await postable(office);
+    expect(
+      (
+        await office.send("POST", `/api/documents/${id}/post`, {
+          storerooms: [null],
+        })
+      ).statusCode,
+    ).toBe(200);
+    const owner = await ownerUser();
+    const reverseIt = () => owner.send("POST", `/api/documents/${id}/reverse`);
+
+    const response = await reverseIt();
+    expect(response.statusCode).toBe(200);
+    // A reversal is a document of its own (decision 0034): its creation is the entry.
+    const created = (await allEntries("document")).filter(
+      (e) => e.action === "create",
+    );
+    expect(created).toEqual([
+      expect.objectContaining({
+        userId: owner.id,
+        requestId: response.headers["x-request-id"],
+        changes: expect.objectContaining({
+          reverses: { before: null, after: id },
+          status: { before: null, after: "posted" },
+        }),
+      }),
+    ]);
+
+    // Reversed already: refused, and nothing recorded.
+    expect((await reverseIt()).statusCode).toBe(409);
+    expect(await allEntries("document")).toHaveLength(2);
+  },
+
+  async createDocumentCopy() {
+    const office = await officeUser();
+    const supplier = Supplier.parse(
+      (
+        await office.send("POST", "/api/suppliers", {
+          name: "Huerto",
+          taxId: syntheticCif(1),
+        })
+      ).json(),
+    );
+    const id = await postedFrom(db, office.id, supplier.id, {
+      reversed: true,
+    });
+    // Its photo, which the copy is shown with.
+    await db.insert(documentFiles).values({
+      documentId: id,
+      position: 1,
+      kind: "image",
+      contentType: "image/jpeg",
+      sizeBytes: 1,
+      sha256: id,
+      storageKey: `documents/${id}/1.jpg`,
+    });
+    const owner = await ownerUser();
+    const copyIt = () => owner.send("POST", `/api/documents/${id}/copy`);
+
+    const response = await copyIt();
+    expect(response.statusCode).toBe(201);
+    const copied = Document.parse(response.json());
+    expect(await entriesFor("document", copied.id)).toEqual([
+      expect.objectContaining({
+        userId: owner.id,
+        action: "create",
+        requestId: response.headers["x-request-id"],
+        documentId: copied.id,
+        changes: expect.objectContaining({
+          copyOf: { before: null, after: id },
+          status: { before: null, after: "ready_for_review" },
+          supplierId: { before: null, after: supplier.id },
+        }),
+      }),
+    ]);
+
+    // Copied already: refused, and nothing recorded.
+    expect((await copyIt()).statusCode).toBe(409);
+    expect(await allEntries("document")).toHaveLength(1);
+  },
 };
+
+/** A signed-in owner: its ID, and a way to call the API as it. */
+async function ownerUser() {
+  const cookie = await signedInAsOwner(app, auth);
+  const me = MeResponse.parse(
+    (
+      await app.inject({ method: "GET", url: "/api/me", headers: { cookie } })
+    ).json(),
+  );
+  return {
+    id: me.id,
+    send: (method: "POST", url: string) =>
+      app.inject({ method, url, headers: { cookie } }),
+  };
+}
+
+/**
+ * A delivery note ready to post: one line of tomatoes, T-01, a supplier product of its
+ * supplier, kept in a storeroom of its own. Its file is there, as an upload leaves it.
+ */
+async function postable(office: Awaited<ReturnType<typeof officeUser>>) {
+  const { supplier, product } = await supplierAndProduct(office);
+  const storeroom = Storeroom.parse(
+    (
+      await office.send("POST", "/api/storerooms", {
+        name: "Cámara",
+        type: "cold_room",
+      })
+    ).json(),
+  );
+  await office.send("PATCH", `/api/products/${product.id}`, {
+    defaultStoreroomId: storeroom.id,
+  });
+  await office.send("POST", "/api/supplier-products", {
+    supplierId: supplier.id,
+    code: "T-01",
+    description: "Tomate pera",
+    productId: product.id,
+    pack: { quantity: "1", unit: "kg" },
+  });
+  const id = await documentRead(db, {
+    uploadedBy: office.id,
+    supplierId: supplier.id,
+    draft: draftWith([{ supplierCode: "T-01", description: "Tomate pera" }]),
+  });
+  await db.insert(documentFiles).values({
+    documentId: id,
+    position: 1,
+    kind: "image",
+    contentType: "image/jpeg",
+    sizeBytes: 1,
+    sha256: id,
+    storageKey: `documents/${id}/1.jpg`,
+  });
+  return id;
+}
 
 const TOMATE = {
   name: "Tomate pera",

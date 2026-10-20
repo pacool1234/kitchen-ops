@@ -105,6 +105,11 @@ export const DocumentSummary = z.object({
   fileCount: z.number().int().min(1),
   uploadedBy: z.object({ id: z.uuid(), name: z.string() }),
   uploadedAt: z.iso.datetime({ offset: true }),
+  /**
+   * The document that reverses it, and the day it was reversed (#119, decision 0034): a posted
+   * document is never changed, so "reversed" is another document. Null for one that stands.
+   */
+  reversal: z.object({ id: z.uuid(), date: z.iso.date() }).nullable(),
 });
 export type DocumentSummary = z.infer<typeof DocumentSummary>;
 
@@ -142,6 +147,10 @@ export const Document = DocumentSummary.extend({
    * Only in the owner's answers (`seesReadingCost`).
    */
   costMicroUsd: z.number().int().nonnegative().optional(),
+  /** The reversed document this one is a corrected copy of, to review and post again (#119). */
+  copyOf: z.uuid().nullable(),
+  /** Its corrected copy, once the owner has made one of it, reversed. */
+  copy: z.uuid().nullable(),
 });
 export type Document = z.infer<typeof Document>;
 

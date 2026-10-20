@@ -1,45 +1,19 @@
 import { randomUUIDv7 } from "node:crypto";
 import * as ledger from "@kitchen-ops/ledger";
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, notExists, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { audited, type AuditContext, type Tx } from "../audit/audited";
 import type { Db } from "../db/client";
 import { documentLines, documents, movements } from "../db/schema";
+import { ledgerLines, type ReviewedDocument } from "./reviewed";
 import { conversionsOf, movementToRow, movementsOf } from "./stored";
 
 // Posting a reviewed document into stored movements, and reversing a posted one (#116, decision
 // 0034), through packages/ledger. Each runs in one audited transaction, after taking the
 // posting lock, so postings happen one at a time and either everything is written or nothing.
-// The endpoints that call these come with the screens (#119, #120).
+// Their endpoints are in routes.ts (#119).
 
-/** One line as reviewed: what the ledger posts, without the ID it's given when it's stored. */
-export interface ReviewedLine {
-  readonly productId: string;
-  /** In `unit`, as printed: "1.5" boxes. */
-  readonly quantity: string;
-  readonly unit: string;
-  /** Per purchase unit, before discount, excluding VAT. */
-  readonly unitPrice: ledger.UnitCost;
-  readonly discountPercent?: string;
-  readonly vatRate?: string;
-  /** Where it's received, if not the document's storeroom (decision 0033). */
-  readonly storeroomId?: string;
-  /** For an invoice line: the posted delivery-note line it bills (decision 0032). */
-  readonly billsLineId?: string;
-  /** A flagged adjustment: it may take stock below zero (invariant 6). */
-  readonly adjustment?: true;
-}
-
-/** A document as reviewed, ready to post: its header as corrected, and its lines. */
-export interface ReviewedDocument {
-  readonly type: "delivery-note" | "invoice";
-  readonly supplierId: string;
-  readonly number: string | null;
-  /** The issue date, YYYY-MM-DD. */
-  readonly date: string;
-  /** Where its lines are received unless they name their own. */
-  readonly storeroomId: string;
-  readonly lines: readonly ReviewedLine[];
-}
+export type { ReviewedDocument, ReviewedLine } from "./reviewed";
 
 /** Why a line, or the whole document, can't be posted: the ledger's own words. */
 export interface LineError {
@@ -62,7 +36,8 @@ export type PostingResult =
         | "not_ready"
         | "not_posted"
         | "is_reversal"
-        | "already_reversed";
+        | "already_reversed"
+        | "billed";
     }
   | {
       readonly ok: false;
@@ -103,37 +78,17 @@ function lineErrors(
   };
 }
 
-/** A line as the ledger takes it, under its ID. */
-function ledgerLine(id: string, line: ReviewedLine): ledger.InvoiceLine {
-  return {
-    id,
-    productId: line.productId,
-    quantity: line.quantity,
-    unit: line.unit,
-    unitPrice: line.unitPrice,
-    ...(line.discountPercent === undefined
-      ? {}
-      : { discountPercent: line.discountPercent }),
-    ...(line.vatRate === undefined ? {} : { vatRate: line.vatRate }),
-    ...(line.storeroomId === undefined
-      ? {}
-      : { storeroomId: line.storeroomId }),
-    ...(line.billsLineId === undefined
-      ? {}
-      : { deliveryNoteLineId: line.billsLineId }),
-    ...(line.adjustment === true ? { adjustment: true as const } : {}),
-  };
-}
-
 /**
  * A ledger line as a row. `storeroomId` is where it was received; none for a line that bills a
- * delivery-note line, whose goods stay where that one received them.
+ * delivery-note line, whose goods stay where that one received them. `printed` is its unit as
+ * printed, and the supplier product whose pack the ledger converted it with (decision 0038).
  */
 function lineRow(
   documentId: string,
   position: number,
   line: ledger.InvoiceLine,
   storeroomId: string | null,
+  printed: { unit: string; supplierProductId: string | null },
 ): typeof documentLines.$inferInsert {
   return {
     id: line.id,
@@ -141,7 +96,8 @@ function lineRow(
     position,
     productId: line.productId,
     quantity: line.quantity,
-    unit: line.unit,
+    unit: printed.unit,
+    supplierProductId: printed.supplierProductId,
     unitPrice: ledger.formatUnitCost(line.unitPrice),
     discountPercent: line.discountPercent ?? null,
     vatRate: line.vatRate ?? null,
@@ -178,12 +134,16 @@ function lineFromRow(
  * `posted` with its reviewed header (invariant 4: all of it, or nothing). Movements are checked
  * against everything posted before, under the posting lock. An invoice line may only bill a
  * line of a posted delivery note.
+ *
+ * `review` may be worked out in the same transaction, under the lock, once the document is
+ * known to be in review (#119): from its draft as it stands then. What it throws rolls it all
+ * back.
  */
 export async function postDocument(
   db: Db,
   context: AuditContext,
   documentId: string,
-  reviewed: ReviewedDocument,
+  review: ReviewedDocument | ((tx: Tx) => Promise<ReviewedDocument>),
 ): Promise<PostingResult> {
   return audited(db, context, async (tx) => {
     await takePostingLock(tx);
@@ -193,9 +153,10 @@ export async function postDocument(
       .where(eq(documents.id, documentId));
     if (!row) return refused("not_found");
     if (row.status !== "ready_for_review") return refused("not_ready");
+    const reviewed = typeof review === "function" ? await review(tx) : review;
 
     const lineIds = reviewed.lines.map(() => randomUUIDv7());
-    const lines = reviewed.lines.map((l, i) => ledgerLine(lineIds[i]!, l));
+    const { lines, conversions: packs } = ledgerLines(reviewed, lineIds);
 
     // The lines an invoice bills: their products' movements are needed too, and each must be a
     // posted delivery note's.
@@ -237,10 +198,11 @@ export async function postDocument(
         ...billed.map((b) => b.productId),
       ]),
     ];
-    const [existing, conversions] = await Promise.all([
+    const [existing, own] = await Promise.all([
       movementsOf(tx, productIds),
       conversionsOf(tx, productIds),
     ]);
+    const conversions = [...own, ...packs];
     const header = {
       id: documentId,
       date: reviewed.date,
@@ -258,20 +220,22 @@ export async function postDocument(
     );
     if (!result.ok) return lineErrors(result.errors, lineIds);
 
-    await tx
-      .insert(documentLines)
-      .values(
-        lines.map((line, i) =>
-          lineRow(
-            documentId,
-            i + 1,
-            line,
-            line.deliveryNoteLineId === undefined
-              ? (line.storeroomId ?? reviewed.storeroomId)
-              : null,
-          ),
+    await tx.insert(documentLines).values(
+      lines.map((line, i) =>
+        lineRow(
+          documentId,
+          i + 1,
+          line,
+          line.deliveryNoteLineId === undefined
+            ? (line.storeroomId ?? reviewed.storeroomId)
+            : null,
+          {
+            unit: reviewed.lines[i]!.unit,
+            supplierProductId: reviewed.lines[i]!.supplierProduct?.id ?? null,
+          },
         ),
-      );
+      ),
+    );
     if (result.movements.length > 0) {
       await tx.insert(movements).values(result.movements.map(movementToRow));
     }
@@ -304,6 +268,35 @@ export async function postDocument(
       ],
     };
   });
+}
+
+const billing = alias(documents, "billing");
+const billingReversal = alias(documents, "billing_reversal");
+
+/** Whether a posted invoice that stands, neither a reversal nor reversed, bills any of these lines. */
+async function billedByStanding(
+  tx: Tx,
+  lineIds: readonly string[],
+): Promise<boolean> {
+  if (lineIds.length === 0) return false;
+  const [found] = await tx
+    .select({ id: documentLines.id })
+    .from(documentLines)
+    .innerJoin(billing, eq(billing.id, documentLines.documentId))
+    .where(
+      and(
+        inArray(documentLines.billsLineId, [...lineIds]),
+        isNull(billing.reverses),
+        notExists(
+          tx
+            .select({ id: billingReversal.id })
+            .from(billingReversal)
+            .where(eq(billingReversal.reverses, billing.id)),
+        ),
+      ),
+    )
+    .limit(1);
+  return found !== undefined;
 }
 
 /**
@@ -344,6 +337,17 @@ export async function reverseDocument(
       .from(documentLines)
       .where(eq(documentLines.documentId, documentId))
       .orderBy(asc(documentLines.position));
+    // An invoice that stands still bills its goods: reversing them first would quietly drop its
+    // price (decision 0032). Reversing an invoice under a later one is #120's.
+    if (
+      row.type === "delivery-note" &&
+      (await billedByStanding(
+        tx,
+        lineRows.map((l) => l.id),
+      ))
+    ) {
+      return refused("billed");
+    }
     const lines = lineRows.map(lineFromRow);
     const existing = await movementsOf(tx, [
       ...new Set(lines.map((l) => l.productId)),
@@ -386,13 +390,14 @@ export async function reverseDocument(
       .insert(documents)
       .values({ id: reversalId, ...created, uploadedBy: context.userId });
     const copies = result.document.lines as readonly ledger.InvoiceLine[];
-    await tx
-      .insert(documentLines)
-      .values(
-        copies.map((line, i) =>
-          lineRow(reversalId, i + 1, line, line.storeroomId ?? null),
-        ),
-      );
+    await tx.insert(documentLines).values(
+      copies.map((line, i) =>
+        lineRow(reversalId, i + 1, line, line.storeroomId ?? null, {
+          unit: lineRows[i]!.unit,
+          supplierProductId: lineRows[i]!.supplierProductId,
+        }),
+      ),
+    );
     if (result.movements.length > 0) {
       await tx.insert(movements).values(result.movements.map(movementToRow));
     }

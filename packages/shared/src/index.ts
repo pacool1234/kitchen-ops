@@ -7,6 +7,7 @@ export * from "./health";
 export * from "./lists";
 export * from "./locale";
 export * from "./matching";
+export * from "./posting";
 export * from "./products";
 export * from "./storerooms";
 export * from "./supplier-products";
