@@ -13,25 +13,32 @@ import type { z } from "zod";
 /**
  * An API call that did not return the expected data. `code` is the API's `error` field, and
  * `fields` the code of each field it refused (decision 0026), for a form to show by each field.
+ * A file already received names the document that has it, `duplicateOf` (#106).
  */
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly fields: Readonly<Record<string, FieldErrorCode>> | undefined;
+  readonly duplicateOf: string | undefined;
 
   constructor(
     status: number,
     code: string,
     fields?: Readonly<Record<string, FieldErrorCode>>,
+    duplicateOf?: string,
   ) {
     super(`API ${status}: ${code}`);
     this.status = status;
     this.code = code;
     this.fields = fields;
+    this.duplicateOf = duplicateOf;
   }
 }
 
-/** What a call to `E` takes: its path parameters, query and body, each only if it has them. */
+/**
+ * What a call to `E` takes: its path parameters, query and body, and an upload's files, each
+ * only if it has them.
+ */
 export type CallInput<E extends Endpoint> = (E extends {
   params: infer P extends z.ZodType;
 }
@@ -42,7 +49,25 @@ export type CallInput<E extends Endpoint> = (E extends {
     : { query?: undefined }) &
   (E extends { body: infer B extends z.ZodType }
     ? { body: z.input<B> }
-    : { body?: undefined });
+    : { body?: undefined }) &
+  (E extends { upload: { field: string } }
+    ? { files: readonly File[] }
+    : { files?: undefined });
+
+const asJson = (body: unknown) => ({
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify(body),
+});
+
+/**
+ * An upload's files as a form, in order, each under `field` (#106). No content type: the
+ * browser writes multipart/form-data with its boundary itself.
+ */
+function asForm(field: string, files: readonly File[]): FormData {
+  const form = new FormData();
+  for (const file of files) form.append(field, file);
+  return form;
+}
 
 /** Calls an endpoint of the contract and returns its validated response. Throws `ApiError`. */
 export async function call<E extends Endpoint>(
@@ -51,10 +76,11 @@ export async function call<E extends Endpoint>(
     ? [input?: CallInput<E>]
     : [input: CallInput<E>]
 ): Promise<z.output<E["response"]>> {
-  const { params, query, body } = (input ?? {}) as {
+  const { params, query, body, files } = (input ?? {}) as {
     params?: Record<string, string>;
     query?: Record<string, unknown>;
     body?: unknown;
+    files?: readonly File[];
   };
 
   const search = new URLSearchParams();
@@ -67,12 +93,10 @@ export async function call<E extends Endpoint>(
   const response = await fetch(url, {
     method: endpoint.method,
     credentials: "same-origin",
-    ...(body === undefined
+    ...(body === undefined ? {} : asJson(body)),
+    ...(files === undefined || !endpoint.upload
       ? {}
-      : {
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body),
-        }),
+      : { body: asForm(endpoint.upload.field, files) }),
   });
   if (!response.ok) {
     const errorBody: unknown = await response.json().catch(() => null);
@@ -83,6 +107,7 @@ export async function call<E extends Endpoint>(
         response.status,
         parsed.data.error,
         parsed.data.fields,
+        parsed.data.duplicateOf,
       );
     }
     const code =
