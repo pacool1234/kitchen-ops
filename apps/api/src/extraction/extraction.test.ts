@@ -22,7 +22,7 @@ import {
 } from "../db/schema";
 import { createMemoryStorage } from "../storage/memory";
 import type { Storage } from "../storage/storage";
-import { signedInAs } from "../test/auth";
+import { signedInAsOwner } from "../test/auth";
 import { syntheticCif } from "../test/catalogue";
 import { multipart, photo, sample, type UploadFile } from "../test/documents";
 import { testConfig } from "../test/helpers";
@@ -128,10 +128,10 @@ async function supplier() {
   return row!;
 }
 
-/** One counter user's session for each app. */
+/** The owner's session for each app: the one role that sees what reading cost (#106). */
 const sessions = new WeakMap<object, Promise<string>>();
 function signedIn(app: ReturnType<typeof appReadingWith>) {
-  if (!sessions.has(app)) sessions.set(app, signedInAs(app, auth, "counter"));
+  if (!sessions.has(app)) sessions.set(app, signedInAsOwner(app, auth));
   return sessions.get(app)!;
 }
 
@@ -216,6 +216,8 @@ describe("an uploaded document is read in the background", () => {
       status: "ready_for_review",
       supplier: { id: known.id, name: "Frutas del Huerto, S.L." },
       failureReason: null,
+      draft: read(),
+      checkFailures: [],
       costMicroUsd: 400,
     });
     expect(await attempts(document.id)).toEqual([
@@ -244,11 +246,26 @@ describe("an uploaded document is read in the background", () => {
         totals: { ...wrongTotal.totals!, total: "1.00" },
       }).client,
     );
-    const { document } = await upload(app);
+    const { document, cookie } = await upload(app);
     const done = await settled(document.id);
     expect(done.status).toBe("ready_for_review");
     expect(done.supplierId).toBeNull();
     expect(done.checkFailures?.map((f) => f.check)).toContain("total");
+
+    // The screens get each failure's check and field, never its message, which may quote the
+    // document and is English (#106).
+    const answer = await app.inject({
+      method: "GET",
+      url: `/api/documents/${document.id}`,
+      headers: { cookie },
+    });
+    const { checkFailures } = answer.json<{
+      checkFailures: Record<string, unknown>[];
+    }>();
+    expect(checkFailures).toEqual(
+      done.checkFailures!.map(({ check, path }) => ({ check, path })),
+    );
+    expect(answer.body).not.toContain(done.checkFailures![0]!.message);
   });
 
   it("a number already received from that supplier shows as a duplicate", async () => {
@@ -268,13 +285,18 @@ describe("an uploaded document is read in the background", () => {
 
   it("an answer that doesn't match the schema, even after its own retry, is ready for review with a note and no draft", async () => {
     const app = appReadingWith(scripted("not json", "still not json").client);
-    const { document } = await upload(app);
+    const { document, cookie } = await upload(app);
     const done = await settled(document.id);
     expect(done).toMatchObject({
       status: "ready_for_review",
       draft: null,
       reviewNote: "the output was invalid twice",
       failureReason: null,
+    });
+    expect(await getDocument(app, document.id, cookie)).toMatchObject({
+      status: "ready_for_review",
+      draft: null,
+      checkFailures: [],
     });
     expect(await attempts(document.id)).toEqual([
       expect.objectContaining({

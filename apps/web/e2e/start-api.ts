@@ -20,6 +20,14 @@ const env = {
   // A new secret every run: nothing secret-like is written in this file.
   BETTER_AUTH_SECRET: randomBytes(32).toString("base64"),
   BETTER_AUTH_URL: "http://localhost:5173",
+  // Documents (#106): kept in docker-compose.yml's local S3 server, and read by the fake model,
+  // which fails only when a document says so, and is then retried after a second.
+  S3_ENDPOINT: process.env.E2E_S3_ENDPOINT ?? "http://127.0.0.1:9000",
+  S3_REGION: "fr-par",
+  S3_BUCKET: "kitchen-ops-documents",
+  S3_ACCESS_KEY_ID: "local-only-key",
+  S3_SECRET_ACCESS_KEY: "local-only-secret",
+  EXTRACTION_MODEL: "fake",
 };
 
 // pnpm sets npm_execpath to itself when it runs a script, so this works where `pnpm` isn't on
@@ -39,7 +47,9 @@ for (const script of ["db:reset", "db:migrate", "db:seed"]) {
     process.exit(1);
   }
   if (result.status !== 0) {
-    console.error(`${script} failed: is Postgres up (docker compose up -d)?`);
+    console.error(
+      `${script} failed: are Postgres and the S3 server up (docker compose up -d)?`,
+    );
     process.exit(result.status ?? 1);
   }
 }

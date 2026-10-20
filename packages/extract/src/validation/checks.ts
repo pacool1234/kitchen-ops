@@ -8,7 +8,9 @@ import {
   type Money,
 } from "@kitchen-ops/ledger";
 import {
+  CHECK_NAMES,
   checkSpanishTaxId,
+  type CheckName,
   type ExtractedDocument,
   type ExtractedLine,
 } from "@kitchen-ops/shared";
@@ -17,18 +19,12 @@ import {
 // fails goes to review, with the failing check named. Arithmetic uses the ledger's own rules
 // (decision 0016), so a result that passes here is posted at the same amounts.
 
-/** Every check, by name. Names and paths never contain document contents; messages may. */
-export const CHECKS = [
-  "missing-value",
-  "line-total",
-  "lines-sum",
-  "vat",
-  "total",
-  "tax-id",
-  "date",
-  "duplicate",
-] as const;
-export type CheckName = (typeof CHECKS)[number];
+/**
+ * Every check, by name, from packages/shared so the web app can name them too (#106). Names and
+ * paths never contain document contents; messages may.
+ */
+export const CHECKS = CHECK_NAMES;
+export type { CheckName };
 
 export interface CheckFailure {
   readonly check: CheckName;

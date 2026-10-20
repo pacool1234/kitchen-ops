@@ -392,6 +392,53 @@ describe("GET /api/documents/:id", () => {
     );
     expect(response.statusCode).toBe(404);
   });
+
+  it("not read yet: no draft and no check failures", async () => {
+    const created = await uploaded([{ name: "a.pdf", bytes: sample.pdf(1) }]);
+    expect(
+      Document.parse((await read(`/api/documents/${created.id}`)).json()),
+    ).toMatchObject({ status: "queued", draft: null, checkFailures: [] });
+  });
+});
+
+describe("what reading a document cost is the owner's (spec section 6, #106)", () => {
+  it("only the owner's answers have it: uploading, reading one, retrying it", async () => {
+    const as: Record<Role, string> = {
+      counter: await signedInAs(app, auth, "counter"),
+      office: cookie,
+      owner: await signedInAsOwner(app, auth),
+    };
+    let n = 200;
+    for (const [role, session] of Object.entries(as)) {
+      const sees = role === "owner";
+      const posted = await upload(
+        [{ name: "x.pdf", bytes: sample.pdf(n++) }],
+        session,
+      );
+      expect(posted.statusCode, role).toBe(201);
+      const { id } = posted.json<{ id: string }>();
+      expect("costMicroUsd" in posted.json(), `upload, ${role}`).toBe(sees);
+
+      const one = await app.inject({
+        method: "GET",
+        url: `/api/documents/${id}`,
+        headers: { cookie: session },
+      });
+      expect("costMicroUsd" in one.json(), `read, ${role}`).toBe(sees);
+
+      await db
+        .update(documents)
+        .set({ status: "failed", failureReason: "model_error" })
+        .where(eq(documents.id, id));
+      const retried = await app.inject({
+        method: "POST",
+        url: `/api/documents/${id}/retry`,
+        headers: { cookie: session },
+      });
+      expect(retried.statusCode, role).toBe(200);
+      expect("costMicroUsd" in retried.json(), `retry, ${role}`).toBe(sees);
+    }
+  });
 });
 
 describe("without storage configured", () => {
