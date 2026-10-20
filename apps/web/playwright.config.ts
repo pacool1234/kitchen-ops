@@ -2,7 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 // Browser tests (decision 0021): the built web app (`vite preview`) and the API, against a fresh
 // database of their own, at desktop and phone sizes. Run with `pnpm --filter @kitchen-ops/web e2e`,
-// with Postgres up (`docker compose up -d`) and the dev servers stopped: they use the same ports.
+// with Postgres and the S3 server up (`docker compose up -d`) and the dev servers stopped: they use
+// the same ports.
 
 const WEB = "http://localhost:5173";
 

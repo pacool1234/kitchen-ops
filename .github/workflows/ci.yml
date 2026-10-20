@@ -172,6 +172,10 @@ jobs:
         if: steps.browsers.outputs.cache-hit == 'true'
         run: pnpm --filter @kitchen-ops/web exec playwright install-deps chromium
 
+      # Where the browser tests' API keeps documents' files (docker-compose.yml's `s3`, #106).
+      - name: Local S3 server
+        run: docker compose up -d --wait s3
+
       - name: Browser tests
         run: pnpm --filter @kitchen-ops/web e2e
         env:
