@@ -132,6 +132,12 @@ test("M7: a phone photo, misread, corrected, its supplier created, its products 
   await expect(statusOf(page)).toHaveText("Listo para revisar", {
     timeout: 30_000,
   });
+  // Read from the photo, misread: line 1's amount doesn't add up.
+  await expect(
+    page.getByRole("region", { name: "Comprobaciones" }).getByRole("button", {
+      name: "Línea 1: el importe no cuadra con la cantidad, el precio y el descuento",
+    }),
+  ).toBeVisible();
 
   // Corrected where a check failed, and its supplier's tax ID made its own; then saved.
   await line(page, 1).getByRole("textbox", { name: "Cantidad" }).fill("5");
