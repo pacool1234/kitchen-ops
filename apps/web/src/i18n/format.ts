@@ -211,3 +211,40 @@ export function formatPercent(percent: string, locale: Locale): string {
     maximumFractionDigits: 2,
   }).format(checkedDecimal(percent, 2, "a percentage"));
 }
+
+/**
+ * A value as a document printed it, a quantity such as "2.5", with its decimals and no more
+ * (up to 6, as the draft allows): `2,5`, `1.250`.
+ */
+export function formatPrintedDecimal(text: string, locale: Locale): string {
+  return numberFormat(locale, { maximumFractionDigits: 6 }).format(
+    checkedDecimal(text, 6, "a printed value"),
+  );
+}
+
+/** A unit price as printed, in euros, with at least 2 decimals and up to 6: `1,805 €`. */
+export function formatPrice(text: string, locale: Locale): string {
+  return numberFormat(locale, {
+    ...EURO,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6,
+  }).format(checkedDecimal(text, 6, "a price"));
+}
+
+/**
+ * What reading a document cost (#106), from whole millionths of a dollar, to a hundredth of a
+ * cent: `0,0090 US$`. Intl rounds the exact decimal half away from zero.
+ */
+export function formatReadingCost(microUsd: number, locale: Locale): string {
+  if (!Number.isSafeInteger(microUsd) || microUsd < 0) {
+    throw new RangeError(
+      `a cost must be a whole, non-negative number of millionths, got ${microUsd}`,
+    );
+  }
+  return numberFormat(locale, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  }).format(scaled(BigInt(microUsd), 6));
+}
