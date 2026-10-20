@@ -110,16 +110,19 @@ test.describe("the document screens (#106)", () => {
       timeout: 30_000,
     });
     expect(await sameLoad(page)).toBe(true);
-    await expect(page.getByRole("img", { name: "Foto 2 de 2" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Ampliar la foto 2 de 2" }),
+    ).toBeVisible();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "Albarán ALB-0001",
     );
     await expect(
       page.getByText("Distribuciones de Ejemplo, S.L."),
     ).toBeVisible();
-    await expect(page.getByRole("table", { name: "Líneas" })).toContainText(
-      "Tomate pera",
-    );
+    // In review, a counter user sees each line, with its quantity to confirm (#118).
+    await expect(
+      page.getByRole("group", { name: "Línea 1", exact: true }),
+    ).toContainText("Tomate pera");
     await expect(
       page.getByText("Ha pasado todas las comprobaciones."),
     ).toBeVisible();

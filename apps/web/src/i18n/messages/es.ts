@@ -261,6 +261,44 @@ export const es = {
       unexpected: "Algo ha fallado al leerlo.",
     },
     cost: "Coste de la lectura",
+    // Reviewing a document (#118): its draft corrected next to its original.
+    review: {
+      heading: "Revisar lo leído",
+      quantitiesHint:
+        "Comprueba las cantidades con lo que ha llegado y corrige las que no coincidan.",
+      header: "Cabecera",
+      type: "Tipo de documento",
+      supplierName: "Proveedor",
+      dateHint: "dd/mm/aaaa",
+      dateInvalid: "Escribe la fecha como dd/mm/aaaa.",
+      percentInvalid:
+        "Un porcentaje entre 0 y 100, con 2 decimales como mucho.",
+      totals: "Importes",
+      hasTotals: "Con importes",
+      vatRow: "IVA {n}",
+      vatRate: "Tipo",
+      vatBase: "Base",
+      vatAmount: "Cuota",
+      addVat: "Añadir un tipo de IVA",
+      removeVat: "Quitar el IVA {n}",
+      line: "Línea {n}",
+      addLine: "Añadir línea",
+      removeLine: "Quitar la línea {n}",
+      save: "Guardar correcciones",
+      saved: "Correcciones guardadas",
+      modelRead: "Lo que leyó el modelo",
+      readLines: "Líneas leídas",
+    },
+    // The photo viewer.
+    viewer: {
+      enlarge: "Ampliar la foto {n} de {count}",
+      zoomIn: "Acercar",
+      zoomOut: "Alejar",
+      fit: "Ajustar",
+      zoom: "{n} %",
+      previous: "Foto anterior",
+      next: "Foto siguiente",
+    },
   },
   // The catalogue (#89): its sections, and what every list and form in it shares.
   catalogue: {
@@ -396,6 +434,7 @@ export const es = {
     storage_unavailable:
       "Los documentos no están disponibles ahora mismo. Inténtalo más tarde.",
     not_failed: "Ya se estaba volviendo a leer.",
+    not_in_review: "Este documento ya no está en revisión.",
     unknown: "Algo ha fallado. Inténtalo de nuevo.",
     // Why a field was refused: one per code in packages/shared (FIELD_ERROR_CODES).
     fields: {
