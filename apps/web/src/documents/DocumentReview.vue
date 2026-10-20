@@ -5,9 +5,19 @@ import {
   fieldErrors,
   type Document,
   type DocumentCheckFailure,
+  type DocumentMatching,
+  type LineMatch,
   type SavedDraft,
 } from "@kitchen-ops/shared";
-import { computed, onUnmounted, reactive, ref, shallowRef, watch } from "vue";
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  reactive,
+  ref,
+  shallowRef,
+  watch,
+} from "vue";
 import { ApiError, call } from "../api";
 import { isDirty, type FieldErrors } from "../catalogue/form";
 import UnsavedDialog from "../catalogue/UnsavedDialog.vue";
@@ -17,17 +27,22 @@ import UiButton from "../components/ui/UiButton.vue";
 import { showToast } from "../components/ui/toasts";
 import { useT, type MessageKey } from "../i18n";
 import { errorMessageKey, fieldMessageKey } from "../i18n/errors";
+import DocumentSupplier from "./DocumentSupplier.vue";
 import { toDraft, toValues, type DraftValues } from "./draft-form";
 import DraftForm from "./DraftForm.vue";
 import DraftReadOnly from "./DraftReadOnly.vue";
+import LineMappingDialog from "./LineMappingDialog.vue";
+import LineProduct from "./LineProduct.vue";
 import { failureLine } from "./list";
 import { startLiveChecks } from "./live-checks";
+import { mapping, orderedReasons } from "./review-state";
 
 // Reviewing a document's draft (#118, decision 0037): the draft as it stands, corrected or as
 // read, to correct. The checks run again a moment after each change, by the API; a value the
 // draft's schema refuses (a 150% discount) shows on its field at once, from the same schema.
 // Saving keeps the correction apart from what the model read, which shows below once there is
-// one. Leaving with changes not saved asks first.
+// one. Leaving with changes not saved asks first. Office and owner also choose the supplier,
+// or create it, and confirm each line's product (#117); everyone sees what's left before posting.
 const props = defineProps<{
   document: Document;
   mode: "all" | "quantities";
@@ -64,19 +79,80 @@ const live = startLiveChecks<ExtractedDocument>({
 });
 onUnmounted(() => live.stop());
 
-watch(
-  values,
-  () => {
-    const draft = toDraft(values.value);
-    const parsed = ExtractedDocument.safeParse(draft);
-    invalid.value = parsed.success
-      ? {}
-      : fieldErrors(parsed.error.issues, draft);
-    if (parsed.success) live.changed(parsed.data);
-    else live.cancel();
-  },
-  { deep: true },
+/** The checks again for the draft on screen, if the schema takes it: shortly, through the API. */
+function recheck() {
+  const draft = toDraft(values.value);
+  const parsed = ExtractedDocument.safeParse(draft);
+  invalid.value = parsed.success ? {} : fieldErrors(parsed.error.issues, draft);
+  if (parsed.success) live.changed(parsed.data);
+  else live.cancel();
+}
+watch(values, recheck, { deep: true });
+
+/** The supplier, each saved line's product and what's left before posting (#117). */
+const matching = ref<DocumentMatching>();
+async function loadMatching() {
+  try {
+    matching.value = await call(endpoints.getDocumentMatching, {
+      params: { id: props.document.id },
+    });
+  } catch {
+    // Without it, the screen still corrects the draft; the next save asks again.
+  }
+}
+onMounted(loadMatching);
+
+/** A supplier chosen: its lines' products, and the checks again (its numbers already received). */
+function supplierChosen(next: DocumentMatching) {
+  matching.value = next;
+  recheck();
+}
+
+const reasons = computed(() =>
+  matching.value ? orderedReasons(matching.value.reviewReasons) : [],
 );
+/** Lines added or removed since saving: the saved lines' products can't be put on these. */
+const linesMoved = computed(
+  () => values.value.lines.length !== loaded.value.lines.length,
+);
+/** A saved line's product: matched, suggested, or none; undefined before it's known. */
+function lineMatch(index: number): LineMatch | null | undefined {
+  if (!matching.value || linesMoved.value) return undefined;
+  return matching.value.lines[index]?.match ?? null;
+}
+function lineMapping(index: number) {
+  return mapping({
+    hasSupplier: Boolean(matching.value?.supplier),
+    dirty: dirty.value,
+    match: lineMatch(index) ?? null,
+  });
+}
+
+/** The line whose product is being chosen, from 0; null when none is. */
+const mappingLine = ref<number | null>(null);
+const mappingOpen = computed({
+  get: () => mappingLine.value !== null,
+  set: (open) => {
+    if (!open) mappingLine.value = null;
+  },
+});
+/** The saved line, to say which it is: "T-01 · Tomate pera". */
+const savedLineText = computed(() => {
+  const line =
+    mappingLine.value === null
+      ? undefined
+      : loaded.value.lines[mappingLine.value];
+  return [line?.supplierCode, line?.description].filter(Boolean).join(" · ");
+});
+const mappingSuggestion = computed(() => {
+  const match =
+    mappingLine.value === null ? null : lineMatch(mappingLine.value);
+  return match?.by === "suggestion" ? match.product : undefined;
+});
+const readSupplier = computed(() => {
+  const { supplier } = toDraft(values.value);
+  return { name: supplier.name ?? "", taxId: supplier.taxId ?? "" };
+});
 
 /** Percentages and the date have their own words for "not valid". */
 function ownWords(path: string): Partial<Record<string, MessageKey>> {
@@ -149,6 +225,7 @@ async function save() {
     submitted.value = false;
     emit("saved", saved);
     showToast({ tone: "success", title: t("documents.review.saved") });
+    void loadMatching();
   } catch (caught) {
     if (caught instanceof ApiError && caught.fields) {
       refused.value = { ...caught.fields };
@@ -179,6 +256,30 @@ const guard = useUnsavedGuard(dirty);
     </p>
 
     <section
+      v-if="matching"
+      class="flex flex-col gap-2 rounded-lg border border-line bg-surface p-5"
+      aria-labelledby="left-heading"
+    >
+      <h3 id="left-heading" class="font-semibold">
+        {{ t("documents.left") }}
+      </h3>
+      <ul v-if="reasons.length > 0" class="flex list-disc flex-col gap-1 ps-5">
+        <li v-for="reason in reasons" :key="reason">
+          {{ t(`documents.reasons.${reason}`) }}
+        </li>
+      </ul>
+      <p v-else>{{ t("documents.nothingLeft") }}</p>
+    </section>
+
+    <DocumentSupplier
+      v-if="mode === 'all' && matching"
+      :document-id="document.id"
+      :matching="matching"
+      :read="readSupplier"
+      @chosen="supplierChosen"
+    />
+
+    <section
       class="flex flex-col gap-2 rounded-lg border border-line bg-surface p-5"
       aria-labelledby="checks-heading"
     >
@@ -205,7 +306,22 @@ const guard = useUnsavedGuard(dirty);
       @submit.prevent="save"
       @focusout="onFocusOut"
     >
-      <DraftForm v-model="values" :mode="mode" :error-at="errorAt" />
+      <DraftForm v-model="values" :mode="mode" :error-at="errorAt">
+        <template #line="{ index }">
+          <LineProduct
+            v-if="lineMatch(index) !== undefined"
+            :match="lineMatch(index) ?? null"
+            v-bind="lineMapping(index)"
+            @choose="mappingLine = index"
+          />
+          <p
+            v-else-if="linesMoved"
+            class="border-t border-line pt-3 text-sm text-fg-muted"
+          >
+            {{ t("documents.matching.blocked.unsaved") }}
+          </p>
+        </template>
+      </DraftForm>
       <div class="flex justify-end">
         <UiButton type="submit" :loading="saving">
           {{ t("documents.review.save") }}
@@ -228,6 +344,14 @@ const guard = useUnsavedGuard(dirty);
       </div>
     </details>
 
+    <LineMappingDialog
+      v-model:open="mappingOpen"
+      :document-id="document.id"
+      :line="(mappingLine ?? 0) + 1"
+      :line-text="savedLineText"
+      :suggested="mappingSuggestion"
+      @mapped="(next) => (matching = next)"
+    />
     <UnsavedDialog
       v-model:open="guard.asking.value"
       @stay="guard.stay"
