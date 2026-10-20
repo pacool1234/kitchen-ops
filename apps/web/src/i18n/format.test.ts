@@ -6,7 +6,10 @@ import {
   formatDateTime,
   formatMoney,
   formatPercent,
+  formatPrice,
+  formatPrintedDecimal,
   formatQuantity,
+  formatReadingCost,
   formatUnitCost,
 } from "./format";
 
@@ -244,5 +247,52 @@ describe("formatCount: how many of something, grouped like money", () => {
 
   it("refuses anything but a whole number", () => {
     expect(() => formatCount(2.5, "es")).toThrow(RangeError);
+  });
+});
+
+describe("formatReadingCost: what reading a document cost, from millionths of a dollar (#106)", () => {
+  it("in dollars, to a hundredth of a cent", () => {
+    expect(formatReadingCost(8954, "es")).toBe(`0,0090${NBSP}US$`);
+    expect(formatReadingCost(8954, "en")).toBe("US$0.0090");
+    expect(formatReadingCost(0, "es")).toBe(`0,0000${NBSP}US$`);
+    expect(formatReadingCost(1_234_500_000, "es")).toBe(`1.234,5000${NBSP}US$`);
+  });
+
+  it("rounds half away from zero, exactly: 50 millionths is a hundredth of a cent, 49 isn't", () => {
+    expect(formatReadingCost(50, "es")).toBe(`0,0001${NBSP}US$`);
+    expect(formatReadingCost(49, "es")).toBe(`0,0000${NBSP}US$`);
+  });
+
+  it("any cost reads back as itself, rounded to a hundredth of a cent", () => {
+    fc.assert(
+      fc.property(fc.maxSafeNat(), (micro) => {
+        const shown = BigInt(
+          formatReadingCost(micro, "es").replace(/[^\d]/g, ""),
+        );
+        expect(shown).toBe((BigInt(micro) + 50n) / 100n);
+      }),
+    );
+  });
+
+  it("refuses what isn't a whole, non-negative number of millionths", () => {
+    expect(() => formatReadingCost(1.5, "es")).toThrow(RangeError);
+    expect(() => formatReadingCost(-1, "es")).toThrow(RangeError);
+  });
+});
+
+describe("a draft's values, as the document printed them (#106)", () => {
+  it("formatPrintedDecimal: a quantity, with its decimals and no more", () => {
+    expect(formatPrintedDecimal("2.5", "es")).toBe("2,5");
+    expect(formatPrintedDecimal("1250", "es")).toBe("1.250");
+    expect(formatPrintedDecimal("-0.125000", "en")).toBe("-0.125");
+    expect(() => formatPrintedDecimal("1.1234567", "es")).toThrow(RangeError);
+    expect(() => formatPrintedDecimal("2,5", "es")).toThrow(RangeError);
+  });
+
+  it("formatPrice: a unit price in euros, with at least 2 decimals and up to 6, never rounded", () => {
+    expect(formatPrice("1.8", "es")).toBe(`1,80${NBSP}€`);
+    expect(formatPrice("1.805", "es")).toBe(`1,805${NBSP}€`);
+    expect(formatPrice("0.123456", "en")).toBe("€0.123456");
+    expect(() => formatPrice("0.1234567", "es")).toThrow(RangeError);
   });
 });

@@ -1,4 +1,6 @@
+import { crc32, deflateSync } from "node:zlib";
 import { expect, type Page } from "@playwright/test";
+import { mainNav } from "./shell.ts";
 
 // Receiving documents (#106). The browser tests' API keeps files in the local S3 server and reads
 // them with the fake model (start-api.ts), which answers a fixed delivery note, or fails every
@@ -37,6 +39,50 @@ export function textPdf(text: string): Buffer {
   pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
   return Buffer.from(pdf, "latin1");
 }
+
+/** One PNG chunk: its length, type, data and CRC (the PNG specification, section 5.3). */
+function pngChunk(type: string, data: Buffer): Buffer {
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length);
+  const body = Buffer.concat([Buffer.from(type, "latin1"), data]);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(body));
+  return Buffer.concat([length, body, crc]);
+}
+
+/**
+ * A real photo, a grey 40 × 30 PNG that extraction can decode, made a file of its own by `label`
+ * in a text chunk, which a viewer ignores.
+ */
+export function photoPng(label: string): Buffer {
+  const [width, height] = [40, 30];
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header.set([8, 2, 0, 0, 0], 8); // 8 bits a channel, RGB, no interlacing
+  // Each row: filter type 0, then each pixel's red, green and blue.
+  const row = Buffer.alloc(1 + 3 * width, 0x80);
+  row[0] = 0;
+  const rows = Buffer.concat(Array.from({ length: height }, () => row));
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk("IHDR", header),
+    pngChunk("tEXt", Buffer.from(`Comment\0${label}`, "latin1")),
+    pngChunk("IDAT", deflateSync(rows)),
+    pngChunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+
+/** Opens the documents list from the main navigation. */
+export async function openDocuments(page: Page): Promise<void> {
+  await mainNav(page).getByRole("link", { name: "Documentos" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Documentos",
+  );
+}
+
+/** A document's status, as its page shows it. */
+export const statusOf = (page: Page) => page.getByTestId("document-status");
 
 interface DocumentAnswer {
   id: string;
