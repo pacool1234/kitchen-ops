@@ -35,7 +35,12 @@ Gold runs, prompt v2, results in `eval/results/2026-10-20-*`:
 | Model | Temperature | Endpoint | Runs | Silent errors | Review | Correct | Cost per document with a model call |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `google/gemini-3.8-flash` | 0 (0018) | AI Studio | 3 | 0 of 60 | 0 of 60 | 60 of 60 | $0.0107 |
-| `google/gemini-3.8-flash` | provider's | Vertex | 3 | _pending_ | _pending_ | _pending_ | _pending_ |
+| `google/gemini-3.8-flash` | provider's | Vertex | 3 | 0 of 60 | 0 of 60 | 60 of 60 | $0.0128 |
+
+- **The rule is met:** no silent errors, nothing sent to review, every document right in every run.
+- **The three runs gave the same answer for every document,** as 0018's did at temperature 0. They still carry little more than one run (0018's "Still provisional" applies).
+- **A document costs about 19% more:** $0.0128 against $0.0107. The answers are as long as before (about 2,560 output tokens a document against 2,610), but Vertex counts about 4,300 input tokens where AI Studio counted about 1,780, for the same files and prompt. At about 300 documents a month that's about $3.80 instead of $3.20, still within the budget (spec section 7).
+- **Latency is about the same:** p50 12.6–13.9 s against 9.5–12.6 s, p95 32–46 s against 30–41 s.
 
 ## Alternatives considered
 

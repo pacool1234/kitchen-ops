@@ -406,4 +406,4 @@ Each is settled by a decision record at the start of the milestone that first ne
 - Native mobile apps: the PWA covers phones.
 - The non-goals in section 1 still hold: no invoices or tickets issued, no accounting, no POS.
 
-**Budget:** the background worker adds about $7 a month in production (section 7). About 300 documents a month cost about $3 in model calls (decision 0018). Both fit the €30 budget, checked again at M6.
+**Budget:** the background worker adds about $7 a month in production (section 7). About 300 documents a month cost about $4 in model calls (decisions 0018 and 0031). Both fit the €30 budget, checked again at M6.
