@@ -14,8 +14,9 @@ The stock ledger: pure TypeScript domain logic for movements, unit conversions, 
 | `money.ts`, `fixed-point.ts` | `Money` (bigint cents) and `UnitCost` (bigint millionths), line totals, `percentageOf` (VAT), and `roundDiv`, the one rounding function (decision 0015) |
 | `conversion.ts` | Purchase units to base units, per product: 1.5 boxes of 6000 g is 9000 g |
 | `movement.ts` | Movements, stock on hand, cached balances, reversals, and `appendMovements`, which allows negative stock only through a flagged adjustment |
-| `cost.ts` | Received unit cost, weighted-average cost by replaying movements, and the latest purchase price for recipe costing |
-| `document.ts` | Posting delivery notes, waste, counts and transfers into movements, all or nothing; reversing posted documents |
+| `cost.ts` | Received unit cost, weighted-average cost by replaying movements, and the latest purchase price for recipe costing. A correcting receipt counts in the place of the receipt it corrects |
+| `document.ts` | Posting delivery notes, invoices, waste, counts and transfers into movements, all or nothing; reversing posted documents. An invoice corrects its delivery notes' prices (decision 0032) |
+| `invoice.ts` | Suggesting which delivery-note line each invoice line bills (decision 0032) |
 | `recipe.ts` | Recipes, yields (net ÷ yield) and theoretical use from dishes sold |
 | `variance.ts` | Actual use, unexplained variance and its value, and the report sorted by largest loss |
 
@@ -37,6 +38,7 @@ A balance kept up to date one movement at a time always matches adding everythin
 Posting and reversing only produce movements that point to a line of the posted document they return.
 
 - `invariant 2: every movement from posting or reversing points to a line of the posted document returned with it` (`document.test.ts`)
+- `invariant 2: every movement from posting or reversing an invoice points to a line of the invoice returned with it` (`invoice.test.ts`)
 
 ### 3. Movements are never updated or deleted; a correction is a reversing movement plus a new one
 
@@ -45,6 +47,7 @@ A reversal cancels its movement exactly, for stock and for cost, and creating on
 - `invariant 3: a movement and its reversal together leave stock exactly as it was without either` (`movement.test.ts`)
 - `invariant 3: reversing a movement never changes the original or the existing list` (`movement.test.ts`)
 - `invariant 3 (cost): a movement and its reversal together leave the average exactly as if neither had been posted` (`cost.test.ts`)
+- `invariant 3: an invoice changes no movement; it only reverses existing receipts and posts new ones, each correction paired with the reversal of the receipt it corrects` (`invoice.test.ts`)
 
 ### 4. Posting is atomic: a document posts all its movements or none
 
@@ -52,6 +55,7 @@ One bad line anywhere stops the whole document, and a document that posts has ev
 
 - `invariant 4: if any line fails, posting returns an error naming every failing line and no movements; one broken line anywhere in a document is enough` (`document.test.ts`)
 - `invariant 4: if posting succeeds, every line produced its movements: one per line, two per transfer line, matching the line's quantity` (`document.test.ts`)
+- `invariant 4: an invoice with any failing line posts no movements and names every failing line; one line billing an unknown delivery-note line anywhere is enough` (`invoice.test.ts`)
 
 ### 5. Replaying the same movements in the same order always gives the same stock and cost
 
@@ -59,6 +63,7 @@ The results depend only on the movements and their order: no hidden state, no cl
 
 - `invariant 5: replaying the same movements in the same order gives the same stock for every product and storeroom, also from a fresh copy` (`movement.test.ts`)
 - `invariant 5 (cost): replaying the same movements in the same order gives the same average cost for every product and storeroom, also from a fresh copy` (`cost.test.ts`)
+- `invariant 5 (cost): with invoice corrections among them, replaying the same movements in the same order gives the same average costs and latest purchase prices, also from a fresh copy` (`invoice.test.ts`)
 
 ### 6. Negative stock is only possible through a flagged adjustment, which reports surface
 
@@ -74,6 +79,7 @@ Posting and reversing never change the documents or movements they are given, an
 
 - `invariant 7: posting never changes the document it was given, and a posted document can't be posted again` (`document.test.ts`)
 - `invariant 7: reversing never changes the posted document or the existing movements` (`document.test.ts`)
+- `invariant 7: posting or reversing an invoice never changes the invoice or the movements given` (`invoice.test.ts`)
 
 ## Commands
 
