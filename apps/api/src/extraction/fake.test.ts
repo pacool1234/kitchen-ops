@@ -14,7 +14,8 @@ import {
   FAKE_MODEL,
   fakeDocument,
 } from "./fake";
-import { CALL_TIMEOUT_MS, readerFor } from "./reader";
+import { JOB_SETTINGS } from "./jobs";
+import { CALL_TIMEOUT_MS, jobSettingsFor, readerFor } from "./reader";
 
 // The fake model (#104): a fixed, valid extraction without calling OpenRouter, for tests, local
 // development and the browser tests. It never runs in production (src/config.ts refuses it).
@@ -90,5 +91,26 @@ describe("the default model", () => {
     );
     expect(calls[0]!.init.signal).toBeInstanceOf(AbortSignal);
     expect(CALL_TIMEOUT_MS).toBe(3 * 60_000);
+  });
+});
+
+describe("how soon a failed try is tried again", () => {
+  it("with the fake model, after a second and without backoff, so a browser test sees a failure in seconds (#106)", () => {
+    expect(jobSettingsFor({ model: "fake" })).toEqual({
+      ...JOB_SETTINGS,
+      retryDelaySeconds: 1,
+      retryBackoff: false,
+    });
+  });
+
+  it("with the real model, or none, decision 0030's: 30 seconds, with backoff", () => {
+    expect(jobSettingsFor({ model: "default", apiKey: "k" })).toEqual(
+      JOB_SETTINGS,
+    );
+    expect(jobSettingsFor(null)).toEqual(JOB_SETTINGS);
+    expect(JOB_SETTINGS).toMatchObject({
+      retryDelaySeconds: 30,
+      retryBackoff: true,
+    });
   });
 });
