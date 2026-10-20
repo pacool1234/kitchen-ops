@@ -20,7 +20,7 @@ describe("planSeed", () => {
     );
   });
 
-  it("anywhere else without SEED_DEMO: the five local-only logins", () => {
+  it("anywhere else without SEED_DEMO: the six local-only logins", () => {
     for (const NODE_ENV of [undefined, "development", "test"]) {
       const plan = planSeed({ NODE_ENV });
       expect(plan.mode).toBe("local");
@@ -30,6 +30,7 @@ describe("planSeed", () => {
         ["owner@example.test", "owner", "local-only-owner"],
         ["staff@example.test", "counter", "local-only-staff"],
         ["manager@example.test", "owner", "local-only-manager"],
+        ["director@example.test", "owner", "local-only-director"],
       ]);
     }
   });

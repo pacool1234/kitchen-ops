@@ -55,9 +55,10 @@ function pngChunk(type: string, data: Uint8Array): Uint8Array {
 
 /**
  * A real photo, which extraction can decode, unlike `sample.png`: a grey PNG `n` + 1 pixels wide
- * and 1 high, so each `n` is a file of its own (#104).
+ * and 1 high, so each `n` is a file of its own (#104). `comment`, if given, goes in a text chunk,
+ * which a viewer ignores: a marker for the fake model (#119).
  */
-export function photo(n: number): Uint8Array {
+export function photo(n: number, comment?: string): Uint8Array {
   const width = n + 1;
   const header = new Uint8Array(13);
   const view = new DataView(header.buffer);
@@ -70,6 +71,9 @@ export function photo(n: number): Uint8Array {
   return join(
     new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     pngChunk("IHDR", header),
+    ...(comment === undefined
+      ? []
+      : [pngChunk("tEXt", text(`Comment\0${comment}`))]),
     pngChunk("IDAT", new Uint8Array(deflateSync(row))),
     pngChunk("IEND", new Uint8Array()),
   );
