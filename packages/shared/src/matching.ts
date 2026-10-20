@@ -1,9 +1,11 @@
 import { z } from "zod";
+import { BaseUnit } from "./products";
 import { Pack, SupplierProduct } from "./supplier-products";
 
-// Matching a document to the catalogue (#117, decision 0035): its supplier, found by tax ID or
-// chosen in review, and each line's supplier product, by code, then by exact description. A
-// person confirms a new mapping once, and it's remembered as a supplier product.
+// Matching a document to the catalogue (#117, decisions 0035 and 0036): its supplier, found by
+// tax ID or chosen in review, and each line's supplier product, by code, then by exact
+// description, or else a model's suggestion of one of our products. A person confirms a new
+// mapping once, and it's remembered as a supplier product.
 
 /** A supplier is new until it has this many posted documents (spec 11.1, decision 0035). */
 export const NEW_SUPPLIER_DOCUMENTS = 3;
@@ -18,21 +20,28 @@ export const REVIEW_REASONS = [
   "no_supplier",
   /** Its supplier has fewer than NEW_SUPPLIER_DOCUMENTS posted documents (spec 11.1). */
   "new_supplier",
-  /** At least one line isn't matched to a supplier product. */
+  /** At least one line isn't matched to a supplier product: a suggestion isn't a match yet. */
   "unmapped_lines",
 ] as const;
 export const ReviewReason = z.enum(REVIEW_REASONS);
 export type ReviewReason = z.infer<typeof ReviewReason>;
 
-/** How a line was matched: by the supplier's code, or by its exact description. */
+/** How a line was matched to a supplier product: by the supplier's code, or its exact description. */
 export const MATCHED_BY = ["code", "description"] as const;
 export const MatchedBy = z.enum(MATCHED_BY);
 export type MatchedBy = z.infer<typeof MatchedBy>;
 
-export const LineMatch = z.object({
-  by: MatchedBy,
-  supplierProduct: SupplierProduct,
-});
+/**
+ * A line's supplier product, or, when none matched, the product a model suggested (decision
+ * 0036): never applied until a person confirms it as a mapping.
+ */
+export const LineMatch = z.discriminatedUnion("by", [
+  z.object({ by: MatchedBy, supplierProduct: SupplierProduct }),
+  z.object({
+    by: z.literal("suggestion"),
+    product: z.object({ id: z.uuid(), name: z.string(), baseUnit: BaseUnit }),
+  }),
+]);
 export type LineMatch = z.infer<typeof LineMatch>;
 
 /** Answer of `GET /api/documents/:id/matching`, and of the writes that change it. */

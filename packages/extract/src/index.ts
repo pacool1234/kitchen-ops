@@ -27,8 +27,22 @@ export {
   type ValidationResult,
 } from "./validation/checks";
 
-/** The default model and prompt (decision 0018), and the client that calls it. */
-export { defaultExtraction, type ModelConfig } from "./llm/config";
+/** Suggesting which of our products each unmatched line is (decision 0036). */
+export {
+  SUGGESTION_SCHEMA_NAME,
+  suggestionContent,
+  suggestProducts,
+  type CatalogueProduct,
+  type SuggestionLine,
+  type SuggestionResult,
+} from "./llm/suggest";
+
+/** The default model and prompt (decisions 0018, 0036), and the client that calls them. */
+export {
+  defaultExtraction,
+  defaultSuggestion,
+  type ModelConfig,
+} from "./llm/config";
 export type { Prompt } from "./llm/prompts";
 export {
   createOpenRouterClient,

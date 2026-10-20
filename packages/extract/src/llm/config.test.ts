@@ -23,6 +23,7 @@ function fileWith(content: string): URL {
 function withDefault(config: {
   models: Record<string, unknown>[];
   default?: unknown;
+  suggestion?: unknown;
 }): string {
   return JSON.stringify({
     default: { model: config.models[0]?.["id"] ?? "a/b", prompt: "v1" },

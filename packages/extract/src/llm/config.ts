@@ -23,14 +23,21 @@ const ModelsFile = z
     models: z.array(ModelConfig),
     /** What the pipeline extracts with (decision 0018). One entry, so there can't be two. */
     default: z.strictObject({ model: z.string(), prompt: z.string() }),
+    /** What suggests products for unmatched lines (decision 0036); its prompt is a suggestions one. */
+    suggestion: z
+      .strictObject({ model: z.string(), prompt: z.string() })
+      .optional(),
   })
   .superRefine((file, ctx) => {
-    if (!file.models.some((model) => model.id === file.default.model)) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["default", "model"],
-        message: `${file.default.model} isn't one of the models`,
-      });
+    for (const key of ["default", "suggestion"] as const) {
+      const chosen = file[key]?.model;
+      if (chosen !== undefined && !file.models.some((m) => m.id === chosen)) {
+        ctx.addIssue({
+          code: "custom",
+          path: [key, "model"],
+          message: `${chosen} isn't one of the models`,
+        });
+      }
     }
   });
 
@@ -63,4 +70,18 @@ export function defaultExtraction(file: URL = MODELS_FILE): {
   // The file was checked: the default is one of its models.
   const model = models.find((m) => m.id === chosen.model)!;
   return { model, prompt: loadPrompt(chosen.prompt) };
+}
+
+/** The model and prompt that suggest products for unmatched lines (decision 0036). */
+export function defaultSuggestion(file: URL = MODELS_FILE): {
+  model: ModelConfig;
+  prompt: Prompt;
+} {
+  const { models, suggestion } = loadModelsFile(file);
+  if (!suggestion) {
+    throw new Error("invalid model config: no suggestion model and prompt");
+  }
+  // The file was checked: the suggestion's model is one of its models.
+  const model = models.find((m) => m.id === suggestion.model)!;
+  return { model, prompt: loadPrompt(suggestion.prompt, "suggestions") };
 }
