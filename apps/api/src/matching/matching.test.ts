@@ -627,26 +627,35 @@ describe("a model's suggestion (#117, decision 0036)", () => {
     ]);
   });
 
-  it("once the line is remembered, it matches by its code instead", async () => {
+  it("a suggested line still needs a person; once it's remembered, it matches by its code instead", async () => {
+    await establish(huerto.id);
     const id = await documentRead(db, {
       uploadedBy: officeId,
       supplierId: huerto.id,
-      draft: draftWith([{ supplierCode: "C-07", description: "Cebolla" }]),
+      draft: draftWith([
+        { supplierCode: "T-01", description: "Tomate pera" },
+        { supplierCode: "C-07", description: "Cebolla" },
+      ]),
     });
     await suggestedFor(id, [
       { supplierCode: "C-07", description: "Cebolla", productId: aceite.id },
     ]);
+    expect(await matching(id)).toMatchObject({
+      lines: [{ match: { by: "code" } }, { match: { by: "suggestion" } }],
+      reviewReasons: ["unmapped_lines"],
+    });
+
     const response = await office.send(
       "POST",
-      `/api/documents/${id}/lines/1/mapping`,
+      `/api/documents/${id}/lines/2/mapping`,
       { productId: aceite.id, pack: { quantity: "5", unit: "l" } },
     );
     expect(response.statusCode).toBe(201);
-    expect(
-      DocumentMatching.parse(response.json()).lines[0]?.match,
-    ).toMatchObject({
+    const after = DocumentMatching.parse(response.json());
+    expect(after.lines[1]?.match).toMatchObject({
       by: "code",
       supplierProduct: { product: { id: aceite.id } },
     });
+    expect(after.reviewReasons).toEqual([]);
   });
 });
