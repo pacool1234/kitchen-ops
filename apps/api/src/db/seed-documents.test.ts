@@ -209,14 +209,19 @@ describe("the demo documents (#119)", () => {
     }
   });
 
-  it("a second run changes nothing", async () => {
+  it("a second run changes nothing, and knows the documents by their IDs", async () => {
     const storage = createMemoryStorage();
     await seed(storage);
     const first = await counts();
     const keys = storage.keys();
+    lines.length = 0;
     await seed(storage);
     expect(await counts()).toEqual(first);
     expect(storage.keys()).toEqual(keys);
+    // Not as files uploaded already: they're the demo's own.
+    expect(lines).toContain(
+      "Inserted 0 demo documents ready for review; 3 were there already.",
+    );
   });
 
   it("on a database with a catalogue already, as on staging, the demo's rows are added and the rest left as they were", async () => {
