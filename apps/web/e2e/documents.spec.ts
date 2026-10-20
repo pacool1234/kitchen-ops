@@ -232,7 +232,11 @@ test.describe("the document screens (#106)", () => {
     );
     await openDocuments(page);
     await markLoad(page);
-    const entry = page.locator(`[data-document="${failing.id}"]`);
+    // A table row on a desktop, a card on a phone.
+    const entry = page
+      .getByRole("row")
+      .or(page.getByRole("listitem"))
+      .filter({ has: page.locator(`a[href="/documents/${failing.id}"]`) });
     await expect(entry.getByRole("link", { name: "Sin leer" })).toBeVisible();
     await expect(entry.getByTestId("list-status")).toHaveText("Ha fallado", {
       timeout: 30_000,

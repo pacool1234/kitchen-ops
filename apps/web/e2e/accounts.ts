@@ -43,6 +43,9 @@ export async function setUpTwoFactor(
   password: string,
   check: (page: Page) => Promise<void> = async () => {},
 ): Promise<string> {
+  await expect(
+    page.getByRole("heading", { name: "Activar la verificación en dos pasos" }),
+  ).toBeVisible();
   await page.getByLabel("Contraseña").fill(password);
   await page.getByRole("button", { name: "Continuar" }).click();
   const key = (await page.getByTestId("totp-key").textContent())?.trim();

@@ -126,12 +126,9 @@ describe("call: a contract endpoint, typed and validated (decision 0022)", () =>
       void call(endpoints.me, { params: { id: "1" } });
       // @ts-expect-error: an upload needs its files.
       void call(uploadThing);
+      const notAnUpload = { params: { id: "1" }, body: { name: "a" } };
       // @ts-expect-error: only an upload takes files.
-      void call(renameThing, {
-        params: { id: "1" },
-        body: { name: "a" },
-        files: [],
-      });
+      void call(renameThing, { ...notAnUpload, files: [] });
       // An endpoint with nothing to send needs no input, and its result is typed.
       const me: Promise<{ role: string }> = call(endpoints.me);
       void me;
