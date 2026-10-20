@@ -125,7 +125,15 @@ export const Document = DocumentSummary.extend({
   files: z.array(DocumentFile),
   /** What the model read, once it has; null before, or when its answer didn't fit the schema. */
   draft: ExtractedDocument.nullable(),
-  /** The checks the draft failed: empty when it passed them all, or hasn't been read. */
+  /**
+   * The draft as corrected in review (#118, decision 0037), whole: null until a correction is
+   * saved. `draft` stays what the model read, so both can be seen.
+   */
+  corrected: ExtractedDocument.nullable(),
+  /**
+   * The checks the draft failed, the corrected one if there is one: empty when it passed them
+   * all, or nothing has been read.
+   */
   checkFailures: z.array(DocumentCheckFailure),
   /**
    * What reading it has cost so far, every try included, and asking a model for its lines'
@@ -136,6 +144,16 @@ export const Document = DocumentSummary.extend({
   costMicroUsd: z.number().int().nonnegative().optional(),
 });
 export type Document = z.infer<typeof Document>;
+
+/** Answer of `POST /api/documents/:id/draft/checks`: the checks a version would fail. */
+export const DraftChecks = z.object({
+  checkFailures: z.array(DocumentCheckFailure),
+});
+export type DraftChecks = z.infer<typeof DraftChecks>;
+
+/** Answer of `PUT /api/documents/:id/draft`: the correction saved, and the checks it failed. */
+export const SavedDraft = DraftChecks.extend({ corrected: ExtractedDocument });
+export type SavedDraft = z.infer<typeof SavedDraft>;
 
 /** Query of `GET /api/documents`: newest first. */
 export const DocumentQuery = PageQuery.extend({
