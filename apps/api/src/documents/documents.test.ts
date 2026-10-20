@@ -11,10 +11,11 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../app";
 import { createAuth } from "../auth/auth";
 import { createDb } from "../db/client";
-import { documentFiles, documents, users } from "../db/schema";
+import { documentFiles, documents, suppliers, users } from "../db/schema";
 import { READ_QUEUE } from "../extraction/jobs";
 import { createMemoryStorage } from "../storage/memory";
 import { signedInAs, signedInAsOwner } from "../test/auth";
+import { syntheticCif } from "../test/catalogue";
 import { multipart, sample, type UploadFile } from "../test/documents";
 import { testConfig } from "../test/helpers";
 
@@ -359,7 +360,7 @@ describe("GET /api/documents", () => {
   });
 
   it("refuses a status it doesn't know: 400", async () => {
-    const response = await read("/api/documents?status=posted");
+    const response = await read("/api/documents?status=archived");
     expect(response.json()).toEqual({
       error: "invalid_input",
       fields: { status: "invalid" },
@@ -398,6 +399,33 @@ describe("GET /api/documents/:id", () => {
     expect(
       Document.parse((await read(`/api/documents/${created.id}`)).json()),
     ).toMatchObject({ status: "queued", draft: null, checkFailures: [] });
+  });
+});
+
+describe("reversals (#116, decision 0034)", () => {
+  it("a reversing document, which has no files, is neither listed nor read: #119 shows it with the document it reverses", async () => {
+    await db.execute(sql`truncate ${suppliers} cascade`);
+    const original = await uploaded([{ name: "a.pdf", bytes: sample.pdf(1) }]);
+    const [supplier] = await db
+      .insert(suppliers)
+      .values({ name: "Proveedor", taxId: syntheticCif(1) })
+      .returning({ id: suppliers.id });
+    const [reversal] = await db
+      .insert(documents)
+      .values({
+        status: "posted",
+        type: "delivery-note",
+        supplierId: supplier!.id,
+        date: "2026-10-21",
+        reverses: original.id,
+        uploadedBy: original.uploadedBy.id,
+      })
+      .returning({ id: documents.id });
+
+    const page = DocumentPage.parse((await read("/api/documents")).json());
+    expect(page.items.map((d) => d.id)).toEqual([original.id]);
+    expect(page.total).toBe(1);
+    expect((await read(`/api/documents/${reversal!.id}`)).statusCode).toBe(404);
   });
 });
 

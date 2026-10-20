@@ -9,7 +9,7 @@ import {
   type FieldErrorCode,
   type Role,
 } from "@kitchen-ops/shared";
-import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { FastifyRequest } from "fastify";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { audited, auditContext } from "../audit/audited";
@@ -143,7 +143,10 @@ async function readDocument(
   id: string,
   role: Role,
 ): Promise<Document | undefined> {
-  const [row] = await withNames(db).where(eq(documents.id, id));
+  // A reversal has no files: it's shown with the document it reverses (#119), not on its own.
+  const [row] = await withNames(db).where(
+    and(eq(documents.id, id), isNull(documents.reverses)),
+  );
   if (!row) return undefined;
   const [[read], files, [spent]] = await Promise.all([
     db
@@ -289,6 +292,7 @@ export const documentRoutes: FastifyPluginAsyncZod<{
     ...routeFor(endpoints.listDocuments),
     handler: async ({ query }): Promise<DocumentPage> => {
       const matching = and(
+        isNull(documents.reverses),
         query.status ? eq(documents.status, query.status) : undefined,
       );
       const [rows, [counted]] = await Promise.all([

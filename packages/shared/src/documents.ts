@@ -6,12 +6,16 @@ import { PageQuery, pageOf } from "./lists";
 // Supplier documents (spec section 3, #102): a delivery note or an invoice, as one PDF or Facturae
 // file, or as one or several photos. Each file is kept in object storage (decision 0029).
 
-/** Where a document is on its way to review (#104 moves it along; M7 reviews it). */
+/**
+ * Where a document is on its way to review and into stock (#104 moves it along; M7 reviews and
+ * posts it). A posted document never changes again (invariant 7, decision 0034).
+ */
 export const DOCUMENT_STATUSES = [
   "queued",
   "reading",
   "ready_for_review",
   "failed",
+  "posted",
 ] as const;
 export const DocumentStatus = z.enum(DOCUMENT_STATUSES);
 export type DocumentStatus = z.infer<typeof DocumentStatus>;
