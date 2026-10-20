@@ -92,6 +92,13 @@
       "when": 1792517670066,
       "tag": "0012_supplier_product_code_optional",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792519521283,
+      "tag": "0013_product_suggestions",
+      "breakpoints": true
     }
   ]
 }
