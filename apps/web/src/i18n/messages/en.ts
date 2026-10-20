@@ -283,6 +283,49 @@ export const en: Messages = {
       modelRead: "What the model read",
       readLines: "Lines read",
     },
+    // What's left before posting a document in review (#117's review reasons).
+    left: "Before posting it",
+    nothingLeft: "Nothing left before posting it.",
+    reasons: {
+      no_draft: "It has to be typed in: it couldn't be read.",
+      no_supplier: "The supplier is missing.",
+      failed_checks: "It fails a check.",
+      unmapped_lines: "Some lines have no confirmed product.",
+      new_supplier: "New supplier: its first documents are always reviewed.",
+    },
+    // The document's supplier, and each line's product, in review (#118).
+    matching: {
+      supplier: "Supplier",
+      taxIdShown: "Tax ID {taxId}",
+      newSupplier: "New supplier",
+      noSupplier: "No supplier has the tax ID read.",
+      choose: "Choose a supplier",
+      chooseHint: "Type part of its name or its tax ID.",
+      change: "Change the supplier",
+      keep: "Leave it as it is",
+      create: "Create a supplier",
+      createAndChoose: "Create and choose",
+      chosen: "Supplier chosen",
+      product: "Product",
+      byCode: "by code",
+      byDescription: "by description",
+      suggested: "Suggested: {name}",
+      noProduct: "No product",
+      confirm: "Confirm the product",
+      chooseProduct: "Choose a product",
+      blocked: {
+        no_supplier: "Choose the supplier first.",
+        unsaved: "Save the corrections to choose products.",
+      },
+      lineTitle: "Product of line {n}",
+      lineRead: "Read: {text}",
+      mapped: "Product confirmed",
+      codeTaken: "This supplier already has another product with this code.",
+      descriptionTaken:
+        "This supplier already has another product with this description.",
+      descriptionRequired:
+        "The line has no description or code: correct it and save first.",
+    },
     // The photo viewer.
     viewer: {
       enlarge: "Enlarge photo {n} of {count}",
@@ -423,6 +466,7 @@ export const en: Messages = {
       "Documents aren't available right now. Try again later.",
     not_failed: "It was already being read again.",
     not_in_review: "This document isn't in review any more.",
+    no_supplier: "Choose the document's supplier first.",
     unknown: "Something went wrong. Try again.",
     // Why a field was refused: one per code in packages/shared (FIELD_ERROR_CODES).
     fields: {

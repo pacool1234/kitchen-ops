@@ -289,6 +289,50 @@ export const es = {
       modelRead: "Lo que leyó el modelo",
       readLines: "Líneas leídas",
     },
+    // What's left before posting a document in review (#117's review reasons).
+    left: "Antes de registrarlo",
+    nothingLeft: "Nada pendiente para registrarlo.",
+    reasons: {
+      no_draft: "Hay que introducirlo a mano: no se pudo leer.",
+      no_supplier: "Falta el proveedor.",
+      failed_checks: "No pasa alguna comprobación.",
+      unmapped_lines: "Hay líneas sin producto confirmado.",
+      new_supplier:
+        "Proveedor nuevo: sus primeros documentos se revisan siempre.",
+    },
+    // The document's supplier, and each line's product, in review (#118).
+    matching: {
+      supplier: "Proveedor",
+      taxIdShown: "NIF/CIF {taxId}",
+      newSupplier: "Proveedor nuevo",
+      noSupplier: "Ningún proveedor tiene el NIF/CIF leído.",
+      choose: "Elegir un proveedor",
+      chooseHint: "Escribe parte de su nombre o su NIF/CIF.",
+      change: "Cambiar el proveedor",
+      keep: "Dejar como está",
+      create: "Crear proveedor",
+      createAndChoose: "Crear y elegir",
+      chosen: "Proveedor elegido",
+      product: "Producto",
+      byCode: "por código",
+      byDescription: "por descripción",
+      suggested: "Sugerido: {name}",
+      noProduct: "Sin producto",
+      confirm: "Confirmar el producto",
+      chooseProduct: "Elegir producto",
+      blocked: {
+        no_supplier: "Elige antes el proveedor.",
+        unsaved: "Guarda las correcciones para elegir productos.",
+      },
+      lineTitle: "Producto de la línea {n}",
+      lineRead: "Leído: {text}",
+      mapped: "Producto confirmado",
+      codeTaken: "Este proveedor ya tiene otro producto con este código.",
+      descriptionTaken:
+        "Este proveedor ya tiene otro producto con esta descripción.",
+      descriptionRequired:
+        "La línea no tiene descripción ni código: corrígela y guarda antes.",
+    },
     // The photo viewer.
     viewer: {
       enlarge: "Ampliar la foto {n} de {count}",
@@ -435,6 +479,7 @@ export const es = {
       "Los documentos no están disponibles ahora mismo. Inténtalo más tarde.",
     not_failed: "Ya se estaba volviendo a leer.",
     not_in_review: "Este documento ya no está en revisión.",
+    no_supplier: "Elige antes el proveedor del documento.",
     unknown: "Algo ha fallado. Inténtalo de nuevo.",
     // Why a field was refused: one per code in packages/shared (FIELD_ERROR_CODES).
     fields: {

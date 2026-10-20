@@ -383,6 +383,8 @@ const invoice = computed(() => values.value.documentType === "invoice");
               {{ t("documents.review.removeLine", { n: index + 1 }) }}
             </UiButton>
           </div>
+          <!-- What the page adds to each line: its product (#117). -->
+          <slot name="line" :index="index" />
         </template>
       </fieldset>
       <div v-if="!quantities">
