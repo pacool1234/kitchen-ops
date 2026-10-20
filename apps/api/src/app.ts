@@ -17,6 +17,7 @@ import { openApiRoutes, registerOpenApi } from "./contract";
 import { createDb } from "./db/client";
 import { documentRoutes } from "./documents/routes";
 import { registerErrors } from "./errors";
+import { matchingRoutes } from "./matching/routes";
 import { createJobs, type JobSettings } from "./extraction/jobs";
 import { failedRead, tryReading } from "./extraction/read";
 import { jobSettingsFor, readerFor, type Reader } from "./extraction/reader";
@@ -131,6 +132,7 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   app.register(auditRoutes, { db });
   app.register(catalogueRoutes, { db });
   app.register(documentRoutes, { db, storage, jobs });
+  app.register(matchingRoutes, { db });
 
   return app;
 }

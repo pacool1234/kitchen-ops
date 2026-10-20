@@ -1,6 +1,7 @@
 import {
   canonicalQuantity,
   endpoints,
+  type NewSupplierProduct,
   type Pack,
   type SupplierProduct,
   type SupplierProductPage,
@@ -88,7 +89,7 @@ const recorded = (s: SupplierProduct) => ({
   active: s.active,
 });
 
-async function readSupplierProduct(
+export async function readSupplierProduct(
   db: Db | Tx,
   id: string,
   lock?: "update",
@@ -119,6 +120,41 @@ async function checkPack(tx: Tx, productId: string, pack: Pack) {
       [`pack.${field}`]: converted.refused,
     });
   }
+}
+
+/**
+ * Adds a supplier product, its pack checked against its product, with the audit entry for it:
+ * from the catalogue, or from a document's line (#117), whose ID the entry then records.
+ */
+export async function createSupplierProduct(
+  tx: Tx,
+  { pack, ...fields }: NewSupplierProduct,
+  documentId?: string,
+) {
+  await checkPack(tx, fields.productId, pack);
+  // A supplier that doesn't exist is refused by its foreign key: 400 supplierId not_found.
+  const [row] = await tx
+    .insert(supplierProducts)
+    .values({
+      ...fields,
+      packQuantity: pack.quantity,
+      packUnit: pack.unit,
+    })
+    .returning({ id: supplierProducts.id });
+  const after = (await readSupplierProduct(tx, row!.id))!;
+  return {
+    result: after,
+    changes: [
+      {
+        action: "create" as const,
+        entityType: "supplier_product",
+        entityId: after.id,
+        ...(documentId ? { documentId } : {}),
+        before: null,
+        after: recorded(after),
+      },
+    ],
+  };
 }
 
 export const supplierProductRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
@@ -183,32 +219,9 @@ export const supplierProductRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
   app.route({
     ...routeFor(endpoints.createSupplierProduct),
     handler: async (request, reply) => {
-      const { pack, ...fields } = request.body;
-      const created = await audited(db, auditContext(request), async (tx) => {
-        await checkPack(tx, fields.productId, pack);
-        // A supplier that doesn't exist is refused by its foreign key: 400 supplierId not_found.
-        const [row] = await tx
-          .insert(supplierProducts)
-          .values({
-            ...fields,
-            packQuantity: pack.quantity,
-            packUnit: pack.unit,
-          })
-          .returning({ id: supplierProducts.id });
-        const after = (await readSupplierProduct(tx, row!.id))!;
-        return {
-          result: after,
-          changes: [
-            {
-              action: "create",
-              entityType: "supplier_product",
-              entityId: after.id,
-              before: null,
-              after: recorded(after),
-            },
-          ],
-        };
-      });
+      const created = await audited(db, auditContext(request), (tx) =>
+        createSupplierProduct(tx, request.body),
+      );
       return reply.code(201).send(created);
     },
   });
