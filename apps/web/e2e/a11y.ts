@@ -11,8 +11,26 @@ const WCAG_AA = [
   "wcag22aa",
 ];
 
-/** Fails the test on any WCAG 2.2 AA violation axe finds on the page as it is now. */
+/**
+ * Waits for the colour transitions running now to end (#127): axe measures contrast as it is at
+ * that moment, and halfway between the light and dark themes it's neither one's. Endless
+ * animations, a spinner or a skeleton's pulse, would never end, so they aren't waited for.
+ */
+async function transitionsEnded(page: Page): Promise<void> {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().endTime !== Infinity)
+        // A transition cancelled before it ends rejects: it isn't running any more either.
+        .map((a) => a.finished.catch(() => undefined)),
+    ),
+  );
+}
+
+/** Fails the test on any WCAG 2.2 AA violation axe finds on the page, once it's settled. */
 export async function expectAccessible(page: Page): Promise<void> {
+  await transitionsEnded(page);
   const { violations } = await new AxeBuilder({ page })
     .withTags(WCAG_AA)
     // While a notice shows, Reka puts a focus sentinel on each side of the notices' region:
