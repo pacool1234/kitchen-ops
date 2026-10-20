@@ -33,6 +33,9 @@ const LOCAL_USERS: SeedUser[] = [
   // A second counter, for trying what changes a user's own settings without changing the
   // others': the browser tests switch its language.
   ["staff", "counter", "local-only-staff"], // gitleaks:allow
+  // A second owner, so a browser test can see an owner's view of documents (#106): it sets up
+  // this one's 2FA, leaving the first owner's to the 2FA test.
+  ["manager", "owner", "local-only-manager"], // gitleaks:allow
 ].map(([name, role, password]) => ({
   email: `${name}@example.test`,
   name: `Local ${name}`,
