@@ -9362,24 +9362,18 @@
                           "match": {
                             "anyOf": [
                               {
-                                "type": "object",
-                                "properties": {
-                                  "by": {
-                                    "type": "string",
-                                    "enum": [
-                                      "code",
-                                      "description"
-                                    ]
-                                  },
-                                  "supplierProduct": {
+                                "oneOf": [
+                                  {
                                     "type": "object",
                                     "properties": {
-                                      "id": {
+                                      "by": {
                                         "type": "string",
-                                        "format": "uuid",
-                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        "enum": [
+                                          "code",
+                                          "description"
+                                        ]
                                       },
-                                      "supplier": {
+                                      "supplierProduct": {
                                         "type": "object",
                                         "properties": {
                                           "id": {
@@ -9387,24 +9381,112 @@
                                             "format": "uuid",
                                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                                           },
-                                          "name": {
+                                          "supplier": {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              "name": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "name"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          "code": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          },
+                                          "description": {
                                             "type": "string"
+                                          },
+                                          "product": {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              "name": {
+                                                "type": "string"
+                                              },
+                                              "baseUnit": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "g",
+                                                  "ml",
+                                                  "unit"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "name",
+                                              "baseUnit"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          "pack": {
+                                            "type": "object",
+                                            "properties": {
+                                              "quantity": {
+                                                "type": "string"
+                                              },
+                                              "unit": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "quantity",
+                                              "unit"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          "packBaseUnits": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "active": {
+                                            "type": "boolean"
                                           }
                                         },
                                         "required": [
                                           "id",
-                                          "name"
+                                          "supplier",
+                                          "code",
+                                          "description",
+                                          "product",
+                                          "pack",
+                                          "packBaseUnits",
+                                          "active"
                                         ],
                                         "additionalProperties": false
-                                      },
-                                      "code": {
-                                        "type": [
-                                          "string",
-                                          "null"
+                                      }
+                                    },
+                                    "required": [
+                                      "by",
+                                      "supplierProduct"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "by": {
+                                        "type": "string",
+                                        "enum": [
+                                          "suggestion"
                                         ]
-                                      },
-                                      "description": {
-                                        "type": "string"
                                       },
                                       "product": {
                                         "type": "object",
@@ -9432,50 +9514,15 @@
                                           "baseUnit"
                                         ],
                                         "additionalProperties": false
-                                      },
-                                      "pack": {
-                                        "type": "object",
-                                        "properties": {
-                                          "quantity": {
-                                            "type": "string"
-                                          },
-                                          "unit": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": [
-                                          "quantity",
-                                          "unit"
-                                        ],
-                                        "additionalProperties": false
-                                      },
-                                      "packBaseUnits": {
-                                        "type": "integer",
-                                        "minimum": -9007199254740991,
-                                        "maximum": 9007199254740991
-                                      },
-                                      "active": {
-                                        "type": "boolean"
                                       }
                                     },
                                     "required": [
-                                      "id",
-                                      "supplier",
-                                      "code",
-                                      "description",
-                                      "product",
-                                      "pack",
-                                      "packBaseUnits",
-                                      "active"
+                                      "by",
+                                      "product"
                                     ],
                                     "additionalProperties": false
                                   }
-                                },
-                                "required": [
-                                  "by",
-                                  "supplierProduct"
-                                ],
-                                "additionalProperties": false
+                                ]
                               },
                               {
                                 "type": "null"
@@ -9816,24 +9863,18 @@
                           "match": {
                             "anyOf": [
                               {
-                                "type": "object",
-                                "properties": {
-                                  "by": {
-                                    "type": "string",
-                                    "enum": [
-                                      "code",
-                                      "description"
-                                    ]
-                                  },
-                                  "supplierProduct": {
+                                "oneOf": [
+                                  {
                                     "type": "object",
                                     "properties": {
-                                      "id": {
+                                      "by": {
                                         "type": "string",
-                                        "format": "uuid",
-                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        "enum": [
+                                          "code",
+                                          "description"
+                                        ]
                                       },
-                                      "supplier": {
+                                      "supplierProduct": {
                                         "type": "object",
                                         "properties": {
                                           "id": {
@@ -9841,24 +9882,112 @@
                                             "format": "uuid",
                                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                                           },
-                                          "name": {
+                                          "supplier": {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              "name": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "name"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          "code": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          },
+                                          "description": {
                                             "type": "string"
+                                          },
+                                          "product": {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              "name": {
+                                                "type": "string"
+                                              },
+                                              "baseUnit": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "g",
+                                                  "ml",
+                                                  "unit"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "name",
+                                              "baseUnit"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          "pack": {
+                                            "type": "object",
+                                            "properties": {
+                                              "quantity": {
+                                                "type": "string"
+                                              },
+                                              "unit": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "quantity",
+                                              "unit"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          "packBaseUnits": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "active": {
+                                            "type": "boolean"
                                           }
                                         },
                                         "required": [
                                           "id",
-                                          "name"
+                                          "supplier",
+                                          "code",
+                                          "description",
+                                          "product",
+                                          "pack",
+                                          "packBaseUnits",
+                                          "active"
                                         ],
                                         "additionalProperties": false
-                                      },
-                                      "code": {
-                                        "type": [
-                                          "string",
-                                          "null"
+                                      }
+                                    },
+                                    "required": [
+                                      "by",
+                                      "supplierProduct"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "by": {
+                                        "type": "string",
+                                        "enum": [
+                                          "suggestion"
                                         ]
-                                      },
-                                      "description": {
-                                        "type": "string"
                                       },
                                       "product": {
                                         "type": "object",
@@ -9886,50 +10015,15 @@
                                           "baseUnit"
                                         ],
                                         "additionalProperties": false
-                                      },
-                                      "pack": {
-                                        "type": "object",
-                                        "properties": {
-                                          "quantity": {
-                                            "type": "string"
-                                          },
-                                          "unit": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": [
-                                          "quantity",
-                                          "unit"
-                                        ],
-                                        "additionalProperties": false
-                                      },
-                                      "packBaseUnits": {
-                                        "type": "integer",
-                                        "minimum": -9007199254740991,
-                                        "maximum": 9007199254740991
-                                      },
-                                      "active": {
-                                        "type": "boolean"
                                       }
                                     },
                                     "required": [
-                                      "id",
-                                      "supplier",
-                                      "code",
-                                      "description",
-                                      "product",
-                                      "pack",
-                                      "packBaseUnits",
-                                      "active"
+                                      "by",
+                                      "product"
                                     ],
                                     "additionalProperties": false
                                   }
-                                },
-                                "required": [
-                                  "by",
-                                  "supplierProduct"
-                                ],
-                                "additionalProperties": false
+                                ]
                               },
                               {
                                 "type": "null"
@@ -10355,24 +10449,18 @@
                           "match": {
                             "anyOf": [
                               {
-                                "type": "object",
-                                "properties": {
-                                  "by": {
-                                    "type": "string",
-                                    "enum": [
-                                      "code",
-                                      "description"
-                                    ]
-                                  },
-                                  "supplierProduct": {
+                                "oneOf": [
+                                  {
                                     "type": "object",
                                     "properties": {
-                                      "id": {
+                                      "by": {
                                         "type": "string",
-                                        "format": "uuid",
-                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        "enum": [
+                                          "code",
+                                          "description"
+                                        ]
                                       },
-                                      "supplier": {
+                                      "supplierProduct": {
                                         "type": "object",
                                         "properties": {
                                           "id": {
@@ -10380,24 +10468,112 @@
                                             "format": "uuid",
                                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                                           },
-                                          "name": {
+                                          "supplier": {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              "name": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "name"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          "code": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          },
+                                          "description": {
                                             "type": "string"
+                                          },
+                                          "product": {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              "name": {
+                                                "type": "string"
+                                              },
+                                              "baseUnit": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "g",
+                                                  "ml",
+                                                  "unit"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "name",
+                                              "baseUnit"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          "pack": {
+                                            "type": "object",
+                                            "properties": {
+                                              "quantity": {
+                                                "type": "string"
+                                              },
+                                              "unit": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "quantity",
+                                              "unit"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          "packBaseUnits": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "active": {
+                                            "type": "boolean"
                                           }
                                         },
                                         "required": [
                                           "id",
-                                          "name"
+                                          "supplier",
+                                          "code",
+                                          "description",
+                                          "product",
+                                          "pack",
+                                          "packBaseUnits",
+                                          "active"
                                         ],
                                         "additionalProperties": false
-                                      },
-                                      "code": {
-                                        "type": [
-                                          "string",
-                                          "null"
+                                      }
+                                    },
+                                    "required": [
+                                      "by",
+                                      "supplierProduct"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "by": {
+                                        "type": "string",
+                                        "enum": [
+                                          "suggestion"
                                         ]
-                                      },
-                                      "description": {
-                                        "type": "string"
                                       },
                                       "product": {
                                         "type": "object",
@@ -10425,50 +10601,15 @@
                                           "baseUnit"
                                         ],
                                         "additionalProperties": false
-                                      },
-                                      "pack": {
-                                        "type": "object",
-                                        "properties": {
-                                          "quantity": {
-                                            "type": "string"
-                                          },
-                                          "unit": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": [
-                                          "quantity",
-                                          "unit"
-                                        ],
-                                        "additionalProperties": false
-                                      },
-                                      "packBaseUnits": {
-                                        "type": "integer",
-                                        "minimum": -9007199254740991,
-                                        "maximum": 9007199254740991
-                                      },
-                                      "active": {
-                                        "type": "boolean"
                                       }
                                     },
                                     "required": [
-                                      "id",
-                                      "supplier",
-                                      "code",
-                                      "description",
-                                      "product",
-                                      "pack",
-                                      "packBaseUnits",
-                                      "active"
+                                      "by",
+                                      "product"
                                     ],
                                     "additionalProperties": false
                                   }
-                                },
-                                "required": [
-                                  "by",
-                                  "supplierProduct"
-                                ],
-                                "additionalProperties": false
+                                ]
                               },
                               {
                                 "type": "null"
