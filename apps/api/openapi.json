@@ -6881,6 +6881,316 @@
                         }
                       ]
                     },
+                    "corrected": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "documentType": {
+                              "type": "string",
+                              "enum": [
+                                "delivery-note",
+                                "invoice"
+                              ],
+                              "description": "delivery-note for a delivery note (albarán); invoice for an invoice (factura), including credit notes (facturas rectificativas), whose amounts are negative."
+                            },
+                            "currency": {
+                              "type": "string",
+                              "description": "Always EUR.",
+                              "enum": [
+                                "EUR"
+                              ]
+                            },
+                            "supplier": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The supplier's legal name, as printed with its tax ID: the company name or the person's full name, never a brand, logo or trade name. null if not printed."
+                                },
+                                "taxId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Z0-9]+$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The supplier's tax ID (NIF or CIF), in upper case, without spaces, dots or hyphens: \"B-12.345.678\" is \"B12345678\". Keep a country prefix such as ES if printed. null if not printed."
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "taxId"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Who issued the document."
+                            },
+                            "number": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The document number, as printed. null if not printed."
+                            },
+                            "issueDate": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The issue date, as YYYY-MM-DD. null if not printed."
+                            },
+                            "totals": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "net": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "The total before VAT, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                    },
+                                    "vat": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "rate": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ],
+                                            "description": "The VAT rate. \"21\" for 21%. null if not printed."
+                                          },
+                                          "base": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ],
+                                            "description": "The taxable base at this rate, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                          },
+                                          "amount": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ],
+                                            "description": "The VAT at this rate, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                          }
+                                        },
+                                        "required": [
+                                          "rate",
+                                          "base",
+                                          "amount"
+                                        ],
+                                        "additionalProperties": false,
+                                        "description": "One row of the VAT breakdown: one per rate."
+                                      },
+                                      "description": "The VAT breakdown, one row per rate. Empty if not printed."
+                                    },
+                                    "total": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "The total to pay, including VAT, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                    }
+                                  },
+                                  "required": [
+                                    "net",
+                                    "vat",
+                                    "total"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The document's totals. null when it shows no prices, as some delivery notes don't."
+                            },
+                            "lines": {
+                              "minItems": 1,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "supplierCode": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The supplier's own code for the product. null if not printed."
+                                  },
+                                  "description": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The product, as printed on the line. null if not printed."
+                                  },
+                                  "quantity": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+(\\.\\d{1,6})?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The quantity, in the line's unit. Negative for returns. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                  },
+                                  "unit": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The unit, as printed: kg, caja, ud, botella… null if not printed."
+                                  },
+                                  "unitPrice": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+(\\.\\d{1,6})?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The price per unit, as printed: before discount, excluding VAT. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                  },
+                                  "discountPercent": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The line discount (the \"Dto.\" column) as a percentage. \"21\" for 21%. null if not printed."
+                                  },
+                                  "vatRate": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The VAT rate that applies to this line. \"21\" for 21%. null if not printed."
+                                  },
+                                  "lineTotal": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The line total, as printed: after discount, excluding VAT. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                  }
+                                },
+                                "required": [
+                                  "supplierCode",
+                                  "description",
+                                  "quantity",
+                                  "unit",
+                                  "unitPrice",
+                                  "discountPercent",
+                                  "vatRate",
+                                  "lineTotal"
+                                ],
+                                "additionalProperties": false,
+                                "description": "One product line."
+                              },
+                              "description": "Every product line, in the order printed. Not subtotal, VAT or total rows."
+                            }
+                          },
+                          "required": [
+                            "documentType",
+                            "currency",
+                            "supplier",
+                            "number",
+                            "issueDate",
+                            "totals",
+                            "lines"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "checkFailures": {
                       "type": "array",
                       "items": {
@@ -6929,6 +7239,7 @@
                     "uploadedAt",
                     "files",
                     "draft",
+                    "corrected",
                     "checkFailures"
                   ],
                   "additionalProperties": false
@@ -8100,6 +8411,316 @@
                         }
                       ]
                     },
+                    "corrected": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "documentType": {
+                              "type": "string",
+                              "enum": [
+                                "delivery-note",
+                                "invoice"
+                              ],
+                              "description": "delivery-note for a delivery note (albarán); invoice for an invoice (factura), including credit notes (facturas rectificativas), whose amounts are negative."
+                            },
+                            "currency": {
+                              "type": "string",
+                              "description": "Always EUR.",
+                              "enum": [
+                                "EUR"
+                              ]
+                            },
+                            "supplier": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The supplier's legal name, as printed with its tax ID: the company name or the person's full name, never a brand, logo or trade name. null if not printed."
+                                },
+                                "taxId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Z0-9]+$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The supplier's tax ID (NIF or CIF), in upper case, without spaces, dots or hyphens: \"B-12.345.678\" is \"B12345678\". Keep a country prefix such as ES if printed. null if not printed."
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "taxId"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Who issued the document."
+                            },
+                            "number": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The document number, as printed. null if not printed."
+                            },
+                            "issueDate": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The issue date, as YYYY-MM-DD. null if not printed."
+                            },
+                            "totals": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "net": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "The total before VAT, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                    },
+                                    "vat": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "rate": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ],
+                                            "description": "The VAT rate. \"21\" for 21%. null if not printed."
+                                          },
+                                          "base": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ],
+                                            "description": "The taxable base at this rate, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                          },
+                                          "amount": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ],
+                                            "description": "The VAT at this rate, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                          }
+                                        },
+                                        "required": [
+                                          "rate",
+                                          "base",
+                                          "amount"
+                                        ],
+                                        "additionalProperties": false,
+                                        "description": "One row of the VAT breakdown: one per rate."
+                                      },
+                                      "description": "The VAT breakdown, one row per rate. Empty if not printed."
+                                    },
+                                    "total": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "The total to pay, including VAT, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                    }
+                                  },
+                                  "required": [
+                                    "net",
+                                    "vat",
+                                    "total"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The document's totals. null when it shows no prices, as some delivery notes don't."
+                            },
+                            "lines": {
+                              "minItems": 1,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "supplierCode": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The supplier's own code for the product. null if not printed."
+                                  },
+                                  "description": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The product, as printed on the line. null if not printed."
+                                  },
+                                  "quantity": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+(\\.\\d{1,6})?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The quantity, in the line's unit. Negative for returns. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                  },
+                                  "unit": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The unit, as printed: kg, caja, ud, botella… null if not printed."
+                                  },
+                                  "unitPrice": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+(\\.\\d{1,6})?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The price per unit, as printed: before discount, excluding VAT. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                  },
+                                  "discountPercent": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The line discount (the \"Dto.\" column) as a percentage. \"21\" for 21%. null if not printed."
+                                  },
+                                  "vatRate": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The VAT rate that applies to this line. \"21\" for 21%. null if not printed."
+                                  },
+                                  "lineTotal": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The line total, as printed: after discount, excluding VAT. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                  }
+                                },
+                                "required": [
+                                  "supplierCode",
+                                  "description",
+                                  "quantity",
+                                  "unit",
+                                  "unitPrice",
+                                  "discountPercent",
+                                  "vatRate",
+                                  "lineTotal"
+                                ],
+                                "additionalProperties": false,
+                                "description": "One product line."
+                              },
+                              "description": "Every product line, in the order printed. Not subtotal, VAT or total rows."
+                            }
+                          },
+                          "required": [
+                            "documentType",
+                            "currency",
+                            "supplier",
+                            "number",
+                            "issueDate",
+                            "totals",
+                            "lines"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "checkFailures": {
                       "type": "array",
                       "items": {
@@ -8148,6 +8769,7 @@
                     "uploadedAt",
                     "files",
                     "draft",
+                    "corrected",
                     "checkFailures"
                   ],
                   "additionalProperties": false
@@ -8923,6 +9545,316 @@
                         }
                       ]
                     },
+                    "corrected": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "documentType": {
+                              "type": "string",
+                              "enum": [
+                                "delivery-note",
+                                "invoice"
+                              ],
+                              "description": "delivery-note for a delivery note (albarán); invoice for an invoice (factura), including credit notes (facturas rectificativas), whose amounts are negative."
+                            },
+                            "currency": {
+                              "type": "string",
+                              "description": "Always EUR.",
+                              "enum": [
+                                "EUR"
+                              ]
+                            },
+                            "supplier": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The supplier's legal name, as printed with its tax ID: the company name or the person's full name, never a brand, logo or trade name. null if not printed."
+                                },
+                                "taxId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Z0-9]+$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The supplier's tax ID (NIF or CIF), in upper case, without spaces, dots or hyphens: \"B-12.345.678\" is \"B12345678\". Keep a country prefix such as ES if printed. null if not printed."
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "taxId"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Who issued the document."
+                            },
+                            "number": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The document number, as printed. null if not printed."
+                            },
+                            "issueDate": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The issue date, as YYYY-MM-DD. null if not printed."
+                            },
+                            "totals": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "net": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "The total before VAT, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                    },
+                                    "vat": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "rate": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ],
+                                            "description": "The VAT rate. \"21\" for 21%. null if not printed."
+                                          },
+                                          "base": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ],
+                                            "description": "The taxable base at this rate, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                          },
+                                          "amount": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ],
+                                            "description": "The VAT at this rate, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                          }
+                                        },
+                                        "required": [
+                                          "rate",
+                                          "base",
+                                          "amount"
+                                        ],
+                                        "additionalProperties": false,
+                                        "description": "One row of the VAT breakdown: one per rate."
+                                      },
+                                      "description": "The VAT breakdown, one row per rate. Empty if not printed."
+                                    },
+                                    "total": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "The total to pay, including VAT, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                    }
+                                  },
+                                  "required": [
+                                    "net",
+                                    "vat",
+                                    "total"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The document's totals. null when it shows no prices, as some delivery notes don't."
+                            },
+                            "lines": {
+                              "minItems": 1,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "supplierCode": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The supplier's own code for the product. null if not printed."
+                                  },
+                                  "description": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The product, as printed on the line. null if not printed."
+                                  },
+                                  "quantity": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+(\\.\\d{1,6})?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The quantity, in the line's unit. Negative for returns. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                  },
+                                  "unit": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The unit, as printed: kg, caja, ud, botella… null if not printed."
+                                  },
+                                  "unitPrice": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+(\\.\\d{1,6})?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The price per unit, as printed: before discount, excluding VAT. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                  },
+                                  "discountPercent": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The line discount (the \"Dto.\" column) as a percentage. \"21\" for 21%. null if not printed."
+                                  },
+                                  "vatRate": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The VAT rate that applies to this line. \"21\" for 21%. null if not printed."
+                                  },
+                                  "lineTotal": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "The line total, as printed: after discount, excluding VAT. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                  }
+                                },
+                                "required": [
+                                  "supplierCode",
+                                  "description",
+                                  "quantity",
+                                  "unit",
+                                  "unitPrice",
+                                  "discountPercent",
+                                  "vatRate",
+                                  "lineTotal"
+                                ],
+                                "additionalProperties": false,
+                                "description": "One product line."
+                              },
+                              "description": "Every product line, in the order printed. Not subtotal, VAT or total rows."
+                            }
+                          },
+                          "required": [
+                            "documentType",
+                            "currency",
+                            "supplier",
+                            "number",
+                            "issueDate",
+                            "totals",
+                            "lines"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "checkFailures": {
                       "type": "array",
                       "items": {
@@ -8971,6 +9903,7 @@
                     "uploadedAt",
                     "files",
                     "draft",
+                    "corrected",
                     "checkFailures"
                   ],
                   "additionalProperties": false
@@ -9239,6 +10172,1570 @@
             }
           },
           "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-roles": "any signed-in user"
+      }
+    },
+    "/api/documents/{id}/draft": {
+      "put": {
+        "summary": "Save a document's draft as corrected, keeping what was read, and check it again; 409 not_in_review if it isn't in review",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "documentType": {
+                    "type": "string",
+                    "enum": [
+                      "delivery-note",
+                      "invoice"
+                    ],
+                    "description": "delivery-note for a delivery note (albarán); invoice for an invoice (factura), including credit notes (facturas rectificativas), whose amounts are negative."
+                  },
+                  "currency": {
+                    "type": "string",
+                    "description": "Always EUR.",
+                    "enum": [
+                      "EUR"
+                    ]
+                  },
+                  "supplier": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "The supplier's legal name, as printed with its tax ID: the company name or the person's full name, never a brand, logo or trade name. null if not printed."
+                      },
+                      "taxId": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[A-Z0-9]+$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "The supplier's tax ID (NIF or CIF), in upper case, without spaces, dots or hyphens: \"B-12.345.678\" is \"B12345678\". Keep a country prefix such as ES if printed. null if not printed."
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "taxId"
+                    ],
+                    "description": "Who issued the document."
+                  },
+                  "number": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The document number, as printed. null if not printed."
+                  },
+                  "issueDate": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The issue date, as YYYY-MM-DD. null if not printed."
+                  },
+                  "totals": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "net": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The total before VAT, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                          },
+                          "vat": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "rate": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The VAT rate. \"21\" for 21%. null if not printed."
+                                },
+                                "base": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The taxable base at this rate, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                },
+                                "amount": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The VAT at this rate, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                }
+                              },
+                              "required": [
+                                "rate",
+                                "base",
+                                "amount"
+                              ],
+                              "description": "One row of the VAT breakdown: one per rate."
+                            },
+                            "description": "The VAT breakdown, one row per rate. Empty if not printed."
+                          },
+                          "total": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The total to pay, including VAT, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                          }
+                        },
+                        "required": [
+                          "net",
+                          "vat",
+                          "total"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The document's totals. null when it shows no prices, as some delivery notes don't."
+                  },
+                  "lines": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "supplierCode": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The supplier's own code for the product. null if not printed."
+                        },
+                        "description": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The product, as printed on the line. null if not printed."
+                        },
+                        "quantity": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^-?\\d+(\\.\\d{1,6})?$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The quantity, in the line's unit. Negative for returns. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                        },
+                        "unit": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The unit, as printed: kg, caja, ud, botella… null if not printed."
+                        },
+                        "unitPrice": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^-?\\d+(\\.\\d{1,6})?$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The price per unit, as printed: before discount, excluding VAT. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                        },
+                        "discountPercent": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The line discount (the \"Dto.\" column) as a percentage. \"21\" for 21%. null if not printed."
+                        },
+                        "vatRate": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The VAT rate that applies to this line. \"21\" for 21%. null if not printed."
+                        },
+                        "lineTotal": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The line total, as printed: after discount, excluding VAT. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                        }
+                      },
+                      "required": [
+                        "supplierCode",
+                        "description",
+                        "quantity",
+                        "unit",
+                        "unitPrice",
+                        "discountPercent",
+                        "vatRate",
+                        "lineTotal"
+                      ],
+                      "description": "One product line."
+                    },
+                    "description": "Every product line, in the order printed. Not subtotal, VAT or total rows."
+                  }
+                },
+                "required": [
+                  "documentType",
+                  "currency",
+                  "supplier",
+                  "number",
+                  "issueDate",
+                  "totals",
+                  "lines"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "checkFailures": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "check": {
+                            "type": "string",
+                            "enum": [
+                              "missing-value",
+                              "line-total",
+                              "lines-sum",
+                              "vat",
+                              "total",
+                              "tax-id",
+                              "date",
+                              "duplicate"
+                            ]
+                          },
+                          "path": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "check",
+                          "path"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "corrected": {
+                      "type": "object",
+                      "properties": {
+                        "documentType": {
+                          "type": "string",
+                          "enum": [
+                            "delivery-note",
+                            "invoice"
+                          ],
+                          "description": "delivery-note for a delivery note (albarán); invoice for an invoice (factura), including credit notes (facturas rectificativas), whose amounts are negative."
+                        },
+                        "currency": {
+                          "type": "string",
+                          "description": "Always EUR.",
+                          "enum": [
+                            "EUR"
+                          ]
+                        },
+                        "supplier": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The supplier's legal name, as printed with its tax ID: the company name or the person's full name, never a brand, logo or trade name. null if not printed."
+                            },
+                            "taxId": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^[A-Z0-9]+$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "The supplier's tax ID (NIF or CIF), in upper case, without spaces, dots or hyphens: \"B-12.345.678\" is \"B12345678\". Keep a country prefix such as ES if printed. null if not printed."
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "taxId"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Who issued the document."
+                        },
+                        "number": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The document number, as printed. null if not printed."
+                        },
+                        "issueDate": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The issue date, as YYYY-MM-DD. null if not printed."
+                        },
+                        "totals": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "net": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The total before VAT, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                },
+                                "vat": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "rate": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ],
+                                        "description": "The VAT rate. \"21\" for 21%. null if not printed."
+                                      },
+                                      "base": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ],
+                                        "description": "The taxable base at this rate, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                      },
+                                      "amount": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ],
+                                        "description": "The VAT at this rate, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                      }
+                                    },
+                                    "required": [
+                                      "rate",
+                                      "base",
+                                      "amount"
+                                    ],
+                                    "additionalProperties": false,
+                                    "description": "One row of the VAT breakdown: one per rate."
+                                  },
+                                  "description": "The VAT breakdown, one row per rate. Empty if not printed."
+                                },
+                                "total": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The total to pay, including VAT, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                }
+                              },
+                              "required": [
+                                "net",
+                                "vat",
+                                "total"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The document's totals. null when it shows no prices, as some delivery notes don't."
+                        },
+                        "lines": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "supplierCode": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The supplier's own code for the product. null if not printed."
+                              },
+                              "description": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The product, as printed on the line. null if not printed."
+                              },
+                              "quantity": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?\\d+(\\.\\d{1,6})?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The quantity, in the line's unit. Negative for returns. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                              },
+                              "unit": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The unit, as printed: kg, caja, ud, botella… null if not printed."
+                              },
+                              "unitPrice": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?\\d+(\\.\\d{1,6})?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The price per unit, as printed: before discount, excluding VAT. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                              },
+                              "discountPercent": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The line discount (the \"Dto.\" column) as a percentage. \"21\" for 21%. null if not printed."
+                              },
+                              "vatRate": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The VAT rate that applies to this line. \"21\" for 21%. null if not printed."
+                              },
+                              "lineTotal": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The line total, as printed: after discount, excluding VAT. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                              }
+                            },
+                            "required": [
+                              "supplierCode",
+                              "description",
+                              "quantity",
+                              "unit",
+                              "unitPrice",
+                              "discountPercent",
+                              "vatRate",
+                              "lineTotal"
+                            ],
+                            "additionalProperties": false,
+                            "description": "One product line."
+                          },
+                          "description": "Every product line, in the order printed. Not subtotal, VAT or total rows."
+                        }
+                      },
+                      "required": [
+                        "documentType",
+                        "currency",
+                        "supplier",
+                        "number",
+                        "issueDate",
+                        "totals",
+                        "lines"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "checkFailures",
+                    "corrected"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-roles": "any signed-in user"
+      }
+    },
+    "/api/documents/{id}/draft/checks": {
+      "post": {
+        "summary": "The checks a version of a document's draft would fail, without saving it",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "documentType": {
+                    "type": "string",
+                    "enum": [
+                      "delivery-note",
+                      "invoice"
+                    ],
+                    "description": "delivery-note for a delivery note (albarán); invoice for an invoice (factura), including credit notes (facturas rectificativas), whose amounts are negative."
+                  },
+                  "currency": {
+                    "type": "string",
+                    "description": "Always EUR.",
+                    "enum": [
+                      "EUR"
+                    ]
+                  },
+                  "supplier": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "The supplier's legal name, as printed with its tax ID: the company name or the person's full name, never a brand, logo or trade name. null if not printed."
+                      },
+                      "taxId": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[A-Z0-9]+$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "The supplier's tax ID (NIF or CIF), in upper case, without spaces, dots or hyphens: \"B-12.345.678\" is \"B12345678\". Keep a country prefix such as ES if printed. null if not printed."
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "taxId"
+                    ],
+                    "description": "Who issued the document."
+                  },
+                  "number": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The document number, as printed. null if not printed."
+                  },
+                  "issueDate": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The issue date, as YYYY-MM-DD. null if not printed."
+                  },
+                  "totals": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "net": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The total before VAT, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                          },
+                          "vat": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "rate": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The VAT rate. \"21\" for 21%. null if not printed."
+                                },
+                                "base": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The taxable base at this rate, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                },
+                                "amount": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The VAT at this rate, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                                }
+                              },
+                              "required": [
+                                "rate",
+                                "base",
+                                "amount"
+                              ],
+                              "description": "One row of the VAT breakdown: one per rate."
+                            },
+                            "description": "The VAT breakdown, one row per rate. Empty if not printed."
+                          },
+                          "total": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The total to pay, including VAT, in euros. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                          }
+                        },
+                        "required": [
+                          "net",
+                          "vat",
+                          "total"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The document's totals. null when it shows no prices, as some delivery notes don't."
+                  },
+                  "lines": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "supplierCode": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The supplier's own code for the product. null if not printed."
+                        },
+                        "description": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The product, as printed on the line. null if not printed."
+                        },
+                        "quantity": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^-?\\d+(\\.\\d{1,6})?$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The quantity, in the line's unit. Negative for returns. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                        },
+                        "unit": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The unit, as printed: kg, caja, ud, botella… null if not printed."
+                        },
+                        "unitPrice": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^-?\\d+(\\.\\d{1,6})?$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The price per unit, as printed: before discount, excluding VAT. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                        },
+                        "discountPercent": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The line discount (the \"Dto.\" column) as a percentage. \"21\" for 21%. null if not printed."
+                        },
+                        "vatRate": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^(100(\\.0{1,2})?|\\d{1,2}(\\.\\d{1,2})?)$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The VAT rate that applies to this line. \"21\" for 21%. null if not printed."
+                        },
+                        "lineTotal": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^-?\\d+(\\.\\d{1,2})?$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The line total, as printed: after discount, excluding VAT. Text, with a point as the decimal separator and no thousands separator: \"1.234,56\" on the document is \"1234.56\". null if not printed."
+                        }
+                      },
+                      "required": [
+                        "supplierCode",
+                        "description",
+                        "quantity",
+                        "unit",
+                        "unitPrice",
+                        "discountPercent",
+                        "vatRate",
+                        "lineTotal"
+                      ],
+                      "description": "One product line."
+                    },
+                    "description": "Every product line, in the order printed. Not subtotal, VAT or total rows."
+                  }
+                },
+                "required": [
+                  "documentType",
+                  "currency",
+                  "supplier",
+                  "number",
+                  "issueDate",
+                  "totals",
+                  "lines"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "checkFailures": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "check": {
+                            "type": "string",
+                            "enum": [
+                              "missing-value",
+                              "line-total",
+                              "lines-sum",
+                              "vat",
+                              "total",
+                              "tax-id",
+                              "date",
+                              "duplicate"
+                            ]
+                          },
+                          "path": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "check",
+                          "path"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "checkFailures"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Default Response",
             "content": {
               "application/json": {
