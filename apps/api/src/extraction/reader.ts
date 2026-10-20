@@ -7,6 +7,7 @@ import {
 } from "@kitchen-ops/extract";
 import type { ExtractionConfig } from "../config";
 import { createFakeClient, FAKE_MODEL } from "./fake";
+import { JOB_SETTINGS, type JobSettings } from "./jobs";
 
 // What reads documents (#104): the default model and prompt (decision 0018) through OpenRouter,
 // or the fake model. Tests pass their own client.
@@ -41,4 +42,15 @@ export function readerFor(
     model,
     prompt,
   };
+}
+
+/**
+ * How soon a failed try is tried again. The fake model fails only when told to, never because a
+ * service is down, so waiting is pointless: a second, without backoff, and a browser test sees
+ * the failure in seconds (#106). It never runs in production (src/config.ts).
+ */
+export function jobSettingsFor(config: ExtractionConfig | null): JobSettings {
+  return config?.model === "fake"
+    ? { ...JOB_SETTINGS, retryDelaySeconds: 1, retryBackoff: false }
+    : JOB_SETTINGS;
 }

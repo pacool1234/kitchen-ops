@@ -17,9 +17,9 @@ import { openApiRoutes, registerOpenApi } from "./contract";
 import { createDb } from "./db/client";
 import { documentRoutes } from "./documents/routes";
 import { registerErrors } from "./errors";
-import { createJobs, JOB_SETTINGS, type JobSettings } from "./extraction/jobs";
+import { createJobs, type JobSettings } from "./extraction/jobs";
 import { failedRead, tryReading } from "./extraction/read";
-import { readerFor, type Reader } from "./extraction/reader";
+import { jobSettingsFor, readerFor, type Reader } from "./extraction/reader";
 import { healthRoutes } from "./health/routes";
 import { tagRequest } from "./sentry";
 import { createS3Storage } from "./storage/s3";
@@ -74,7 +74,7 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   const { db, close } = createDb(config.DATABASE_URL);
   const jobs = createJobs(
     config.DATABASE_URL,
-    { ...JOB_SETTINGS, ...(options.jobs || {}) },
+    { ...jobSettingsFor(extractionConfig(config)), ...(options.jobs || {}) },
     app.log,
   );
   app.addHook("onClose", async () => {
