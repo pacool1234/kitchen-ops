@@ -89,7 +89,9 @@ export function loadSet(
   if (name === "gold") {
     return {
       name,
-      source: "own-or-public",
+      // Synthetic documents, but routed like client ones: a run measures the providers that
+      // staging and production can reach (decision 0031).
+      source: "client",
       documents: readDocuments(
         fileURLToPath(goldDirectory),
         (folder) => folder,
