@@ -6,6 +6,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth";
 import { createUser } from "../auth/users";
 import { checked } from "../extraction/read";
+import { readMatching } from "../matching/matching";
 import { createMemoryStorage } from "../storage/memory";
 import type { Storage } from "../storage/storage";
 import { TEST_PASSWORD } from "../test/auth";
@@ -49,6 +50,9 @@ const log = (line: string) => lines.push(line);
 const seed = (storage: Storage | null) =>
   runSeed(db, auth, local, storage, log, NOW);
 
+const hash = (bytes: Uint8Array) =>
+  createHash("sha256").update(bytes).digest("hex");
+
 /** A gold folder's file and expected draft, read here rather than through the seed. */
 function gold(folder: string) {
   const directory = new URL(
@@ -59,7 +63,7 @@ function gold(folder: string) {
   const bytes = new Uint8Array(readFileSync(new URL(source, directory)));
   return {
     bytes,
-    sha256: createHash("sha256").update(bytes).digest("hex"),
+    sha256: hash(bytes),
     expected: ExtractedDocument.parse(
       JSON.parse(readFileSync(new URL("expected.json", directory), "utf8")),
     ),
@@ -139,7 +143,8 @@ describe("the demo documents (#119)", () => {
         sha256,
         sizeBytes: bytes.length,
       });
-      expect(await storage.get(files[0]!.storageKey)).toEqual(bytes);
+      // By its hash: comparing megabytes byte by byte takes seconds.
+      expect(hash(await storage.get(files[0]!.storageKey))).toBe(sha256);
     }
   });
 
@@ -156,6 +161,23 @@ describe("the demo documents (#119)", () => {
     expect(supplierOf.get(DEMO_DOCUMENTS[2]!.id)).toBe(
       await supplierId("B00555664"),
     );
+  });
+
+  it("in review, the lines the demo mapped are matched by their code, and the rest are left to map", async () => {
+    await seed(createMemoryStorage());
+    const matched = async (id: string) =>
+      (await readMatching(db, id))!.lines
+        .filter((l) => l.match !== null)
+        .map((l) => ({ line: l.line, by: l.match!.by }));
+    expect(await matched(DEMO_DOCUMENTS[0]!.id)).toEqual([
+      { line: 1, by: "code" },
+      { line: 3, by: "code" },
+    ]);
+    expect(await matched(DEMO_DOCUMENTS[1]!.id)).toEqual([]);
+    expect(await matched(DEMO_DOCUMENTS[2]!.id)).toEqual([
+      { line: 1, by: "code" },
+      { line: 15, by: "code" },
+    ]);
   });
 
   it("each mapped line's pack is in one of its product's units", async () => {
