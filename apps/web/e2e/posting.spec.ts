@@ -177,7 +177,7 @@ test("M7: a phone photo, misread, corrected, its supplier created, its products 
 
   // Read-only now: its movements, each at its pack, into its storeroom, at its cost.
   await expect(statusOf(page)).toHaveText("Registrado");
-  await expect(line(page, 1)).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "Cantidad" })).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Guardar correcciones" }),
   ).toHaveCount(0);
@@ -250,7 +250,7 @@ test("the owner reverses a posted delivery note, then makes a corrected copy to 
   );
   await expect(
     reversal.getByRole("group", { name: "Línea 1", exact: true }),
-  ).toContainText(/Anulación: -5 kg · Cámara frigorífica · 1,80 €\/kg/);
+  ).toContainText("Anulación: -5 kg · Cámara frigorífica · 1,80 €/kg");
   await expect(page.getByRole("button", { name: "Anular" })).toHaveCount(0);
   await expectAccessible(page);
 
