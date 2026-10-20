@@ -3,6 +3,7 @@ import { averageCost, receivedUnitCost } from "./cost";
 import { lineTotal, type UnitCost } from "./money";
 import {
   appendMovements,
+  latestVersionOf,
   reverseMovement,
   stockOnHand,
   type Movement,
@@ -38,6 +39,15 @@ export interface DeliveryNoteLine extends DocumentLine {
   readonly vatRate?: string;
 }
 
+/**
+ * An invoice line also has a price, and may bill a delivery-note line (decision 0032). Billing
+ * one corrects its price; billing none receives the line like a delivery-note line.
+ */
+export interface InvoiceLine extends DeliveryNoteLine {
+  /** The posted delivery-note line this line bills, if any. */
+  readonly deliveryNoteLineId?: string;
+}
+
 interface DocumentHeader {
   /** Passed in, never generated here. */
   readonly id: string;
@@ -46,7 +56,10 @@ interface DocumentHeader {
   /** The number printed on the document, if it has one. */
   readonly number?: string;
   readonly status: DocumentStatus;
-  /** Where the stock is: received into, wasted from, counted in, or transferred from. */
+  /**
+   * Where the stock is: received into, wasted from, counted in, or transferred from. An
+   * invoice's own lines are received into it; its corrections stay where the goods were received.
+   */
   readonly storeroomId: string;
   /** The posted document this one reverses, if it is a reversal. */
   readonly reverses?: string;
@@ -57,6 +70,16 @@ export interface DeliveryNote extends DocumentHeader {
   readonly type: "delivery-note";
   readonly supplierId: string;
   readonly lines: readonly DeliveryNoteLine[];
+}
+
+/**
+ * A supplier's invoice (decision 0032): corrects the prices of the delivery-note lines it bills,
+ * and receives its other lines, like a delivery note, for a supplier that sends no delivery notes.
+ */
+export interface Invoice extends DocumentHeader {
+  readonly type: "invoice";
+  readonly supplierId: string;
+  readonly lines: readonly InvoiceLine[];
 }
 
 /** Stock thrown away: removes it at the average cost. */
@@ -78,12 +101,9 @@ export interface TransferDocument extends DocumentHeader {
   readonly lines: readonly DocumentLine[];
 }
 
-/**
- * The documents that move stock (spec section 3). Invoices wait for the discovery session, and
- * sales imports feed variance, not movements.
- */
+/** The documents that move stock (spec section 3). Sales imports feed variance, not movements. */
 export type Document =
-  DeliveryNote | WasteDocument | CountDocument | TransferDocument;
+  DeliveryNote | Invoice | WasteDocument | CountDocument | TransferDocument;
 
 /** Why a document can't be posted or reversed: about one line, or about the whole document. */
 export interface PostingError {
@@ -153,6 +173,9 @@ function postLines<L extends DocumentLine>(
  * the result has a posted copy.
  *
  * - Delivery note: a receipt of the line's quantity, at its received unit cost.
+ * - Invoice: for a line billing a delivery-note line at another unit cost, a receipt at the
+ *   invoice's cost correcting the delivery note's, and that one's reversal; nothing at the same
+ *   cost. A line billing nothing is received like a delivery-note line (decision 0032).
  * - Waste: the quantity out, at the average cost.
  * - Count: counted − on hand, at the average cost. A line that matches the stock posts 0.
  * - Transfer: out of the storeroom and into the other one, both at the source's average cost.
@@ -204,20 +227,49 @@ export function postDocument(
   };
   const average = (line: DocumentLine) =>
     averageCost(movements, line.productId, storeroomId);
+  const receive = (line: DeliveryNoteLine): Movement[] => {
+    const quantity = baseUnits(line);
+    const cost = receivedUnitCost(lineTotalOf(line), quantity);
+    return [movement(line, storeroomId, quantity, cost, "receipt")];
+  };
 
   const outcome = ((): LinesOutcome => {
     switch (document.type) {
       case "delivery-note":
+        return postLines(document.lines, movements, receive);
+      case "invoice": {
+        const billed = new Set<string>();
+        const latest = latestVersionOf(movements);
         return postLines(document.lines, movements, (line) => {
+          const { deliveryNoteLineId } = line;
+          if (deliveryNoteLineId === undefined) return receive(line);
+          if (billed.has(deliveryNoteLineId)) {
+            throw new Error(
+              `delivery-note line ${deliveryNoteLineId} is billed twice in this invoice`,
+            );
+          }
+          billed.add(deliveryNoteLineId);
+          const current = billedReceipt(movements, latest, deliveryNoteLineId);
+          if (current.productId !== line.productId) {
+            throw new Error(
+              `delivery-note line ${deliveryNoteLineId} received ${current.productId}, not ${line.productId}`,
+            );
+          }
           const quantity = baseUnits(line);
-          const total = lineTotal({
-            quantity: line.quantity,
-            unitPrice: line.unitPrice,
-            discountPercent: line.discountPercent,
+          if (quantity !== current.quantity) {
+            throw new Error(
+              `the invoice bills ${quantity} base units of ${line.productId}, but delivery-note line ${deliveryNoteLineId} received ${current.quantity}`,
+            );
+          }
+          const cost = receivedUnitCost(lineTotalOf(line), quantity);
+          if (cost === current.unitCost) return [];
+          return correction(current, cost, movements, {
+            id: newId(),
+            reversalId: newId(),
+            documentLineId: line.id,
           });
-          const cost = receivedUnitCost(total, quantity);
-          return [movement(line, storeroomId, quantity, cost, "receipt")];
         });
+      }
       case "waste":
         return postLines(document.lines, movements, (line) => [
           movement(
@@ -281,6 +333,76 @@ export function postDocument(
   };
 }
 
+function lineTotalOf(line: DeliveryNoteLine) {
+  return lineTotal({
+    quantity: line.quantity,
+    unitPrice: line.unitPrice,
+    discountPercent: line.discountPercent,
+  });
+}
+
+/**
+ * The receipt that stands for a delivery-note line's goods now: the line's receipt, or the last
+ * correction of it. Throws if there is none, or if it was reversed.
+ */
+function billedReceipt(
+  movements: readonly Movement[],
+  latest: (movement: Movement) => Movement,
+  deliveryNoteLineId: string,
+): Movement {
+  const received = movements.find(
+    (m) =>
+      m.documentLineId === deliveryNoteLineId &&
+      m.kind === "receipt" &&
+      m.reverses === undefined &&
+      m.corrects === undefined,
+  );
+  if (received === undefined) {
+    throw new Error(
+      `delivery-note line ${deliveryNoteLineId} has no receipt in the movements given`,
+    );
+  }
+  const current = latest(received);
+  if (movements.some((m) => m.reverses === current.id)) {
+    throw new Error(
+      `delivery-note line ${deliveryNoteLineId} was reversed: there is no received stock to bill`,
+    );
+  }
+  return current;
+}
+
+/**
+ * A receipt at a new unit cost correcting `current`, and `current`'s reversal (decision 0032).
+ * Both point to `documentLineId`. The one that adds stock goes first, so stock never dips: the
+ * correction for goods received, the reversal for a return.
+ */
+function correction(
+  current: Movement,
+  unitCost: UnitCost,
+  movements: readonly Movement[],
+  {
+    id,
+    reversalId,
+    documentLineId,
+  }: { id: string; reversalId: string; documentLineId: string },
+): Movement[] {
+  const corrected: Movement = {
+    id,
+    productId: current.productId,
+    storeroomId: current.storeroomId,
+    quantity: current.quantity,
+    unitCost,
+    documentLineId,
+    kind: current.kind,
+    corrects: current.id,
+  };
+  const reversal = reverseMovement(current, movements, {
+    id: reversalId,
+    documentLineId,
+  });
+  return current.quantity > 0 ? [corrected, reversal] : [reversal, corrected];
+}
+
 export interface ReversalDetails {
   /** The reversing document's ID and date, passed in. */
   readonly id: string;
@@ -307,6 +429,10 @@ function copyLines<L extends DocumentLine>(
  * movements, pointing to the copied line. The original and the movements given are never
  * changed (invariant 7). A correction is this reversal plus a new posted document.
  *
+ * A receipt an invoice corrected is taken out as it stands now: its last correction is the one
+ * reversed. Reversing an invoice puts back the price each line replaced, with a correction and a
+ * reversal (decision 0032); an invoice that corrected nothing reverses with no movements.
+ *
  * The movements are reversed last first, so stock passes back through the levels posting went
  * through. Each goes through `appendMovements` (invariant 6): reversing a delivery note whose
  * stock was already used fails, so post the corrected document first. All or nothing, like
@@ -329,11 +455,11 @@ export function reverseDocument(
   }
 
   // Two identical branches: in each, TypeScript knows the lines' type, so the copies keep it
-  // (a delivery note's lines keep their prices).
+  // (a delivery note's and an invoice's lines keep their prices).
   const header = { id, date, reverses: posted.id };
   let document: Document;
   let pairs: readonly { original: DocumentLine; copy: DocumentLine }[];
-  if (posted.type === "delivery-note") {
+  if (posted.type === "delivery-note" || posted.type === "invoice") {
     const copied = copyLines(posted.lines, newId);
     document = { ...posted, ...header, lines: copied.lines };
     pairs = copied.pairs;
@@ -350,21 +476,45 @@ export function reverseDocument(
       )
       .map((movement) => ({ movement, line: original, copy })),
   );
-  if (toReverse.length === 0) {
+  if (toReverse.length === 0 && posted.type !== "invoice") {
     return failed({
       message: `document ${posted.id} has no movements in the movements given`,
     });
   }
 
+  const latest = latestVersionOf(movements);
+  const byId = new Map(movements.map((m) => [m.id, m]));
   let accepted = movements;
   const errors: PostingError[] = [];
   for (const { movement, line, copy } of toReverse.reverse()) {
     try {
-      const reversal = reverseMovement(movement, accepted, {
-        id: newId(),
-        documentLineId: copy.id,
-      });
-      accepted = appendMovements(accepted, [reversal]);
+      const current = latest(movement);
+      let added: Movement[];
+      if (movement.corrects === undefined) {
+        added = [
+          reverseMovement(current, accepted, {
+            id: newId(),
+            documentLineId: copy.id,
+          }),
+        ];
+      } else {
+        // An invoice's correction: put back the price of the receipt it replaced.
+        const replaced = byId.get(movement.corrects);
+        if (replaced === undefined) {
+          throw new Error(
+            `movement ${movement.id} corrects ${movement.corrects}, which is not in the movements given`,
+          );
+        }
+        added =
+          replaced.unitCost === current.unitCost
+            ? []
+            : correction(current, replaced.unitCost, accepted, {
+                id: newId(),
+                reversalId: newId(),
+                documentLineId: copy.id,
+              });
+      }
+      accepted = appendMovements(accepted, added);
     } catch (error) {
       errors.push({ lineId: line.id, message: messageOf(error) });
     }
