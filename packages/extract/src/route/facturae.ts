@@ -215,6 +215,16 @@ export function parseFacturae(xml: string): FacturaeResult {
     },
     number: number === null ? null : `${series ?? ""}${number}`,
     issueDate: text(invoice, "InvoiceIssueData", "IssueDate"),
+    // Facturae names them per line (#120); the draft lists each once, in the order first seen.
+    deliveryNotes: [
+      ...new Set(
+        lines.flatMap((line) =>
+          children(child(line, "DeliveryNotesReferences"), "DeliveryNote")
+            .map((note) => text(note, "DeliveryNoteNumber"))
+            .filter((n) => n !== null),
+        ),
+      ),
+    ],
     totals: {
       net: decimal(
         text(invoice, "InvoiceTotals", "TotalGrossAmountBeforeTaxes"),

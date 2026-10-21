@@ -61,6 +61,7 @@ export const document: fc.Arbitrary<ExtractedDocument> = fc.record({
   }),
   number: nullable(text),
   issueDate: nullable(date),
+  deliveryNotes: fc.array(text, { maxLength: 3 }),
   totals: nullable(
     fc.record({
       net: nullable(decimal(2)),

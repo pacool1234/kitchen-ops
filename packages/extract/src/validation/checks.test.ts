@@ -43,6 +43,7 @@ const invoice: ExtractedDocument = {
   supplier: { name: "Proveedor Ficticio S.A.", taxId: "B00123455" },
   number: "F-1",
   issueDate: "2026-10-15",
+  deliveryNotes: [],
   totals: {
     net: "157.37",
     vat: [

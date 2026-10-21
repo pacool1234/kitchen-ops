@@ -113,6 +113,13 @@ export const ExtractedDocument = z.object({
     .date()
     .nullable()
     .describe("The issue date, as YYYY-MM-DD. null if not printed."),
+  // #120. A draft the API saved before this field is read as listing none (apps/api's
+  // storedDraft); here, the list is always written, [] for none.
+  deliveryNotes: z
+    .array(z.string().min(1))
+    .describe(
+      "The numbers of the delivery notes (albaranes) the document says it bills, each as printed, in the order printed. An invoice often lists them in its header, in its notes, or above each group of lines. Empty if it lists none, and on a delivery note.",
+    ),
   totals: z
     .object({
       net: money("The total before VAT, in euros."),

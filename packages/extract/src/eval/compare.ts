@@ -10,12 +10,14 @@ import {
   sameDocumentNumber,
   sameText,
 } from "./normalize";
+import { normalizedNumber } from "../validation/checks";
 
 // One extracted document against its gold answer (spec section 5, metrics): which header fields
 // are right, which lines were found, and which fields of the found lines are right. The result
 // names fields and lines by position, never their values, so it can be logged.
 
-export const HEADER_FIELDS = [
+/** The header fields that decide whether a document is right. */
+export const SCORED_HEADER_FIELDS = [
   "documentType",
   "supplier.name",
   "supplier.taxId",
@@ -24,6 +26,16 @@ export const HEADER_FIELDS = [
   "totals.net",
   "totals.total",
   "totals.vat",
+] as const;
+
+/**
+ * Every header field reported. The delivery notes an invoice lists (#120, decision 0040) are
+ * scored apart: a missed one only leaves matching to fall back on dates and lines, which a
+ * person confirms, and runs from before the field stay comparable.
+ */
+export const HEADER_FIELDS = [
+  ...SCORED_HEADER_FIELDS,
+  "deliveryNotes",
 ] as const;
 export type HeaderField = (typeof HEADER_FIELDS)[number];
 
@@ -95,6 +107,23 @@ function sameVat(
   });
 }
 
+/** The same numbers, as many times each, in any order; compared as document numbers are. */
+function sameDeliveryNotes(
+  result: readonly string[],
+  gold: readonly string[],
+): boolean {
+  const sorted = (numbers: readonly string[]) =>
+    numbers.map(normalizedNumber).sort();
+  return JSON.stringify(sorted(result)) === JSON.stringify(sorted(gold));
+}
+
+/** Header fields reported but not scored. */
+const UNSCORED: ReadonlySet<string> = new Set(
+  HEADER_FIELDS.filter(
+    (field) => !(SCORED_HEADER_FIELDS as readonly string[]).includes(field),
+  ),
+);
+
 function compareHeader(
   result: ExtractedDocument,
   gold: ExtractedDocument,
@@ -114,6 +143,7 @@ function compareHeader(
       gold.totals?.total ?? null,
     ),
     "totals.vat": sameVat(vatRows(result), vatRows(gold)),
+    deliveryNotes: sameDeliveryNotes(result.deliveryNotes, gold.deliveryNotes),
   };
 }
 
@@ -207,6 +237,7 @@ export function compareDocument(
       fieldsRight,
     },
     differences,
-    correct: differences.length === 0,
+    // Right when nothing differs but what's scored apart.
+    correct: differences.every((difference) => UNSCORED.has(difference)),
   };
 }

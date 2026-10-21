@@ -28,6 +28,7 @@ const expected: ExtractedDocument = {
   supplier: { name: "Proveedor Ficticio S.L.", taxId: null },
   number: null,
   issueDate: null,
+  deliveryNotes: [],
   totals: null,
   lines: [
     {
@@ -102,6 +103,14 @@ describe("goldEntryProblems: what makes a gold folder invalid", () => {
       goldEntryProblems({ ...valid, expected: { ...expected, lines: [] } }),
     ).toEqual([
       "syn-999-example: expected.json: lines: Too small: expected array to have >=1 items",
+    ]);
+  });
+
+  it("an expected.json that doesn't say which delivery notes it lists, even none (#120)", () => {
+    const unsaid: Record<string, unknown> = { ...expected };
+    delete unsaid.deliveryNotes;
+    expect(goldEntryProblems({ ...valid, expected: unsaid })).toEqual([
+      "syn-999-example: expected.json: deliveryNotes: Invalid input: expected array, received undefined",
     ]);
   });
 

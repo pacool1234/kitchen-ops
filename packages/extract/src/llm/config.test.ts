@@ -119,14 +119,14 @@ const LEGAL_NAME_RULE =
 const model = (id: string) => ({ id, structuredOutput: true, vision: true });
 
 describe("the default model and prompt (#70)", () => {
-  it("the committed default is decision 0018's: Gemini 3.8 Flash with prompt v2, at the provider's temperature (0031)", () => {
+  it("the committed default is Gemini 3.8 Flash (0018) with prompt v3 (0040), at the provider's temperature (0031)", () => {
     const { model, prompt } = defaultExtraction(MODELS_FILE);
     expect(model.id).toBe("google/gemini-3.8-flash");
     // With zero retention only Vertex serves it, and Vertex doesn't take a temperature: with
     // one set, OpenRouter finds no endpoint and every client document fails (decision 0031).
     expect(model.temperature).toBeUndefined();
-    expect(prompt.version).toBe("v2");
-    expect(prompt.text).toBe(loadPrompt("v2").text);
+    expect(prompt.version).toBe("v3");
+    expect(prompt.text).toBe(loadPrompt("v3").text);
   });
 
   it("a file with no default is refused, naming it", () => {
@@ -242,6 +242,20 @@ describe("loadPrompt: prompts are versioned files", () => {
     expect(v2.version).toBe("v2");
     expect(v2.text).toContain(LEGAL_NAME_RULE);
     expect(v2.text.replace(LEGAL_NAME_RULE, "")).toBe(v1);
+  });
+
+  it("v3 is exactly v2 plus rule 5, on the delivery notes listed, with the later rules one number on (#120)", () => {
+    const v2 = loadPrompt("v2").text;
+    const v3 = loadPrompt("v3").text;
+    const rule = /^5\. Delivery notes: .*\n/m;
+    expect(v3).toMatch(rule);
+    expect(v3).toMatch(/order numbers \(pedidos\)/);
+    const renumbered = v3
+      .replace(rule, "")
+      .replace(/^(\d)\. /gm, (whole, n: string) =>
+        Number(n) > 5 ? `${Number(n) - 1}. ` : whole,
+      );
+    expect(renumbered).toBe(v2);
   });
 
   it("an unknown version fails, naming it", () => {

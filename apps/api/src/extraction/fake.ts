@@ -36,6 +36,7 @@ export function fakeDocument(issueDate: string): ExtractedDocument {
     },
     number: "ALB-0001",
     issueDate,
+    deliveryNotes: [],
     totals: {
       net: "58.00",
       vat: [{ rate: "10", base: "58.00", amount: "5.80" }],

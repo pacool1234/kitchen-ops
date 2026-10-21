@@ -15,6 +15,7 @@ const deliveryNote: ExtractedDocument = {
   supplier: { name: "Huerta Ejemplo S.L.", taxId: "B00000000" },
   number: "ALB-0042",
   issueDate: "2026-10-14",
+  deliveryNotes: [],
   totals: null,
   lines: [
     {
@@ -37,6 +38,8 @@ const invoice: ExtractedDocument = {
   supplier: { name: "Distribuciones Ejemplo S.A.", taxId: "ESA00000000" },
   number: "F-2026/0315",
   issueDate: "2026-10-15",
+  // The delivery notes it bills, as printed (#120).
+  deliveryNotes: ["ALB-0042", "ALB-0045"],
   totals: {
     // 1.5 × 12.00 − 5% = 17.10; 2 × 3.50 = 7.00; net 24.10.
     // VAT: 17.10 × 10% = 1.71; 7.00 × 21% = 1.47; total 24.10 + 3.18 = 27.28.
@@ -132,6 +135,18 @@ describe("ExtractedDocument: what extraction returns", () => {
 });
 
 describe("ExtractedDocument: rejected, with the path to the bad field", () => {
+  it("no list of delivery notes: it's always written, [] for none (#120)", () => {
+    const unlisted: Record<string, unknown> = { ...invoice };
+    delete unlisted.deliveryNotes;
+    expect(problems(unlisted)).toEqual(["deliveryNotes"]);
+  });
+
+  it("an empty delivery-note number in the list (#120)", () => {
+    expect(problems({ ...invoice, deliveryNotes: ["ALB-0042", ""] })).toEqual([
+      "deliveryNotes.1",
+    ]);
+  });
+
   it("a number instead of a decimal string", () => {
     expect(
       problems({ ...invoice, lines: [{ ...firstLine, quantity: 1.5 }] }),
@@ -276,6 +291,27 @@ describe("the JSON Schema given to models for structured output", () => {
     expect(description).toMatch(/legal name/);
     expect(description).toMatch(/tax ID/);
     expect(description).toMatch(/never a brand, logo or trade name/);
+  });
+
+  it("asks for the delivery notes an invoice lists, as printed, and none on a delivery note (#120)", () => {
+    const schema = extractedDocumentJsonSchema() as {
+      properties: {
+        deliveryNotes: {
+          type?: string;
+          items?: { type?: string };
+          description?: string;
+          default?: unknown;
+        };
+      };
+    };
+    const listed = schema.properties.deliveryNotes;
+    expect(listed.type).toBe("array");
+    expect(listed.items?.type).toBe("string");
+    // A default isn't part of strict structured output: the model always writes the list.
+    expect(listed.default).toBeUndefined();
+    expect(listed.description).toMatch(/delivery notes \(albaranes\)/);
+    expect(listed.description).toMatch(/as printed/);
+    expect(listed.description).toMatch(/Empty/);
   });
 
   it("only changes on purpose: compared with a committed snapshot", () => {

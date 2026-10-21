@@ -23,6 +23,8 @@ export interface DraftValues {
   number: string;
   /** As typed, dd/mm/aaaa. */
   issueDate: string;
+  /** The delivery notes an invoice lists (#120): kept as read, with no field of their own yet. */
+  deliveryNotes: string[];
   /** Whether it shows prices. Off, the totals are null, and kept for when it's on again. */
   hasTotals: boolean;
   totals: { net: string; vat: VatValues[]; total: string };
@@ -96,6 +98,7 @@ export function toValues(draft: ExtractedDocument | null): DraftValues {
       supplier: { name: "", taxId: "" },
       number: "",
       issueDate: "",
+      deliveryNotes: [],
       hasTotals: false,
       totals: { net: "", vat: [], total: "" },
       lines: [emptyLine()],
@@ -109,6 +112,7 @@ export function toValues(draft: ExtractedDocument | null): DraftValues {
     },
     number: shown(draft.number),
     issueDate: writeDate(draft.issueDate),
+    deliveryNotes: [...draft.deliveryNotes],
     hasTotals: draft.totals !== null,
     totals: {
       net: shown(draft.totals?.net ?? null),
@@ -149,6 +153,7 @@ export function toDraft(values: DraftValues): ExtractedDocument {
     },
     number: typed(values.number),
     issueDate: date.ok ? date.value : values.issueDate,
+    deliveryNotes: [...values.deliveryNotes],
     totals: values.hasTotals
       ? {
           net: typed(values.totals.net),

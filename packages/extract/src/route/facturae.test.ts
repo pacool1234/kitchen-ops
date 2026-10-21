@@ -38,6 +38,17 @@ const escape = (text: string) =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 
+/** Each line's DeliveryNotesReferences, as Facturae holds them: per line, not per invoice. */
+const references = (numbers: readonly string[]) =>
+  numbers.length === 0
+    ? ""
+    : `<DeliveryNotesReferences>${numbers
+        .map(
+          (n) =>
+            `<DeliveryNote><DeliveryNoteNumber>${escape(n)}</DeliveryNoteNumber></DeliveryNote>`,
+        )
+        .join("")}</DeliveryNotesReferences>`;
+
 const UNIT_CODES = new Map(
   Object.entries(FACTURAE_UNITS).flatMap(([code, name]) =>
     name === null ? [] : [[name, code] as const],
@@ -56,14 +67,14 @@ function writeFacturae(
     value === null ? "" : `<${name}>${escape(value)}</${name}>`;
   const tax = (rate: string | null, base = "0.00", amount = "0.00") =>
     `<Tax><TaxTypeCode>01</TaxTypeCode>${element("TaxRate", rate)}<TaxableBase><TotalAmount>${base}</TotalAmount></TaxableBase><TaxAmount><TotalAmount>${amount}</TotalAmount></TaxAmount></Tax>`;
-  const lines = document.lines.map((line) => {
+  const lines = document.lines.map((line, i) => {
     const unit =
       line.unit === null ? null : (UNIT_CODES.get(line.unit) ?? null);
     const discount =
       line.discountPercent === null
         ? ""
         : `<DiscountsAndRebates><Discount><DiscountReason>Descuento</DiscountReason>${element("DiscountRate", line.discountPercent)}<DiscountAmount>0.00</DiscountAmount></Discount></DiscountsAndRebates>`;
-    return `<InvoiceLine>${element("ItemDescription", line.description)}${element("Quantity", line.quantity)}${element("UnitOfMeasure", unit)}${element("UnitPriceWithoutTax", line.unitPrice)}<TotalCost>0.00</TotalCost>${discount}${element("GrossAmount", line.lineTotal)}<TaxesOutputs>${tax(line.vatRate)}</TaxesOutputs>${element("ArticleCode", line.supplierCode)}</InvoiceLine>`;
+    return `<InvoiceLine>${references(i === 0 ? document.deliveryNotes : [])}${element("ItemDescription", line.description)}${element("Quantity", line.quantity)}${element("UnitOfMeasure", unit)}${element("UnitPriceWithoutTax", line.unitPrice)}<TotalCost>0.00</TotalCost>${discount}${element("GrossAmount", line.lineTotal)}<TaxesOutputs>${tax(line.vatRate)}</TaxesOutputs>${element("ArticleCode", line.supplierCode)}</InvoiceLine>`;
   });
   const totals = document.totals;
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -132,6 +143,7 @@ const invoice: fc.Arbitrary<ExtractedDocument> = fc.record({
   }),
   number: text,
   issueDate: date,
+  deliveryNotes: fc.uniqueArray(text, { maxLength: 3 }),
   totals: fc.record({
     net: decimal(2),
     vat: fc.array(
@@ -177,6 +189,20 @@ describe("parseFacturae: a Facturae 3.2.x e-invoice read directly, without a mod
         },
       ),
     );
+  });
+
+  it("lists the delivery notes its lines reference, each once, in the order they first appear (#120)", () => {
+    const [head, ...lines] = goldXml.split("<InvoiceLine>");
+    const perLine = [["AV-1", "AV-2"], ["AV-2"], [], ["AV-0"]];
+    const xml = [
+      head,
+      ...lines.map((line, i) => `${references(perLine[i]!)}${line}`),
+    ].join("<InvoiceLine>");
+    const result = parseFacturae(xml);
+    expect(result.status).toBe("extracted");
+    expect(
+      result.status === "extracted" && result.document.deliveryNotes,
+    ).toEqual(["AV-1", "AV-2", "AV-0"]);
   });
 
   it("the document number is the series code followed by the invoice number", () => {
