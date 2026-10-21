@@ -22,7 +22,12 @@ import {
   setUpCatalogue,
   type PostingCatalogue,
 } from "../test/posting";
-import { postDocument, reverseDocument, type ReviewedLine } from "./posting";
+import {
+  databaseNow as readClock,
+  postDocument,
+  reverseDocument,
+  type ReviewedLine,
+} from "./posting";
 import { recordStockDocument } from "../stock/record";
 import { productStock } from "../stock/stock";
 import { movementsOf } from "./stored";
@@ -183,9 +188,7 @@ const postedDocuments = () =>
  * compared with. It waits for the clock to move on, so what's posted next is stamped later.
  */
 async function databaseNow() {
-  const read = async () =>
-    (await db.execute<{ now: Date }>(sql`select clock_timestamp() as now`))
-      .rows[0]!.now;
+  const read = () => readClock(db);
   const now = await read();
   let later = await read();
   while (later.getTime() === now.getTime()) later = await read();

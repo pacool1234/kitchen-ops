@@ -22,7 +22,11 @@ import {
   users,
 } from "../db/schema";
 import { today } from "../extraction/read";
-import { postDocument, type ReviewedLine } from "../posting/posting";
+import {
+  databaseNow as readClock,
+  postDocument,
+  type ReviewedLine,
+} from "../posting/posting";
 import { createMemoryStorage } from "../storage/memory";
 import { signedInAs, signedInAsOwner } from "../test/auth";
 import { apiAs, syntheticCif } from "../test/catalogue";
@@ -150,9 +154,7 @@ async function deliver(number: string, lines: ReviewedLine[]) {
  * compared with. It waits for the clock to move on, so what's posted next is stamped later.
  */
 async function databaseNow() {
-  const read = async () =>
-    (await db.execute<{ now: Date }>(sql`select clock_timestamp() as now`))
-      .rows[0]!.now;
+  const read = () => readClock(db);
   const now = await read();
   let later = await read();
   while (later.getTime() === now.getTime()) later = await read();

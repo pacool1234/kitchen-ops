@@ -61,8 +61,23 @@ export type PostingResult =
  */
 const POSTING_LOCK = 116_034;
 
-export async function takePostingLock(tx: Tx) {
+/**
+ * Takes the posting lock, and gives the database's time once it's taken: what this posting's
+ * movements are stamped with. Postings take the lock one at a time, so their times follow
+ * their order (#149). The transaction's own start, `now()`, wouldn't: one that began first
+ * may wait for the lock behind one that began later.
+ */
+export async function takePostingLock(tx: Tx): Promise<Date> {
   await tx.execute(sql`select pg_advisory_xact_lock(${POSTING_LOCK})`);
+  return databaseNow(tx);
+}
+
+/** The database's clock as it reads now, not at the transaction's start: to the millisecond. */
+export async function databaseNow(db: Db | Tx): Promise<Date> {
+  const { rows } = await db.execute<{ ms: string }>(
+    sql`select floor(extract(epoch from clock_timestamp()) * 1000)::bigint as ms`,
+  );
+  return new Date(Number(rows[0]!.ms));
 }
 
 /** Nothing written, and nothing to audit. */
@@ -175,7 +190,7 @@ export async function postDocument(
   review: ReviewedDocument | ((tx: Tx) => Promise<ReviewedDocument>),
 ): Promise<PostingResult> {
   return audited(db, context, async (tx) => {
-    await takePostingLock(tx);
+    const postedAt = await takePostingLock(tx);
     const [row] = await tx
       .select()
       .from(documents)
@@ -266,7 +281,9 @@ export async function postDocument(
       ),
     );
     if (result.movements.length > 0) {
-      await tx.insert(movements).values(result.movements.map(movementToRow));
+      await tx
+        .insert(movements)
+        .values(result.movements.map((m) => movementToRow(m, postedAt)));
     }
     const after = {
       status: "posted" as const,
@@ -430,7 +447,7 @@ export async function reverseDocument(
   { date }: { date: string },
 ): Promise<PostingResult> {
   return audited(db, context, async (tx) => {
-    await takePostingLock(tx);
+    const postedAt = await takePostingLock(tx);
     const [row] = await tx
       .select()
       .from(documents)
@@ -517,7 +534,9 @@ export async function reverseDocument(
       ),
     );
     if (result.movements.length > 0) {
-      await tx.insert(movements).values(result.movements.map(movementToRow));
+      await tx
+        .insert(movements)
+        .values(result.movements.map((m) => movementToRow(m, postedAt)));
     }
 
     return {
