@@ -14,6 +14,12 @@ export const FAIL = "fake-model:fail";
 export const MISREAD = "fake-model:misread";
 
 /**
+ * Text in a document that makes the fake model read an invoice for its delivery note (#120):
+ * FAC-0001, listing ALB-0001, the same lines, the oil at 26,00 € a garrafa instead of 24,50 €.
+ */
+export const INVOICE = "fake-model:invoice";
+
+/**
  * A one-page PDF whose text layer says `text`, written out by hand: the fake model is sent the
  * text of a PDF that has one, and never a photo's pixels. At least 20 characters, or extraction
  * treats it as a scan.

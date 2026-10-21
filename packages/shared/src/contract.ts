@@ -20,6 +20,7 @@ import {
   NewMapping,
 } from "./matching";
 import { DocumentPosting, PostDocument } from "./posting";
+import { ProductStock } from "./stock";
 import {
   NewProduct,
   Product,
@@ -251,6 +252,16 @@ export const endpoints = {
     body: ProductChanges,
     response: Product,
     conflict: true,
+  }),
+  // What an invoice's correction did to a product's cost (#120); M8 builds stock out from here.
+  getProductStock: endpoint({
+    method: "GET",
+    path: "/api/products/:id/stock",
+    summary:
+      "A product's stock and average cost in each storeroom it has moved through",
+    access: CATALOGUE_WRITERS,
+    params: IdParams,
+    response: ProductStock,
   }),
   listSupplierProducts: endpoint({
     method: "GET",

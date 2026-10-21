@@ -3,9 +3,12 @@ import {
   endpoints,
   ExtractedDocument,
   fieldErrors,
+  mayCall,
   type Document,
   type DocumentCheckFailure,
   type DocumentMatching,
+  type LineBilling as Billing,
+  type LineBillingChoice,
   type LineMatch,
   type SavedDraft,
   type Storeroom,
@@ -31,16 +34,20 @@ import type { SelectOption } from "../components/ui/options";
 import { showToast } from "../components/ui/toasts";
 import { useT, type MessageKey } from "../i18n";
 import { errorMessageKey, fieldMessageKey } from "../i18n/errors";
+import BillingDialog from "./BillingDialog.vue";
+import { billingOffers, billingWith, receivesStock } from "./billing-state";
 import DocumentSupplier from "./DocumentSupplier.vue";
 import { toDraft, toValues, type DraftValues } from "./draft-form";
 import DraftForm from "./DraftForm.vue";
 import DraftReadOnly from "./DraftReadOnly.vue";
+import LineBilling from "./LineBilling.vue";
 import LineMappingDialog from "./LineMappingDialog.vue";
 import LineProduct from "./LineProduct.vue";
 import LineStoreroom from "./LineStoreroom.vue";
 import { failureLine } from "./list";
 import { startLiveChecks } from "./live-checks";
 import { posting, startingStoreroom } from "./posting-state";
+import PriceDifferences from "./PriceDifferences.vue";
 import { mapping, orderedReasons } from "./review-state";
 import { currentUser } from "../session";
 
@@ -51,7 +58,9 @@ import { currentUser } from "../session";
 // one. Leaving with changes not saved asks first. Office and owner also choose the supplier,
 // or create it, and confirm each line's product (#117); everyone sees what's left before posting.
 // A delivery note is posted from here (#119, decision 0038), each line into its product's own
-// storeroom or another one chosen, by whoever may post it with what's left.
+// storeroom or another one chosen, by whoever may post it with what's left. An invoice's lines
+// each bill a delivery-note line, confirmed or chosen by office or the owner, or are received
+// with it like a delivery note's; its price differences show, and they post it (#120).
 const props = defineProps<{
   document: Document;
   mode: "all" | "quantities";
@@ -133,6 +142,94 @@ function lineMatch(index: number): LineMatch | null | undefined {
   if (!matching.value || linesMoved.value) return undefined;
   return matching.value.lines[index]?.match ?? null;
 }
+/** As the API reads the saved draft: an invoice has a difference, even of nothing. */
+const isInvoice = computed(
+  () => matching.value !== undefined && matching.value.difference !== null,
+);
+/** What a saved invoice line bills; undefined when it's no invoice, or before it's known. */
+function lineBilling(index: number): Billing | null | undefined {
+  if (!isInvoice.value || linesMoved.value) return undefined;
+  return matching.value?.lines[index]?.billing ?? null;
+}
+/** Whether a line goes into a storeroom: an invoice's only when received with it. */
+function receivesAt(index: number): boolean {
+  return receivesStock(isInvoice.value, lineBilling(index) ?? null);
+}
+const mayChoose = computed(() =>
+  mayCall(endpoints.setDocumentBilling, currentUser.value?.role ?? null),
+);
+function billingOffersOf(index: number) {
+  return billingOffers({
+    mayChoose: mayChoose.value,
+    hasSupplier: Boolean(matching.value?.supplier),
+    dirty: dirty.value,
+    billing: lineBilling(index) ?? null,
+  });
+}
+
+/** Saves one line's choice, with every other line's as stored; false if it was refused. */
+const billingNow = ref(false);
+async function setBilling(
+  index: number,
+  choice: LineBillingChoice,
+): Promise<boolean> {
+  if (!matching.value) return false;
+  billingNow.value = true;
+  // What was refused about lines' choices before: this answer says it again if it still is.
+  refused.value = Object.fromEntries(
+    Object.entries(refused.value).filter(
+      ([path]) => !/^lines\.\d+$/.test(path),
+    ),
+  );
+  try {
+    matching.value = await call(endpoints.setDocumentBilling, {
+      params: { id: props.document.id },
+      body: billingWith(
+        matching.value.lines.map((l) => l.billing),
+        index,
+        choice,
+      ),
+    });
+    showToast({ tone: "success", title: t("documents.billing.saved") });
+    return true;
+  } catch (caught) {
+    if (caught instanceof ApiError && caught.fields) {
+      refused.value = { ...refused.value, ...caught.fields };
+    }
+    showToast({ tone: "error", title: t(errorMessageKey(caught)) });
+    if (caught instanceof ApiError && caught.code === "not_in_review") {
+      emit("reload");
+    } else {
+      void loadMatching();
+    }
+    return false;
+  } finally {
+    billingNow.value = false;
+  }
+}
+function confirmBilling(index: number) {
+  const billing = lineBilling(index);
+  if (billing?.by !== "suggested") return;
+  void setBilling(index, {
+    deliveryNoteLineId: billing.deliveryNoteLine.id,
+  });
+}
+
+/** The line whose delivery-note line is being chosen, from 0; null when none is. */
+const billingLine = ref<number | null>(null);
+const billingOpen = computed({
+  get: () => billingLine.value !== null,
+  set: (open) => {
+    if (!open) billingLine.value = null;
+  },
+});
+async function chooseBilling(deliveryNoteLineId: string) {
+  if (billingLine.value === null) return;
+  if (await setBilling(billingLine.value, { deliveryNoteLineId })) {
+    billingLine.value = null;
+  }
+}
+
 function lineMapping(index: number) {
   return mapping({
     hasSupplier: Boolean(matching.value?.supplier),
@@ -240,14 +337,18 @@ const postState = computed(() =>
         : null,
   }),
 );
+/** The saved draft's type, for the words: "Registrar la factura". */
+const savedType = computed(() =>
+  loaded.value.documentType === "invoice" ? "invoice" : "delivery-note",
+);
 const postHintId = useId();
 const confirmingPost = ref(false);
 const postingNow = ref(false);
 
-/** Asks first, once every line has a storeroom; a line without one says so. */
+/** Asks first, once every line received has a storeroom; a line without one says so. */
 function askToPost() {
   const missing = values.value.lines.flatMap((_, i) =>
-    storeroomOf(i) === "" ? [`lines.${i}.storeroomId`] : [],
+    receivesAt(i) && storeroomOf(i) === "" ? [`lines.${i}.storeroomId`] : [],
   );
   if (missing.length > 0) {
     refused.value = Object.fromEntries(
@@ -265,10 +366,18 @@ async function post() {
   try {
     await call(endpoints.postDocument, {
       params: { id: props.document.id },
-      body: { storerooms: values.value.lines.map((_, i) => storeroomOf(i)) },
+      // A line an invoice bills stays where its delivery note put it.
+      body: {
+        storerooms: values.value.lines.map((_, i) =>
+          receivesAt(i) ? storeroomOf(i) : null,
+        ),
+      },
     });
     confirmingPost.value = false;
-    showToast({ tone: "success", title: t("documents.posting.posted") });
+    showToast({
+      tone: "success",
+      title: t(`documents.posting.posted.${savedType.value}`),
+    });
     emit("posted");
   } catch (caught) {
     confirmingPost.value = false;
@@ -276,8 +385,11 @@ async function post() {
       refused.value = { ...caught.fields };
     }
     showToast({ tone: "error", title: t(errorMessageKey(caught)) });
-    // Something changed meanwhile: what's left, as it is now.
-    if (caught instanceof ApiError && caught.code === "review_pending") {
+    // Something changed meanwhile: what's left, and what each line bills, as they are now.
+    if (
+      caught instanceof ApiError &&
+      (caught.code === "review_pending" || caught.code === "already_billed")
+    ) {
       void loadMatching();
     }
     if (caught instanceof ApiError && caught.code === "not_in_review") {
@@ -296,14 +408,11 @@ const mappingOpen = computed({
     if (!open) mappingLine.value = null;
   },
 });
-/** The saved line, to say which it is: "T-01 · Tomate pera". */
-const savedLineText = computed(() => {
-  const line =
-    mappingLine.value === null
-      ? undefined
-      : loaded.value.lines[mappingLine.value];
+/** A saved line, to say which it is: "T-01 · Tomate pera". */
+function lineText(index: number | null): string {
+  const line = index === null ? undefined : loaded.value.lines[index];
   return [line?.supplierCode, line?.description].filter(Boolean).join(" · ");
-});
+}
 const mappingSuggestion = computed(() => {
   const match =
     mappingLine.value === null ? null : lineMatch(mappingLine.value);
@@ -317,6 +426,7 @@ const readSupplier = computed(() => {
 /** Percentages and the date have their own words for "not valid". */
 function ownWords(path: string): Partial<Record<string, MessageKey>> {
   if (path === "issueDate") return { invalid: "documents.review.dateInvalid" };
+  if (/^lines\.\d+$/.test(path)) return { taken: "documents.billing.taken" };
   if (/(discountPercent|vatRate|\.rate)$/.test(path)) {
     return { invalid: "documents.review.percentInvalid" };
   }
@@ -435,7 +545,7 @@ const guard = useUnsavedGuard(dirty);
           :aria-describedby="postState.blocked ? postHintId : undefined"
           @click="askToPost"
         >
-          {{ t("documents.posting.post") }}
+          {{ t(`documents.posting.post.${savedType}`) }}
         </UiButton>
         <p
           v-if="postState.blocked"
@@ -454,6 +564,8 @@ const guard = useUnsavedGuard(dirty);
       :read="readSupplier"
       @chosen="supplierChosen"
     />
+
+    <PriceDifferences v-if="matching && isInvoice" :matching="matching" />
 
     <section
       class="flex flex-col gap-2 rounded-lg border border-line bg-surface p-5"
@@ -484,23 +596,36 @@ const guard = useUnsavedGuard(dirty);
     >
       <DraftForm v-model="values" :mode="mode" :error-at="errorAt">
         <template #line="{ index }">
-          <LineProduct
-            v-if="lineMatch(index) !== undefined"
-            :match="lineMatch(index) ?? null"
-            v-bind="lineMapping(index)"
-            @choose="mappingLine = index"
+          <LineBilling
+            v-if="lineBilling(index) !== undefined"
+            :field="`lines.${index}`"
+            :billing="lineBilling(index) ?? null"
+            :offers="billingOffersOf(index)"
+            :error="errorAt(`lines.${index}`)"
+            :busy="billingNow"
+            @confirm="confirmBilling(index)"
+            @choose="billingLine = index"
+            @receive="setBilling(index, { received: true })"
           />
-          <LineStoreroom
-            v-if="storeroomShown(index)"
-            :field="`lines.${index}.storeroomId`"
-            :options="storeroomOptions(index)"
-            :error="errorAt(`lines.${index}.storeroomId`)"
-            :no-price="values.lines[index]?.unitPrice === ''"
-            :model-value="storeroomOf(index)"
-            @update:model-value="(id) => chooseStoreroom(index, id)"
-          />
+          <template v-if="receivesAt(index)">
+            <LineProduct
+              v-if="lineMatch(index) !== undefined"
+              :match="lineMatch(index) ?? null"
+              v-bind="lineMapping(index)"
+              @choose="mappingLine = index"
+            />
+            <LineStoreroom
+              v-if="storeroomShown(index)"
+              :field="`lines.${index}.storeroomId`"
+              :options="storeroomOptions(index)"
+              :error="errorAt(`lines.${index}.storeroomId`)"
+              :no-price="values.lines[index]?.unitPrice === ''"
+              :model-value="storeroomOf(index)"
+              @update:model-value="(id) => chooseStoreroom(index, id)"
+            />
+          </template>
           <p
-            v-else-if="linesMoved"
+            v-if="linesMoved"
             class="border-t border-line pt-3 text-sm text-fg-muted"
           >
             {{ t("documents.matching.blocked.unsaved") }}
@@ -533,16 +658,26 @@ const guard = useUnsavedGuard(dirty);
       v-model:open="mappingOpen"
       :document-id="document.id"
       :line="(mappingLine ?? 0) + 1"
-      :line-text="savedLineText"
+      :line-text="lineText(mappingLine)"
       :suggested="mappingSuggestion"
       @mapped="(next) => (matching = next)"
+    />
+    <BillingDialog
+      v-model:open="billingOpen"
+      :document-id="document.id"
+      :line="(billingLine ?? 0) + 1"
+      :line-text="lineText(billingLine)"
+      :saving="billingNow"
+      @chosen="chooseBilling"
     />
     <UiDialog
       v-model:open="confirmingPost"
       :title="
-        t('documents.posting.confirmTitle', { number: loaded.number ?? '' })
+        t(`documents.posting.confirmTitle.${savedType}`, {
+          number: loaded.number ?? '',
+        })
       "
-      :description="t('documents.posting.confirmText')"
+      :description="t(`documents.posting.confirmText.${savedType}`)"
     >
       <template #footer="{ close }">
         <UiButton variant="secondary" @click="close">

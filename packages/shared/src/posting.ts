@@ -44,6 +44,8 @@ export const MOVEMENT_KINDS = [
 ] as const;
 
 const Named = z.object({ id: z.uuid(), name: z.string() });
+/** Another document, as a link to it says: "Albarán ALB-0001". */
+const Numbered = z.object({ id: z.uuid(), number: z.string().nullable() });
 
 /** One stored movement (decision 0034): signed whole base units, and a cost per base unit. */
 export const PostedMovement = z.object({
@@ -76,6 +78,19 @@ export const PostedLine = z.object({
   /** Where it was received; none for an invoice line that bills a delivery note's. */
   storeroom: Named.nullable(),
   movements: z.array(PostedMovement),
+  /** The delivery-note line an invoice's line billed (#120); null for any other line. */
+  bills: z
+    .object({
+      deliveryNote: Numbered,
+      /** From 1, in its delivery note's order. */
+      position: z.number().int().min(1),
+    })
+    .nullable(),
+  /**
+   * The invoices that stand and bill a delivery note's line, in the order they were posted: an
+   * invoice, then any credit note restating its price (#120). Empty for any other line.
+   */
+  billedBy: z.array(Numbered),
 });
 export type PostedLine = z.infer<typeof PostedLine>;
 

@@ -4,6 +4,7 @@ import {
   checkConversions,
   endpoints,
   Locale,
+  mayCall,
   NewProduct,
   PRODUCT_CATEGORIES,
   type BaseUnit,
@@ -28,15 +29,22 @@ import { fieldMessageKey } from "../i18n/errors";
 import { formatQuantity } from "../i18n/format";
 import DeactivateDialog from "./DeactivateDialog.vue";
 import { useCatalogueItem } from "./item";
+import { currentUser } from "../session";
+import ProductStock from "./ProductStock.vue";
 import ProductSuppliers from "./ProductSuppliers.vue";
 import UnsavedDialog from "./UnsavedDialog.vue";
 import { amountToFactor, factorToAmount } from "./units";
 
 // A product's page (#89): a new one's form, an existing one's form for office and owner, or its
 // details for counter staff, and the supplier products that sell it. Its purchase units are
-// edited in place, their sizes typed in kilos, litres or units, each with a live example.
+// edited in place, their sizes typed in kilos, litres or units, each with a live example. Office
+// and the owner also see its stock and average cost in each storeroom (#120).
 const props = defineProps<{ id?: string }>();
 const t = useT();
+/** Its stock and average cost, for office and the owner (#120). */
+const mayReadStock = computed(() =>
+  mayCall(endpoints.getProductStock, currentUser.value?.role ?? null),
+);
 const { locale } = useI18n();
 
 /** A purchase unit's row as typed; `key` keeps each row's fields its own as rows go. */
@@ -368,6 +376,7 @@ const storeroomName = computed(
       </dl>
     </div>
 
+    <ProductStock v-if="item && mayReadStock" :product="item" />
     <ProductSuppliers v-if="item" :product="item" />
 
     <DeactivateDialog

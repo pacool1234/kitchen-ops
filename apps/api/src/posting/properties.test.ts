@@ -1,5 +1,6 @@
 import {
   averageCost,
+  formatUnitCost,
   latestPurchasePrice,
   parseUnitCost,
   stockOnHand,
@@ -21,6 +22,7 @@ import {
   type PostingCatalogue,
 } from "../test/posting";
 import { postDocument, reverseDocument, type ReviewedLine } from "./posting";
+import { productStock } from "../stock/stock";
 import { movementsOf } from "./stored";
 
 // Spec 11.2 (M7): database-level property tests showing that stored movements and
@@ -287,6 +289,34 @@ describe("stored movements agree with packages/ledger (spec 11.2, decision 0034)
           expect(latestPurchasePrice(stored, p)).toBe(
             latestPurchasePrice(returned, p),
           );
+        }
+      }),
+      RUNS,
+    );
+  });
+
+  it("the stock a product's page shows (#120): each storeroom it has moved through, and only those, with the ledger's stock and average cost from the movements posting returned", async () => {
+    await fc.assert(
+      fc.asyncProperty(steps, async (sequence) => {
+        const { returned } = await run(sequence);
+        for (const p of [c.tomatoes, c.eggs]) {
+          const shown = (await productStock(db, p))!;
+          const moved = [c.coldRoom, c.dryStore].filter((s) =>
+            returned.some((m) => m.productId === p && m.storeroomId === s),
+          );
+          expect(shown.storerooms.map((r) => r.storeroom.id).sort()).toEqual(
+            moved.sort(),
+          );
+          for (const {
+            storeroom,
+            onHand,
+            averageCost: cost,
+          } of shown.storerooms) {
+            expect(onHand).toBe(stockOnHand(returned, p, storeroom.id));
+            expect(cost).toBe(
+              formatUnitCost(averageCost(returned, p, storeroom.id)),
+            );
+          }
         }
       }),
       RUNS,

@@ -3,7 +3,8 @@ import {
   type DocumentPosting,
   type PostedLine,
 } from "@kitchen-ops/shared";
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, notExists } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { Tx } from "../audit/audited";
 import type { Db } from "../db/client";
 import {
@@ -16,9 +17,79 @@ import {
 } from "../db/schema";
 
 // A posted document as its page shows it (#119): each stored line as posted, with the
-// movements it made, and its reversal's, if it's reversed (decision 0034).
+// movements it made, and its reversal's, if it's reversed (decision 0034). An invoice's line
+// says the delivery-note line it billed; a delivery note's, the invoices that bill it (#120).
 
 type Reader = Db | Tx;
+
+const billed = alias(documentLines, "billed");
+const billedNote = alias(documents, "billed_note");
+const invoice = alias(documents, "invoice");
+const invoiceReversal = alias(documents, "invoice_reversal");
+
+/** Each billed delivery-note line's position and delivery note, by its ID. */
+async function billedLines(db: Reader, lineIds: readonly string[]) {
+  const rows =
+    lineIds.length === 0
+      ? []
+      : await db
+          .select({
+            id: billed.id,
+            position: billed.position,
+            noteId: billedNote.id,
+            number: billedNote.number,
+          })
+          .from(billed)
+          .innerJoin(billedNote, eq(billedNote.id, billed.documentId))
+          .where(inArray(billed.id, [...lineIds]));
+  return new Map(
+    rows.map((r) => [
+      r.id,
+      {
+        deliveryNote: { id: r.noteId, number: r.number },
+        position: r.position,
+      },
+    ]),
+  );
+}
+
+/**
+ * The invoices that stand (posted, neither a reversal nor reversed) and bill each of these
+ * delivery-note lines, by the line's ID, in the order they were posted: a posted document never
+ * changes, so its `updated_at` is when it was posted.
+ */
+async function billingInvoices(db: Reader, lineIds: readonly string[]) {
+  const rows =
+    lineIds.length === 0
+      ? []
+      : await db
+          .select({
+            lineId: documentLines.billsLineId,
+            id: invoice.id,
+            number: invoice.number,
+          })
+          .from(documentLines)
+          .innerJoin(invoice, eq(invoice.id, documentLines.documentId))
+          .where(
+            and(
+              inArray(documentLines.billsLineId, [...lineIds]),
+              eq(invoice.status, "posted"),
+              isNull(invoice.reverses),
+              notExists(
+                db
+                  .select({ id: invoiceReversal.id })
+                  .from(invoiceReversal)
+                  .where(eq(invoiceReversal.reverses, invoice.id)),
+              ),
+            ),
+          )
+          .orderBy(asc(invoice.updatedAt), asc(invoice.id));
+  const by = new Map<string, { id: string; number: string | null }[]>();
+  for (const { lineId, id, number } of rows) {
+    by.set(lineId!, [...(by.get(lineId!) ?? []), { id, number }]);
+  }
+  return by;
+}
 
 /** A document's stored lines in order, each with its movements in the order they were posted. */
 async function postedLines(
@@ -39,6 +110,7 @@ async function postedLines(
       vatRate: documentLines.vatRate,
       storeroomId: storerooms.id,
       storeroomName: storerooms.name,
+      billsLineId: documentLines.billsLineId,
     })
     .from(documentLines)
     .innerJoin(products, eq(products.id, documentLines.productId))
@@ -69,6 +141,16 @@ async function postedLines(
             ),
           )
           .orderBy(asc(movements.sequence));
+  const [bills, billedBy] = await Promise.all([
+    billedLines(
+      db,
+      lines.flatMap((l) => l.billsLineId ?? []),
+    ),
+    billingInvoices(
+      db,
+      lines.map((l) => l.id),
+    ),
+  ]);
   return lines.map((line) => ({
     position: line.position,
     product: {
@@ -96,6 +178,8 @@ async function postedLines(
         reverses: m.reverses,
         corrects: m.corrects,
       })),
+    bills: (line.billsLineId && bills.get(line.billsLineId)) || null,
+    billedBy: billedBy.get(line.id) ?? [],
   }));
 }
 

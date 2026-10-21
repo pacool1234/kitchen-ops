@@ -10,7 +10,7 @@ import {
 } from "@kitchen-ops/shared";
 import { computed, ref, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 import { call } from "../api";
 import UiAlert from "../components/ui/UiAlert.vue";
 import UiButton from "../components/ui/UiButton.vue";
@@ -29,7 +29,9 @@ import { currentUser } from "../session";
 
 // A posted document (#119, decision 0034): read-only, with what each line put in stock, where
 // and at what cost. A reversed one says when and by whom, and the movements that undid it. The
-// owner reverses it, and then may make a corrected copy of it to review and post again.
+// owner reverses it, and then may make a corrected copy of it to review and post again. An
+// invoice's line links to the delivery-note line it billed, and a delivery note's line to the
+// invoices that bill it (#120).
 const props = defineProps<{ document: Document }>();
 const emit = defineEmits<{ changed: [] }>();
 const t = useT();
@@ -70,13 +72,17 @@ function movementText(line: PostedLine, movement: PostedMovement): string {
   const { baseUnit } = line.product;
   return t("documents.posted.movement", {
     kind: t(
-      `documents.posted.kinds.${movement.reverses ? "reversal" : movement.kind}`,
+      `documents.posted.kinds.${movement.reverses ? "reversal" : movement.corrects ? "correction" : movement.kind}`,
     ),
     quantity: formatQuantity(movement.quantity, baseUnit, language.value),
     storeroom: movement.storeroom.name,
     cost: formatUnitCost(movement.unitCost, baseUnit, language.value),
   });
 }
+
+/** Another document's number, as a link to it says it. */
+const numberOf = (document: { number: string | null }) =>
+  document.number ?? t("documents.posted.noNumber");
 
 /** The line as printed: "2 garrafa". */
 const printed = (line: PostedLine) =>
@@ -140,11 +146,52 @@ async function copy() {
                 {{ line.product.name }}
               </p>
               <p class="text-sm text-fg-muted tabular">{{ printed(line) }}</p>
+              <p v-if="line.bills" class="text-sm">
+                {{ t("documents.posted.bills", { line: line.bills.position }) }}
+                <RouterLink
+                  :to="{
+                    name: 'document',
+                    params: { id: line.bills.deliveryNote.id },
+                  }"
+                  class="text-primary underline underline-offset-4"
+                >
+                  {{
+                    t("documents.posted.billsNote", {
+                      number: numberOf(line.bills.deliveryNote),
+                    })
+                  }}
+                </RouterLink>
+              </p>
               <ul class="flex flex-col gap-1 text-sm tabular">
                 <li v-for="movement in line.movements" :key="movement.id">
                   {{ movementText(line, movement) }}
                 </li>
               </ul>
+              <p
+                v-if="line.bills && line.movements.length === 0"
+                class="text-sm text-fg-muted"
+              >
+                {{ t("documents.posted.samePrice") }}
+              </p>
+              <p
+                v-if="line.billedBy.length > 0"
+                class="flex flex-wrap gap-x-2 text-sm"
+              >
+                <span>{{ t("documents.posted.billedBy") }}</span>
+                <RouterLink
+                  v-for="invoice in line.billedBy"
+                  :key="invoice.id"
+                  :to="{ name: 'document', params: { id: invoice.id } }"
+                  class="text-primary underline underline-offset-4"
+                >
+                  {{
+                    t("documents.titled", {
+                      type: t("documents.types.invoice"),
+                      number: numberOf(invoice),
+                    })
+                  }}
+                </RouterLink>
+              </p>
             </div>
           </li>
         </ol>
