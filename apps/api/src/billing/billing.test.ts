@@ -440,11 +440,7 @@ describe("PUT /api/documents/:id/billing", () => {
     await confirmed(id, [tomatoes!, oil!]);
     await confirmed(id, [{ received: true }, null]);
     const entries = await db
-      .select({
-        action: auditLog.action,
-        before: auditLog.before,
-        after: auditLog.after,
-      })
+      .select({ action: auditLog.action, changes: auditLog.changes })
       .from(auditLog)
       .where(
         and(
@@ -453,42 +449,31 @@ describe("PUT /api/documents/:id/billing", () => {
         ),
       )
       .orderBy(asc(auditLog.id));
+    const made = (position: number, line: string) => ({
+      position: { before: null, after: position },
+      deliveryNoteLineId: { before: null, after: line },
+      received: { before: null, after: false },
+    });
     expect(entries).toEqual([
-      {
-        action: "create",
-        before: null,
-        after: {
-          position: 1,
-          deliveryNoteLineId: tomatoes!.deliveryNoteLineId,
-          received: false,
-        },
-      },
-      {
-        action: "create",
-        before: null,
-        after: {
-          position: 2,
-          deliveryNoteLineId: oil!.deliveryNoteLineId,
-          received: false,
-        },
-      },
+      { action: "create", changes: made(1, tomatoes!.deliveryNoteLineId) },
+      { action: "create", changes: made(2, oil!.deliveryNoteLineId) },
       {
         action: "update",
-        before: {
-          position: 1,
-          deliveryNoteLineId: tomatoes!.deliveryNoteLineId,
-          received: false,
+        changes: {
+          deliveryNoteLineId: {
+            before: tomatoes!.deliveryNoteLineId,
+            after: null,
+          },
+          received: { before: false, after: true },
         },
-        after: { position: 1, deliveryNoteLineId: null, received: true },
       },
       {
         action: "delete",
-        before: {
-          position: 2,
-          deliveryNoteLineId: oil!.deliveryNoteLineId,
-          received: false,
+        changes: {
+          position: { before: 2, after: null },
+          deliveryNoteLineId: { before: oil!.deliveryNoteLineId, after: null },
+          received: { before: false, after: null },
         },
-        after: null,
       },
     ]);
   });
