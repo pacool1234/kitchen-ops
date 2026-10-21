@@ -3,6 +3,7 @@ import {
   DocumentPage,
   DocumentPosting,
   MeResponse,
+  PostedStockDocument,
   Product,
   Storeroom,
   Supplier,
@@ -213,17 +214,24 @@ describe("PUT /api/waste/:id", () => {
     const id = randomUUIDv7();
     const response = await waste(id, SPOILED());
     expect(response.statusCode, response.body).toBe(200);
-    const posting = DocumentPosting.parse(response.json());
-    expect(posting).toMatchObject({
+    const recorded = PostedStockDocument.parse(response.json());
+    expect(recorded).toMatchObject({
+      id,
+      type: "waste",
+      date: today(new Date()),
+      storeroom: { id: coldRoom.id, name: "Cámara" },
+      toStoreroom: null,
+      reason: "spoiled",
+      note: "Se rompió la cámara el fin de semana",
+      countedAt: null,
+      recordedBy: { id: officeId, name: "Test office" },
       reversal: null,
       lines: [
         {
           position: 1,
-          product: { id: tomate.id },
+          product: { id: tomate.id, name: "Tomate pera", baseUnit: "g" },
           quantity: "2",
           unit: "kg",
-          unitPrice: null,
-          storeroom: { id: coldRoom.id },
           movements: [
             {
               storeroom: { id: coldRoom.id },
@@ -390,13 +398,20 @@ describe("PUT /api/transfers/:id", () => {
     const id = randomUUIDv7();
     const response = await transfer(id, TO_DRY_STORE());
     expect(response.statusCode, response.body).toBe(200);
-    expect(DocumentPosting.parse(response.json()).lines).toMatchObject([
+    const recorded = PostedStockDocument.parse(response.json());
+    expect(recorded).toMatchObject({
+      type: "transfer",
+      storeroom: { id: coldRoom.id, name: "Cámara" },
+      toStoreroom: { id: dryStore.id, name: "Almacén" },
+      reason: null,
+      note: null,
+      countedAt: null,
+    });
+    expect(recorded.lines).toMatchObject([
       {
         product: { id: tomate.id },
         quantity: "4",
         unit: "kg",
-        unitPrice: null,
-        storeroom: { id: coldRoom.id },
         movements: [
           {
             storeroom: { id: coldRoom.id },
@@ -472,13 +487,20 @@ describe("PUT /api/counts/:id", () => {
     const countedAt = await databaseNow();
     const response = await count(id, COUNTED(countedAt));
     expect(response.statusCode, response.body).toBe(200);
-    expect(DocumentPosting.parse(response.json()).lines).toMatchObject([
+    const recorded = PostedStockDocument.parse(response.json());
+    expect(recorded).toMatchObject({
+      type: "count",
+      date: today(countedAt),
+      storeroom: { id: coldRoom.id },
+      toStoreroom: null,
+      reason: null,
+      countedAt: countedAt.toISOString(),
+    });
+    expect(recorded.lines).toMatchObject([
       {
         product: { id: tomate.id },
         quantity: "7.5",
         unit: "kg",
-        unitPrice: null,
-        storeroom: { id: coldRoom.id },
         movements: [
           {
             storeroom: { id: coldRoom.id },
@@ -660,7 +682,7 @@ describe("PUT /api/counts/:id", () => {
 });
 
 describe("stock documents among the rest", () => {
-  it("stay out of Documentos, the list of supplier documents, and have no document page there; their posting reads like any other", async () => {
+  it("stay out of Documentos, the list of supplier documents, and have no document page there; their posting is read on their own page, with euros by role (#151)", async () => {
     const id = randomUUIDv7();
     await waste(id, SPOILED());
     const list = await office.read("/api/documents", DocumentPage);
@@ -669,11 +691,11 @@ describe("stock documents among the rest", () => {
     expect((await office.send("GET", `/api/documents/${id}`)).statusCode).toBe(
       404,
     );
-    const posting = await counter.read(
-      `/api/documents/${id}/posting`,
-      DocumentPosting,
-    );
-    expect(posting.lines).toHaveLength(1);
+    for (const api of [counter, office]) {
+      expect(
+        (await api.send("GET", `/api/documents/${id}/posting`)).statusCode,
+      ).toBe(404);
+    }
   });
 
   it("the owner reverses waste, and the tomatoes are back; a transfer, and they're back where they were", async () => {
@@ -721,6 +743,172 @@ describe("stock documents among the rest", () => {
     expect(
       (await owner.send("POST", `/api/documents/${id}/copy`)).statusCode,
     ).toBe(404);
+  });
+});
+
+describe("GET /api/stock-documents/:id (#151)", () => {
+  const read = (id: string, api = office) =>
+    api.read(`/api/stock-documents/${id}`, PostedStockDocument);
+  /** Every key in an answer, nested ones included: what a role is sent, whatever the schema. */
+  const keysOf = (value: unknown): string[] =>
+    Array.isArray(value)
+      ? value.flatMap(keysOf)
+      : value !== null && typeof value === "object"
+        ? Object.entries(value).flatMap(([k, v]) => [k, ...keysOf(v)])
+        : [];
+
+  it("office reads waste as it was recorded: what, where, why, who, when, and each movement at its cost", async () => {
+    const id = randomUUIDv7();
+    await waste(id, SPOILED());
+    expect(await read(id)).toEqual({
+      id,
+      type: "waste",
+      date: today(new Date()),
+      storeroom: { id: coldRoom.id, name: "Cámara" },
+      toStoreroom: null,
+      reason: "spoiled",
+      note: "Se rompió la cámara el fin de semana",
+      countedAt: null,
+      recordedBy: { id: officeId, name: "Test office" },
+      lines: [
+        {
+          position: 1,
+          product: { id: tomate.id, name: "Tomate pera", baseUnit: "g" },
+          quantity: "2",
+          unit: "kg",
+          movements: [
+            {
+              id: expect.any(String),
+              storeroom: { id: coldRoom.id, name: "Cámara" },
+              quantity: -2000,
+              unitCost: "0.001800",
+              kind: "waste",
+            },
+          ],
+        },
+      ],
+      reversal: null,
+    });
+  });
+
+  it("a transfer names both storerooms; a count, when it was counted", async () => {
+    const moved = randomUUIDv7();
+    await transfer(moved, TO_DRY_STORE(), counter);
+    expect(await read(moved)).toMatchObject({
+      type: "transfer",
+      storeroom: { id: coldRoom.id, name: "Cámara" },
+      toStoreroom: { id: dryStore.id, name: "Almacén" },
+      recordedBy: { name: "Test counter" },
+      lines: [
+        {
+          movements: [
+            { storeroom: { id: coldRoom.id }, kind: "transfer-out" },
+            { storeroom: { id: dryStore.id }, kind: "transfer-in" },
+          ],
+        },
+      ],
+    });
+    const counted = randomUUIDv7();
+    const countedAt = await databaseNow();
+    await count(counted, COUNTED(countedAt));
+    expect(await read(counted)).toMatchObject({
+      type: "count",
+      countedAt: countedAt.toISOString(),
+      toStoreroom: null,
+    });
+  });
+
+  it("a reversed waste shows its reversal: when, by whom, and the movements that undid it", async () => {
+    const id = randomUUIDv7();
+    await waste(id, SPOILED());
+    const ownerId = (await owner.read("/api/me", MeResponse)).id;
+    await owner.send("POST", `/api/documents/${id}/reverse`);
+    expect((await read(id)).reversal).toEqual({
+      id: expect.any(String),
+      date: today(new Date()),
+      reversedBy: { id: ownerId, name: "Test owner" },
+      lines: [
+        expect.objectContaining({
+          position: 1,
+          quantity: "2",
+          unit: "kg",
+          movements: [
+            expect.objectContaining({
+              storeroom: { id: coldRoom.id, name: "Cámara" },
+              quantity: 2000,
+              unitCost: "0.001800",
+            }),
+          ],
+        }),
+      ],
+    });
+  });
+
+  it("a counter user reads it without a euro: no unit cost on any movement, its reversal's included", async () => {
+    const id = randomUUIDv7();
+    await waste(id, SPOILED());
+    await owner.send("POST", `/api/documents/${id}/reverse`);
+    const response = await counter.send("GET", `/api/stock-documents/${id}`);
+    expect(response.statusCode, response.body).toBe(200);
+    const body: unknown = response.json();
+    expect(keysOf(body)).not.toContain("unitCost");
+    const answer = PostedStockDocument.parse(body);
+    expect(answer.lines[0]!.movements).toEqual([
+      expect.objectContaining({ quantity: -2000, kind: "waste" }),
+    ]);
+    expect(answer.reversal!.lines[0]!.movements).toEqual([
+      expect.objectContaining({ quantity: 2000 }),
+    ]);
+  });
+
+  it("recording answers what reading does, by role: euros for office, none for a counter user, sent again or not", async () => {
+    for (const api of [office, counter]) {
+      const id = randomUUIDv7();
+      const recorded = await waste(id, SPOILED(), api);
+      const again = await waste(id, SPOILED(), api);
+      const moved = randomUUIDv7();
+      const transferred = await transfer(moved, TO_DRY_STORE(), api);
+      const counted = randomUUIDv7();
+      const counting = await count(
+        counted,
+        COUNTED(await databaseNow()),
+        api,
+      );
+      for (const [response, docId] of [
+        [recorded, id],
+        [again, id],
+        [transferred, moved],
+        [counting, counted],
+      ] as const) {
+        expect(response.statusCode, response.body).toBe(200);
+        expect(response.json()).toEqual(
+          (await api.send("GET", `/api/stock-documents/${docId}`)).json(),
+        );
+        expect(keysOf(response.json()).includes("unitCost")).toBe(
+          api === office,
+        );
+      }
+    }
+  });
+
+  it("is a stock document's only: 404 for a supplier document, a reversal, and an ID that's no document; 401 signed out", async () => {
+    const id = randomUUIDv7();
+    await waste(id, SPOILED());
+    await owner.send("POST", `/api/documents/${id}/reverse`);
+    const [reversal] = await db
+      .select({ id: documents.id })
+      .from(documents)
+      .where(eq(documents.reverses, id));
+    for (const missing of [delivery, reversal!.id, MISSING]) {
+      expect(
+        (await office.send("GET", `/api/stock-documents/${missing}`))
+          .statusCode,
+      ).toBe(404);
+    }
+    expect(
+      (await app.inject({ method: "GET", url: `/api/stock-documents/${id}` }))
+        .statusCode,
+    ).toBe(401);
   });
 });
 
