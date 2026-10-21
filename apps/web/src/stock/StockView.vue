@@ -9,9 +9,11 @@ import {
 } from "@kitchen-ops/shared";
 import { computed, onMounted, ref, useId } from "vue";
 import { useI18n } from "vue-i18n";
+import { ArrowRightLeft, Trash2 } from "lucide-vue-next";
 import { RouterLink } from "vue-router";
 import { call } from "../api";
 import { useCatalogueList } from "../catalogue/list-query";
+import { buttonClasses } from "../components/ui/styles";
 import UiDataTable, { type Column } from "../components/ui/UiDataTable.vue";
 import UiSelect from "../components/ui/UiSelect.vue";
 import UiTextField from "../components/ui/UiTextField.vue";
@@ -22,7 +24,7 @@ import { currentUser } from "../session";
 // Stock per storeroom (#150): every product in every storeroom it has moved through, searched as
 // typed and filtered by storeroom and category, a page at a time from the API. Office and the
 // owner also see its cost and value, and what the whole stock is worth. Cards on a phone, a
-// table from 768px.
+// table from 768px. Everyone records waste and transfers from here (#151).
 const t = useT();
 const { locale } = useI18n();
 const language = computed(() => Locale.parse(locale.value));
@@ -114,6 +116,19 @@ const columns = computed<Column<StockPlace>[]>(() => [
 
 <template>
   <div class="flex flex-col gap-4">
+    <div class="flex flex-wrap gap-3">
+      <RouterLink :to="{ name: 'new-waste' }" :class="buttonClasses()">
+        <Trash2 class="size-4" aria-hidden="true" />
+        {{ t("stock.newWaste") }}
+      </RouterLink>
+      <RouterLink
+        :to="{ name: 'new-transfer' }"
+        :class="buttonClasses('secondary')"
+      >
+        <ArrowRightLeft class="size-4" aria-hidden="true" />
+        {{ t("stock.newTransfer") }}
+      </RouterLink>
+    </div>
     <section
       v-if="costs && totals"
       :aria-labelledby="totalsId"
