@@ -338,14 +338,32 @@ describe("GET /api/documents/:id/matching, for an invoice", () => {
     expect((await noteLines(id, old)).map((l) => l.position)).toEqual([1, 2]);
   });
 
-  it("a line with a negative quantity is never suggested: a return bills nothing", async () => {
+  it("a line with a negative quantity is never suggested, not even for a return delivery note of the same quantity: a return bills nothing", async () => {
     await postedNote();
-    const read = invoiceFor();
+    // 5 kg returned: a delivery-note line of -5000 g, the same quantity as the invoice's line.
+    const returned = noteNumbered("ALB-0002");
+    const returnId = await inReview({
+      ...returned,
+      lines: [{ ...returned.lines[0]!, quantity: "-5", lineTotal: "-9.00" }],
+    });
+    await posted(returnId, [null]);
+    const read = invoiceFor(undefined, { deliveryNotes: ["ALB-0002"] });
     const id = await inReview({
       ...read,
       lines: [{ ...read.lines[0]!, quantity: "-5", lineTotal: "-10.00" }],
     });
     expect((await matchingOf(id)).lines[0]!.billing).toBeNull();
+  });
+
+  it("a reversed delivery note's lines can't be billed", async () => {
+    const note = await postedNote();
+    expect((await reverse(note)).statusCode).toBe(200);
+    const id = await inReview(invoiceFor());
+    expect(await noteLines(id, note)).toEqual([]);
+    expect((await matchingOf(id)).lines.map((l) => l.billing)).toEqual([
+      null,
+      null,
+    ]);
   });
 
   it("an invoice-only supplier's lines start as received with the invoice: it has never posted a delivery note", async () => {
