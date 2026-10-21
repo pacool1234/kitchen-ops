@@ -132,9 +132,12 @@ test("office finds a delivery note's goods in the stock list, valued, and follow
     .click();
   await arrivedAt(page, tomato);
   await expect(
-    page.getByRole("region", { name: "En cada almacén" }),
+    page.getByRole("region", { name: "En cada almacén", exact: true }),
   ).toContainText("9,00 €");
-  const movements = page.getByRole("region", { name: "Movimientos" });
+  const movements = page.getByRole("region", {
+    name: "Movimientos",
+    exact: true,
+  });
   const receipt = rowOf(page, isMobile, "Entrada");
   for (const text of ["+5 kg", "Cámara frigorífica", "1,80 €/kg"]) {
     await expect(receipt).toContainText(text);
@@ -218,5 +221,6 @@ test(`a full page of the stock list shows within ${SCREEN_BUDGET_MS} ms of openi
   await openStock(page);
   await expect(rowOf(page, isMobile, "Producto 050")).toBeVisible();
   expect(Date.now() - start).toBeLessThan(SCREEN_BUDGET_MS);
-  await expect(rowOf(page, isMobile, "Producto")).toHaveCount(50);
+  // "Producto 0…": not the table's "Producto" heading.
+  await expect(rowOf(page, isMobile, "Producto 0")).toHaveCount(50);
 });
