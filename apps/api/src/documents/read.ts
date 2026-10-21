@@ -56,6 +56,14 @@ export const withNames = (db: Db) =>
 
 type SummaryRow = Awaited<ReturnType<typeof withNames>>[number];
 
+/** A supplier document's type, once read. A stock document (#149) has no summary here. */
+function supplierType(type: SummaryRow["type"]): DocumentSummary["type"] {
+  if (type === null || type === "delivery-note" || type === "invoice") {
+    return type;
+  }
+  throw new Error(`a ${type} is not a supplier's document`);
+}
+
 /**
  * The document whose files each of these has: itself, or, for a corrected copy, the one first
  * uploaded, however many copies back (a copy's files are its original's, decision 0038).
@@ -100,7 +108,7 @@ export async function toSummaries(
     id: row.id,
     status: row.status,
     failureReason: row.failureReason,
-    type: row.type,
+    type: supplierType(row.type),
     supplier:
       row.supplierId && row.supplierName
         ? { id: row.supplierId, name: row.supplierName }

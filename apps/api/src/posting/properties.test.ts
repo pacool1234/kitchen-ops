@@ -197,7 +197,8 @@ async function run(sequence: readonly Step[]) {
             unit: line.unit,
             unitPrice:
               newPrice === null
-                ? parseUnitCost(line.unitPrice)
+                ? // A delivery note's line always has a price.
+                  parseUnitCost(line.unitPrice!)
                 : unitCostFromMillionths(newPrice),
             billsLineId: line.id,
           });

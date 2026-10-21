@@ -117,6 +117,12 @@ function lineRow(
   };
 }
 
+/** A supplier document's line's price: it always has one. A stock document's (#149) has none. */
+function priceOf(row: typeof documentLines.$inferSelect): string {
+  if (row.unitPrice === null) throw new Error(`line ${row.id} has no price`);
+  return row.unitPrice;
+}
+
 /** A stored line as the ledger's. */
 function lineFromRow(
   row: typeof documentLines.$inferSelect,
@@ -126,7 +132,7 @@ function lineFromRow(
     productId: row.productId,
     quantity: row.quantity,
     unit: row.unit,
-    unitPrice: ledger.parseUnitCost(row.unitPrice),
+    unitPrice: ledger.parseUnitCost(priceOf(row)),
     ...(row.discountPercent === null
       ? {}
       : { discountPercent: row.discountPercent }),

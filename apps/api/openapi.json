@@ -16074,7 +16074,10 @@
                             "type": "string"
                           },
                           "unitPrice": {
-                            "type": "string"
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "discountPercent": {
                             "type": [
@@ -16357,7 +16360,10 @@
                                     "type": "string"
                                   },
                                   "unitPrice": {
-                                    "type": "string"
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
                                   },
                                   "discountPercent": {
                                     "type": [
@@ -16923,7 +16929,10 @@
                             "type": "string"
                           },
                           "unitPrice": {
-                            "type": "string"
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "discountPercent": {
                             "type": [
@@ -17206,7 +17215,10 @@
                                     "type": "string"
                                   },
                                   "unitPrice": {
-                                    "type": "string"
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
                                   },
                                   "discountPercent": {
                                     "type": [
@@ -17772,7 +17784,10 @@
                             "type": "string"
                           },
                           "unitPrice": {
-                            "type": "string"
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "discountPercent": {
                             "type": [
@@ -18055,7 +18070,10 @@
                                     "type": "string"
                                   },
                                   "unitPrice": {
-                                    "type": "string"
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
                                   },
                                   "discountPercent": {
                                     "type": [

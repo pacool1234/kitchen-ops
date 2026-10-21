@@ -71,8 +71,11 @@ export const PostedLine = z.object({
   /** As printed, in `unit`: "1.5" cajas. */
   quantity: z.string(),
   unit: z.string(),
-  /** Per `unit`, before discount, excluding VAT: 6 decimals, as text. */
-  unitPrice: z.string(),
+  /**
+   * Per `unit`, before discount, excluding VAT: 6 decimals, as text. None for a stock document's
+   * line (#149): waste, a count or a transfer is valued at the average cost, on its movements.
+   */
+  unitPrice: z.string().nullable(),
   discountPercent: z.string().nullable(),
   vatRate: z.string().nullable(),
   /** Where it was received; none for an invoice line that bills a delivery note's. */
