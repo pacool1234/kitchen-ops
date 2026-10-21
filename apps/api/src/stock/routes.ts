@@ -5,7 +5,7 @@ import { routeFor } from "../contract";
 import type { Db } from "../db/client";
 import { HttpError, notFound } from "../errors";
 import { today } from "../extraction/read";
-import { readPosting } from "../posting/read";
+import { readStockDocument } from "./document";
 import { stockList } from "./list";
 import { productMovements } from "./movements";
 import { recordStockDocument, type RecordResult } from "./record";
@@ -14,7 +14,7 @@ import { productStock } from "./stock";
 // A product's stock and average cost in each storeroom (#120), for office and the owner. The
 // stock list and a product's movements, for everyone, with euros for office and the owner only
 // (#150). Waste, transfers and counts, recorded by anyone under an ID their client made, and
-// posted at once (#149).
+// posted at once (#149), each read on its own page (#151).
 
 /** A refusal from recording, as the API answers it. */
 function refusal(result: Exclude<RecordResult, { ok: true }>): HttpError {
@@ -59,6 +59,17 @@ export const stockRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
   });
 
   app.route({
+    ...routeFor(endpoints.getStockDocument),
+    handler: async ({ params, user }) => {
+      const document = await readStockDocument(db, params.id, {
+        costs: seesCosts(user!.role),
+      });
+      if (!document) throw notFound();
+      return document;
+    },
+  });
+
+  app.route({
     ...routeFor(endpoints.recordWaste),
     handler: async (request) => {
       const { id } = request.params;
@@ -70,7 +81,9 @@ export const stockRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
         { date: today(new Date()) },
       );
       if (!result.ok) throw refusal(result);
-      return (await readPosting(db, id))!;
+      return (await readStockDocument(db, id, {
+        costs: seesCosts(request.user!.role),
+      }))!;
     },
   });
 
@@ -86,7 +99,9 @@ export const stockRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
         { date: today(new Date()) },
       );
       if (!result.ok) throw refusal(result);
-      return (await readPosting(db, id))!;
+      return (await readStockDocument(db, id, {
+        costs: seesCosts(request.user!.role),
+      }))!;
     },
   });
 
@@ -103,7 +118,9 @@ export const stockRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
         { date: today(new Date(request.body.countedAt)) },
       );
       if (!result.ok) throw refusal(result);
-      return (await readPosting(db, id))!;
+      return (await readStockDocument(db, id, {
+        costs: seesCosts(request.user!.role),
+      }))!;
     },
   });
 };
