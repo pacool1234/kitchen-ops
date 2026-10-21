@@ -60,6 +60,17 @@ describe("posting: whether the screen offers to post the document", () => {
     ).toBe("unsaved");
   });
 
+  it("a counter user is never offered to post an invoice, even with nothing left and nothing unsaved (#120)", () => {
+    expect(
+      posting({
+        role: "counter",
+        reasons: [],
+        dirty: false,
+        type: "invoice",
+      }),
+    ).toEqual({ offered: false, blocked: "invoice" });
+  });
+
   it("office and the owner post an invoice with nothing left but a new supplier (#120)", () => {
     for (const role of ["office", "owner"] as const) {
       expect(

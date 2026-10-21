@@ -63,7 +63,8 @@ async function ok(answer: Promise<APIResponse>) {
  * Through the API, as the signed-in office user: a supplier and an oil of the test's own; the
  * fake model's delivery note from it posted, its oil into the dry store at 24,50 € a garrafa
  * of 5 l; then its invoice read, with its supplier chosen. Its lines' delivery-note lines are
- * only suggested.
+ * only suggested. The oil has no storeroom of its own: a line an invoice bills is never asked
+ * for one, so posting the invoice can't need it.
  */
 async function deliveredAndInvoiced(page: Page, label: string) {
   const supplier = await ok(
@@ -79,7 +80,6 @@ async function deliveredAndInvoiced(page: Page, label: string) {
         name: oilName,
         baseUnit: "ml",
         category: "dry_goods",
-        defaultStoreroomId: await idOf(page, "storerooms", "Almacén seco"),
         conversions: [{ unit: "garrafa", factor: 5000 }],
       },
     }),
@@ -109,7 +109,9 @@ async function deliveredAndInvoiced(page: Page, label: string) {
   }
   await ok(
     page.request.post(`/api/documents/${note}/post`, {
-      data: { storerooms: [null, null] },
+      data: {
+        storerooms: [null, await idOf(page, "storerooms", "Almacén seco")],
+      },
     }),
   );
 
