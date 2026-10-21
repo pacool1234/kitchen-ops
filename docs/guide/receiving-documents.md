@@ -27,3 +27,7 @@ Reviewing what was read, correcting it and posting it into stock: see [Reviewing
 ## For the owner
 
 A document's page also shows what reading it cost, in US dollars: usually about a cent. No other role sees it.
+
+## A new version of the app
+
+When there's a new version, a bar at the top of the page says **Hay una versión nueva de la app** (There's a new version of the app). Tap **Recargar** (Reload) to use it now, or **Ahora no** (Not now). Otherwise it's used the next time you move to another page, after anything unsaved has been saved or left. An app left open notices a new version within half an hour, or when you bring it back to the front.
