@@ -1,10 +1,12 @@
 import {
   averageCost,
+  formatMoney,
   formatUnitCost,
   latestPurchasePrice,
   parseUnitCost,
   stockOnHand,
   unitCostFromMillionths,
+  valuation,
   type Movement,
 } from "@kitchen-ops/ledger";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
@@ -29,6 +31,8 @@ import {
   type ReviewedLine,
 } from "./posting";
 import { recordStockDocument } from "../stock/record";
+import { stockList } from "../stock/list";
+import { productMovements } from "../stock/movements";
 import { productStock } from "../stock/stock";
 import { movementsOf } from "./stored";
 
@@ -459,6 +463,92 @@ describe("stored movements agree with packages/ledger (spec 11.2, decision 0034)
           }
         }
       }),
+      RUNS,
+    );
+  });
+
+  it("the stock list (#150), page by page: every product in every storeroom with movements, each once, with the ledger's stock, average cost and value; and its totals, each storeroom's and the whole stock's", async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        steps,
+        fc.integer({ min: 1, max: 3 }),
+        async (sequence, pageSize) => {
+          const { returned } = await run(sequence);
+          const expected = valuation(returned);
+          const listed = [];
+          let totals;
+          for (let page = 1; ; page++) {
+            const answer = await stockList(
+              db,
+              { page, pageSize },
+              { costs: true },
+            );
+            totals ??= answer.totals;
+            listed.push(...answer.items);
+            if (page * pageSize >= answer.total) break;
+          }
+          expect(listed).toHaveLength(expected.places.length);
+          for (const place of expected.places) {
+            const found = listed.filter(
+              (l) =>
+                l.product.id === place.productId &&
+                l.storeroom.id === place.storeroomId,
+            );
+            expect(found).toEqual([
+              expect.objectContaining({
+                onHand: place.onHand,
+                averageCost: formatUnitCost(place.averageCost),
+                value: formatMoney(place.value),
+              }),
+            ]);
+          }
+          expect(totals?.value).toBe(formatMoney(expected.total));
+          expect(
+            new Map(
+              totals?.storerooms.map((s) => [s.storeroom.id, s.value]) ?? [],
+            ),
+          ).toEqual(
+            new Map(
+              [...expected.storerooms].map(([id, value]) => [
+                id,
+                formatMoney(value),
+              ]),
+            ),
+          );
+        },
+      ),
+      RUNS,
+    );
+  });
+
+  it("a product's movements (#150), page by page: its stored movements, newest first, none missing and none twice", async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        steps,
+        fc.integer({ min: 1, max: 3 }),
+        async (sequence, pageSize) => {
+          const { returned } = await run(sequence);
+          for (const p of [c.tomatoes, c.eggs]) {
+            const listed: string[] = [];
+            for (let page = 1; ; page++) {
+              const answer = (await productMovements(
+                db,
+                p,
+                { page, pageSize },
+                { costs: true },
+              ))!;
+              listed.push(...answer.items.map((m) => m.id));
+              if (page * pageSize >= answer.total) break;
+            }
+            expect(listed).toEqual(
+              returned
+                .filter((m) => m.productId === p)
+                .map((m) => m.id)
+                .reverse(),
+            );
+          }
+        },
+      ),
       RUNS,
     );
   });

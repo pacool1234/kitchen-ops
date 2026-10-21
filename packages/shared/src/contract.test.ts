@@ -39,7 +39,7 @@ describe("endpoints: the API's contract (decision 0022)", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it("the routes that exist today: health, openapi, me, the audit log, the catalogue, a product's stock, documents, their matching and posting, waste, transfers and counts", () => {
+  it("the routes that exist today: health, openapi, me, the audit log, the catalogue, a product's stock and movements, the stock list, documents, their matching and posting, waste, transfers and counts", () => {
     const writers = { roles: ["office", "owner"] };
     expect(
       Object.values(endpoints).map((e) => [e.method, e.path, e.access]),
@@ -62,6 +62,8 @@ describe("endpoints: the API's contract (decision 0022)", () => {
       ["POST", "/api/products", writers],
       ["PATCH", "/api/products/:id", writers],
       ["GET", "/api/products/:id/stock", writers],
+      ["GET", "/api/products/:id/movements", "signed-in"],
+      ["GET", "/api/stock", "signed-in"],
       ["GET", "/api/supplier-products", "signed-in"],
       ["GET", "/api/supplier-products/:id", "signed-in"],
       ["POST", "/api/supplier-products", writers],

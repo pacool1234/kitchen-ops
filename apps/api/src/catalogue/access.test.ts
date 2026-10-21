@@ -82,6 +82,7 @@ const REQUESTS: Record<
     body: { name: `Producto ${next()}` },
   }),
   getProductStock: (ids) => ({ params: { id: ids.product } }),
+  listProductMovements: (ids) => ({ params: { id: ids.product } }),
   listSupplierProducts: () => ({}),
   getSupplierProduct: (ids) => ({ params: { id: ids.supplierProduct } }),
   createSupplierProduct: (ids) => ({

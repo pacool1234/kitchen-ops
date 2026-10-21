@@ -1,8 +1,11 @@
 import { z } from "zod";
+import type { Role } from "./auth";
 import { EXTRACTED_DOCUMENT_TYPES } from "./extraction";
 import { fieldError } from "./errors";
 import { optionalText } from "./fields";
-import { UnitName } from "./products";
+import { PageQuery, pageOf, SearchText } from "./lists";
+import { MOVEMENT_KINDS } from "./posting";
+import { BaseUnit, ProductCategory, UnitName } from "./products";
 import { decimalQuantity, PackQuantity } from "./supplier-products";
 
 // A product's stock and average cost in each storeroom (#120): what its page shows office and
@@ -117,3 +120,88 @@ export const RecordCount = z.strictObject({
     }),
 });
 export type RecordCount = z.input<typeof RecordCount>;
+
+/**
+ * Who sees what stock costs and is worth (spec section 6): office and the owner. Counter users
+ * get quantities only; the API leaves the euros out of their answers (#150).
+ */
+export function seesCosts(role: Role): boolean {
+  return role === "office" || role === "owner";
+}
+
+const Named = z.object({ id: z.uuid(), name: z.string() });
+
+/** Query of `GET /api/stock`. */
+export const StockQuery = PageQuery.extend({
+  /** In the product's name. */
+  q: SearchText,
+  category: ProductCategory.optional(),
+  storeroomId: z.uuid().optional(),
+});
+export type StockQuery = z.infer<typeof StockQuery>;
+
+/** One product in one storeroom it has moved through (#150). */
+export const StockPlace = z.object({
+  product: z.object({
+    id: z.uuid(),
+    name: z.string(),
+    baseUnit: BaseUnit,
+    category: ProductCategory,
+  }),
+  storeroom: Named,
+  /** Whole base units: the sum of its movements (ledger invariant 1). */
+  onHand: z.number().int(),
+  /** Office and the owner only. Per base unit, 6 decimals as text (decision 0015). */
+  averageCost: z.string().optional(),
+  /** Office and the owner only. On hand × average cost in euros, rounded to cents (decision 0043). */
+  value: z.string().optional(),
+});
+export type StockPlace = z.infer<typeof StockPlace>;
+
+/** What the whole stock is worth, whatever the search and filters: office and the owner only. */
+export const StockTotals = z.object({
+  /** Each storeroom with movements, by name: the sum of its places' values. */
+  storerooms: z.array(z.object({ storeroom: Named, value: z.string() })),
+  /** The sum of the storerooms' values. */
+  value: z.string(),
+});
+export type StockTotals = z.infer<typeof StockTotals>;
+
+/** Answer of `GET /api/stock`: by product name, then storeroom name. */
+export const StockPage = pageOf(StockPlace).extend({
+  totals: StockTotals.optional(),
+});
+export type StockPage = z.infer<typeof StockPage>;
+
+/** Query of `GET /api/products/:id/movements`. */
+export const ProductMovementQuery = PageQuery.extend({
+  storeroomId: z.uuid().optional(),
+});
+export type ProductMovementQuery = z.infer<typeof ProductMovementQuery>;
+
+/** One of a product's stored movements, with the document it came from (#150). */
+export const ProductMovement = z.object({
+  id: z.uuid(),
+  kind: z.enum(MOVEMENT_KINDS),
+  storeroom: Named,
+  /** Whole base units, signed: positive into the storeroom, negative out of it. */
+  quantity: z.number().int(),
+  /** Office and the owner only. Per base unit, 6 decimals as text. */
+  unitCost: z.string().optional(),
+  /** A flagged adjustment: it may take stock below zero (invariant 6). */
+  adjustment: z.boolean(),
+  /** Its document's date, YYYY-MM-DD. */
+  date: z.iso.date(),
+  document: z.object({
+    id: z.uuid(),
+    type: z.enum(STORED_DOCUMENT_TYPES),
+    number: z.string().nullable(),
+    /** For a reversal, the document it reverses: the page that shows both. */
+    reverses: z.uuid().nullable(),
+  }),
+});
+export type ProductMovement = z.infer<typeof ProductMovement>;
+
+/** Answer of `GET /api/products/:id/movements`: newest first. */
+export const ProductMovementPage = pageOf(ProductMovement);
+export type ProductMovementPage = z.infer<typeof ProductMovementPage>;
