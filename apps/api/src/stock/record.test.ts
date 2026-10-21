@@ -534,7 +534,7 @@ describe("PUT /api/counts/:id", () => {
     expect(response.statusCode, response.body).toBe(200);
     // Measured against the 10 kg there were, at their average then.
     expect(
-      DocumentPosting.parse(response.json()).lines[0]!.movements,
+      PostedStockDocument.parse(response.json()).lines[0]!.movements,
     ).toMatchObject([{ quantity: -2500, unitCost: "0.001800" }]);
     expect(await stockOf(tomate.id)).toEqual({ [coldRoom.id]: 12_500 });
   });
@@ -567,7 +567,7 @@ describe("PUT /api/counts/:id", () => {
     });
     expect(response.statusCode, response.body).toBe(200);
     expect(
-      DocumentPosting.parse(response.json()).lines[0]!.movements,
+      PostedStockDocument.parse(response.json()).lines[0]!.movements,
     ).toMatchObject([{ storeroom: { id: dryStore.id }, quantity: 0 }]);
     expect(await stockOf(tomate.id)).toEqual({
       [coldRoom.id]: 10_000,
@@ -586,7 +586,7 @@ describe("PUT /api/counts/:id", () => {
     const [row] = await db.select().from(documents).where(eq(documents.id, id));
     expect(row!.date).toBe("2025-03-30");
     expect(
-      DocumentPosting.parse(response.json()).lines[0]!.movements,
+      PostedStockDocument.parse(response.json()).lines[0]!.movements,
     ).toMatchObject([{ quantity: 0 }]);
     expect(await stockOf(tomate.id)).toEqual({ [coldRoom.id]: 10_000 });
   });
@@ -869,11 +869,7 @@ describe("GET /api/stock-documents/:id (#151)", () => {
       const moved = randomUUIDv7();
       const transferred = await transfer(moved, TO_DRY_STORE(), api);
       const counted = randomUUIDv7();
-      const counting = await count(
-        counted,
-        COUNTED(await databaseNow()),
-        api,
-      );
+      const counting = await count(counted, COUNTED(await databaseNow()), api);
       for (const [response, docId] of [
         [recorded, id],
         [again, id],
