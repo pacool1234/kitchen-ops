@@ -1,15 +1,21 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
-import { ExtractedDocument } from "@kitchen-ops/shared";
+import {
+  DocumentMatching,
+  ProductStock,
+  ExtractedDocument,
+} from "@kitchen-ops/shared";
 import { count, eq, inArray, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { buildApp } from "../app";
 import { createAuth } from "../auth/auth";
 import { createUser } from "../auth/users";
 import { checked } from "../extraction/read";
 import { readMatching } from "../matching/matching";
 import { createMemoryStorage } from "../storage/memory";
 import type { Storage } from "../storage/storage";
-import { TEST_PASSWORD } from "../test/auth";
+import { signedInAs, TEST_PASSWORD } from "../test/auth";
+import { apiAs } from "../test/catalogue";
 import { testConfig } from "../test/helpers";
 import { createDb } from "./client";
 import {
@@ -35,6 +41,7 @@ import { runSeed } from "./seed-run";
 
 // Staging's demo documents (#119, decision 0039): seeded by their fixed IDs, on a database that
 // may have a catalogue and documents of its own already. Each one is what reading it would give.
+// The fourth is the invoice for the first, a delivery note (#120).
 
 const config = testConfig();
 const { db, close } = createDb(config.DATABASE_URL);
@@ -111,7 +118,7 @@ describe("the demo documents (#119)", () => {
     await seed(storage);
 
     const rows = await demoRows();
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(4);
     const [office] = await db
       .select({ id: users.id })
       .from(users)
@@ -121,7 +128,7 @@ describe("the demo documents (#119)", () => {
       const { bytes, sha256, expected } = gold(folder);
       expect(row).toMatchObject({
         status: "ready_for_review",
-        type: "delivery-note",
+        type: expected.documentType,
         number: expected.number,
         date: expected.issueDate,
         draft: expected,
@@ -148,6 +155,21 @@ describe("the demo documents (#119)", () => {
     }
   });
 
+  it("three are delivery notes, and the fourth the invoice for the first (#120)", async () => {
+    await seed(createMemoryStorage());
+    const typeOf = new Map((await demoRows()).map((r) => [r.id, r.type]));
+    expect(DEMO_DOCUMENTS.map((d) => typeOf.get(d.id))).toEqual([
+      "delivery-note",
+      "delivery-note",
+      "delivery-note",
+      "invoice",
+    ]);
+    const note = gold(DEMO_DOCUMENTS[0]!.gold).expected;
+    const invoice = gold(DEMO_DOCUMENTS[3]!.gold).expected;
+    expect(invoice.supplier.taxId).toBe(note.supplier.taxId);
+    expect(invoice.deliveryNotes).toEqual([note.number]);
+  });
+
   it("two are from suppliers we know; Huerta La Ejemplar is left to create in review", async () => {
     await seed(createMemoryStorage());
     const supplierOf = new Map(
@@ -160,6 +182,9 @@ describe("the demo documents (#119)", () => {
     expect(await supplierId("B00123455")).toBeNull();
     expect(supplierOf.get(DEMO_DOCUMENTS[2]!.id)).toBe(
       await supplierId("B00555664"),
+    );
+    expect(supplierOf.get(DEMO_DOCUMENTS[3]!.id)).toBe(
+      await supplierId("B00777029"),
     );
   });
 
@@ -220,7 +245,7 @@ describe("the demo documents (#119)", () => {
     expect(storage.keys()).toEqual(keys);
     // Not as files uploaded already: they're the demo's own.
     expect(lines).toContain(
-      "Inserted 0 demo documents ready for review; 3 were there already.",
+      "Inserted 0 demo documents ready for review; 4 were there already.",
     );
   });
 
@@ -243,7 +268,7 @@ describe("the demo documents (#119)", () => {
     expect(await counts()).toMatchObject({
       suppliers: 2,
       products: demoProducts.length,
-      documents: 3,
+      documents: 4,
     });
     const [carnes] = await db
       .select({ name: suppliers.name })
@@ -293,7 +318,7 @@ describe("the demo documents (#119)", () => {
 
     await seed(createMemoryStorage());
     expect((await demoRows()).map((r) => r.id).sort()).toEqual(
-      [DEMO_DOCUMENTS[1]!.id, DEMO_DOCUMENTS[2]!.id].sort(),
+      ids.slice(1).sort(),
     );
     expect(lines).toContain(
       `Skipped demo document ${DEMO_DOCUMENTS[0]!.gold}: its file was uploaded already.`,
@@ -335,6 +360,98 @@ describe("the demo documents (#119)", () => {
     };
     await expect(seed(failing)).rejects.toThrow("storage is down");
     expect(await demoRows()).toEqual([]);
+  });
+});
+
+describe("the demo invoice (#120)", () => {
+  const app = buildApp(config, { storage: createMemoryStorage() });
+  afterAll(() => app.close());
+
+  const productId = async (name: string) =>
+    (
+      await db
+        .select({ id: products.id })
+        .from(products)
+        .where(eq(products.name, name))
+    )[0]!.id;
+
+  it("bills the demo's Carnes Ficticias delivery note: until it's posted, its lines are received with the invoice; then each is suggested its delivery-note line, two at new prices, and posting it moves their average costs", async () => {
+    await seed(createMemoryStorage());
+    const office = apiAs(app, await signedInAs(app, auth, "office"));
+    const [note, , , invoice] = ids as [string, string, string, string];
+    const matching = () =>
+      office.read(`/api/documents/${invoice}/matching`, DocumentMatching);
+
+    // Carnes Ficticias has posted no delivery note yet: so far, an invoice-only supplier's.
+    expect((await matching()).lines.map((l) => l.billing?.by)).toEqual(
+      Array(5).fill("received"),
+    );
+
+    // The delivery note reviewed, its three lines the demo left to map mapped, and posted.
+    for (const [line, product, unit] of [
+      [2, "Pollo entero", "kg"],
+      [4, "Chorizo para cocinar", "unit"],
+      [5, "Panceta curada", "kg"],
+    ] as const) {
+      const mapped = await office.send(
+        "POST",
+        `/api/documents/${note}/lines/${line}/mapping`,
+        {
+          productId: await productId(product),
+          pack: { quantity: "1", unit },
+        },
+      );
+      expect(mapped.statusCode, mapped.body).toBe(201);
+    }
+    const storerooms = Array(5).fill(null);
+    const postedNote = await office.send(
+      "POST",
+      `/api/documents/${note}/post`,
+      { storerooms },
+    );
+    expect(postedNote.statusCode, postedNote.body).toBe(200);
+
+    // Each invoice line suggested its line of the delivery note it lists.
+    const suggested = await matching();
+    expect(suggested.lines.map((l) => l.billing?.by)).toEqual(
+      Array(5).fill("suggested"),
+    );
+    expect(
+      suggested.lines.map((l) =>
+        l.billing && l.billing.by !== "received" ? l.billing.difference : null,
+      ),
+    ).toEqual(["1.17", "0.00", "0.00", "0.00", "-0.54"]);
+    expect(suggested.difference).toBe("0.63");
+    expect(suggested.reviewReasons).toEqual(["new_supplier", "unbilled_lines"]);
+
+    // Confirmed as suggested, and posted: the solomillo and the panceta now cost the invoice's.
+    const confirmed = await office.send(
+      "PUT",
+      `/api/documents/${invoice}/billing`,
+      {
+        lines: suggested.lines.map((l) => ({
+          deliveryNoteLineId:
+            l.billing?.by === "suggested" ? l.billing.deliveryNoteLine.id : "",
+        })),
+      },
+    );
+    expect(confirmed.statusCode, confirmed.body).toBe(200);
+    const postedInvoice = await office.send(
+      "POST",
+      `/api/documents/${invoice}/post`,
+      { storerooms },
+    );
+    expect(postedInvoice.statusCode, postedInvoice.body).toBe(200);
+    const cost = async (name: string) =>
+      (
+        await office.read(
+          `/api/products/${await productId(name)}/stock`,
+          ProductStock,
+        )
+      ).storerooms.map((s) => [s.onHand, s.averageCost]);
+    expect(await cost("Solomillo de ternera")).toEqual([[2350, "0.033400"]]);
+    expect(await cost("Panceta curada")).toEqual([[1080, "0.010900"]]);
+    expect(await cost("Pollo entero")).toEqual([[4125, "0.004850"]]);
   });
 });
 
