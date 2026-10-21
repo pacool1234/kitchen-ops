@@ -214,7 +214,7 @@ function failureText(failure: DocumentCheckFailure): string {
       :class="
         mode === 'none'
           ? 'flex flex-col gap-8'
-          : 'grid gap-8 lg:grid-cols-2 lg:items-start'
+          : 'grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start'
       "
     >
       <div
