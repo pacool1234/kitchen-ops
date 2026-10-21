@@ -237,6 +237,7 @@ describe("PUT /api/waste/:id", () => {
               storeroom: { id: coldRoom.id },
               quantity: -2000,
               unitCost: "0.001800",
+              value: "-3.60",
               kind: "waste",
             },
           ],
@@ -417,12 +418,14 @@ describe("PUT /api/transfers/:id", () => {
             storeroom: { id: coldRoom.id },
             quantity: -4000,
             unitCost: "0.001800",
+            value: "-7.20",
             kind: "transfer-out",
           },
           {
             storeroom: { id: dryStore.id },
             quantity: 4000,
             unitCost: "0.001800",
+            value: "7.20",
             kind: "transfer-in",
           },
         ],
@@ -506,6 +509,7 @@ describe("PUT /api/counts/:id", () => {
             storeroom: { id: coldRoom.id },
             quantity: -2500,
             unitCost: "0.001800",
+            value: "-4.50",
             kind: "count",
           },
         ],
@@ -782,6 +786,7 @@ describe("GET /api/stock-documents/:id (#151)", () => {
               storeroom: { id: coldRoom.id, name: "Cámara" },
               quantity: -2000,
               unitCost: "0.001800",
+              value: "-3.60",
               kind: "waste",
             },
           ],
@@ -837,6 +842,7 @@ describe("GET /api/stock-documents/:id (#151)", () => {
               storeroom: { id: coldRoom.id, name: "Cámara" },
               quantity: 2000,
               unitCost: "0.001800",
+              value: "3.60",
             }),
           ],
         }),
@@ -844,7 +850,7 @@ describe("GET /api/stock-documents/:id (#151)", () => {
     });
   });
 
-  it("a counter user reads it without a euro: no unit cost on any movement, its reversal's included", async () => {
+  it("a counter user reads it without a euro: no unit cost or value on any movement, its reversal's included", async () => {
     const id = randomUUIDv7();
     await waste(id, SPOILED());
     await owner.send("POST", `/api/documents/${id}/reverse`);
@@ -852,6 +858,7 @@ describe("GET /api/stock-documents/:id (#151)", () => {
     expect(response.statusCode, response.body).toBe(200);
     const body: unknown = response.json();
     expect(keysOf(body)).not.toContain("unitCost");
+    expect(keysOf(body)).not.toContain("value");
     const answer = PostedStockDocument.parse(body);
     expect(answer.lines[0]!.movements).toEqual([
       expect.objectContaining({ quantity: -2000, kind: "waste" }),
@@ -883,8 +890,30 @@ describe("GET /api/stock-documents/:id (#151)", () => {
         expect(keysOf(response.json()).includes("unitCost")).toBe(
           api === office,
         );
+        expect(keysOf(response.json()).includes("value")).toBe(api === office);
       }
     }
+  });
+
+  it("a movement's value (#152) is its quantity at its cost, rounded once to cents, half away from zero: 3 g out at €0.001667/g is -€0.01", async () => {
+    const sal = await office.created(
+      "/api/products",
+      { name: "Sal en escamas", baseUnit: "g", category: "dry_goods" },
+      Product,
+    );
+    await deliver("A-2", [reviewedLine(sal.id, "1000", "g", "0.001667")]);
+    const id = randomUUIDv7();
+    await waste(id, {
+      storeroomId: coldRoom.id,
+      reason: "broken",
+      lines: [
+        { productId: sal.id, quantity: "3", unit: "g" },
+        { productId: sal.id, quantity: "2", unit: "g" },
+      ],
+    });
+    const { lines } = await read(id);
+    // -0.005001 € is past half a cent; -0.003334 € isn't, and is no euros at all, unsigned.
+    expect(lines.map((l) => l.movements[0]!.value)).toEqual(["-0.01", "0.00"]);
   });
 
   it("is a stock document's only: 404 for a supplier document, a reversal, and an ID that's no document; 401 signed out", async () => {
