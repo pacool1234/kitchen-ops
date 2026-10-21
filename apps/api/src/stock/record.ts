@@ -16,14 +16,22 @@ import {
   storerooms,
 } from "../db/schema";
 import { lineRow, takePostingLock } from "../posting/posting";
-import { conversionsOf, movementToRow, movementsOf } from "../posting/stored";
+import {
+  conversionsOf,
+  movementToRow,
+  movementsOf,
+  postedBefore,
+} from "../posting/stored";
 
-// Waste and transfers (#149, decision 0044): stock documents that staff record, posted as
-// they're recorded, in one audited transaction under the posting lock. Each is recorded under
-// an ID the client made: the same request again answers what was posted and posts nothing
-// more, so a phone that never heard the answer can simply send it again (#153).
+// Waste, transfers and counts (#149, decision 0044): stock documents that staff record, posted
+// as they're recorded, in one audited transaction under the posting lock. Each is recorded
+// under an ID the client made: the same request again answers what was posted and posts
+// nothing more, so a phone that never heard the answer can simply send it again (#153).
 
-/** What was recorded: waste from a storeroom, or a transfer out of one into another. */
+/** How far ahead of the database's clock a count's time may be: a phone's clock that runs fast. */
+export const CLOCK_AHEAD_MS = 5 * 60_000;
+
+/** What was recorded: waste from a storeroom, a transfer out of one into another, or a count. */
 export type StockDocument =
   | {
       readonly type: "waste";
@@ -37,6 +45,14 @@ export type StockDocument =
       readonly storeroomId: string;
       readonly toStoreroomId: string;
       readonly lines: readonly StockLine[];
+    }
+  | {
+      readonly type: "count";
+      readonly storeroomId: string;
+      /** When it was counted, as ISO text in UTC. */
+      readonly countedAt: string;
+      /** What was counted: 0 is a count too. */
+      readonly lines: readonly StockLine[];
     };
 
 export type RecordResult =
@@ -44,13 +60,13 @@ export type RecordResult =
   | { readonly ok: true; readonly movements: readonly ledger.Movement[] }
   /** The ID is another document's, or this one's recorded from another request. */
   | { readonly ok: false; readonly reason: "conflict" }
-  /** A storeroom, product, unit or quantity that can't be: by field. */
+  /** A storeroom, product, unit, quantity or count's time that can't be: by field. */
   | {
       readonly ok: false;
       readonly reason: "invalid";
       readonly fields: Readonly<Record<string, FieldErrorCode>>;
     }
-  /** Lines that would take stock below zero (invariant 6): by field. */
+  /** Lines that would take stock below zero (invariant 6): by field. Never a count's. */
   | {
       readonly ok: false;
       readonly reason: "below_zero";
@@ -102,9 +118,11 @@ async function storeroomRefusals(
 }
 
 /**
- * Records waste or a transfer under `id`, and posts it: its document, lines and movements, all
- * or nothing, dated `date`. Every line is checked before the ledger posts it, so what the
- * ledger refuses is stock that would go below zero.
+ * Records waste, a transfer or a count under `id`, and posts it: its document, lines and
+ * movements, all or nothing, dated `date`. Every line is checked before the ledger posts it, so
+ * what the ledger refuses is stock that would go below zero. A count is measured against the
+ * movements posted by the time it was counted (decision 0043); one that's late and leaves stock
+ * below zero is posted as a flagged adjustment instead.
  */
 export async function recordStockDocument(
   db: Db,
@@ -114,7 +132,7 @@ export async function recordStockDocument(
   { date }: { date: string },
 ): Promise<RecordResult> {
   return audited<RecordResult>(db, context, async (tx) => {
-    await takePostingLock(tx);
+    const postedAt = await takePostingLock(tx);
     const sha = requestSha256(document);
     const [existing] = await tx
       .select({ type: documents.type, requestSha256: documents.requestSha256 })
@@ -133,6 +151,13 @@ export async function recordStockDocument(
 
     const fields: Record<string, FieldErrorCode> = {};
     await storeroomRefusals(tx, document, fields);
+    // A count from the future would be measured against movements posted after it was made.
+    if (
+      document.type === "count" &&
+      Date.parse(document.countedAt) > postedAt.getTime() + CLOCK_AHEAD_MS
+    ) {
+      fields.countedAt = "invalid";
+    }
     const productIds = [...new Set(document.lines.map((l) => l.productId))];
     const [known, conversions] = await Promise.all([
       tx
@@ -178,11 +203,21 @@ export async function recordStockDocument(
     const posted = ledger.postDocument(
       document.type === "waste"
         ? { ...header, type: "waste" }
-        : {
-            ...header,
-            type: "transfer",
-            toStoreroomId: document.toStoreroomId,
-          },
+        : document.type === "transfer"
+          ? {
+              ...header,
+              type: "transfer",
+              toStoreroomId: document.toStoreroomId,
+            }
+          : {
+              ...header,
+              type: "count",
+              movementsBeforeCount: await postedBefore(
+                tx,
+                productIds,
+                new Date(document.countedAt),
+              ),
+            },
       {
         movements: await movementsOf(tx, productIds),
         conversions,
@@ -210,6 +245,8 @@ export async function recordStockDocument(
         document.type === "transfer" ? document.toStoreroomId : null,
       wasteReason: document.type === "waste" ? document.reason : null,
       note: document.type === "waste" ? document.note : null,
+      countedAt:
+        document.type === "count" ? new Date(document.countedAt) : null,
     };
     await tx.insert(documents).values({
       id,
@@ -230,7 +267,9 @@ export async function recordStockDocument(
           ),
         ),
       );
-    await tx.insert(movements).values(posted.movements.map(movementToRow));
+    await tx
+      .insert(movements)
+      .values(posted.movements.map((m) => movementToRow(m, postedAt)));
     return {
       result: { ok: true, movements: posted.movements },
       changes: [

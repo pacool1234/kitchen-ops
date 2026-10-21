@@ -17,35 +17,39 @@ export function canonicalQuantity(quantity: string): string {
   return decimals ? `${digits}.${decimals}` : digits;
 }
 
+/** A decimal with up to 6 places, up to MAX_PACK_QUANTITY: above 0, or 0 too if `zero`. */
+export const decimalQuantity = ({ zero }: { zero: boolean }) =>
+  z
+    .string()
+    .trim()
+    .regex(/^\d+(\.\d{1,6})?$/)
+    .transform(canonicalQuantity)
+    .superRefine((quantity, ctx) => {
+      // Compared as text and bigint, never as a JavaScript number: "0.000001" stays exact.
+      const [whole = "0", fraction = ""] = quantity.split(".");
+      const units = BigInt(whole);
+      const max = BigInt(MAX_PACK_QUANTITY);
+      if (!zero && units === 0n && fraction === "") {
+        ctx.addIssue({
+          code: "too_small",
+          origin: "number",
+          minimum: 0,
+          inclusive: false,
+          input: quantity,
+        });
+      } else if (units > max || (units === max && fraction !== "")) {
+        ctx.addIssue({
+          code: "too_big",
+          origin: "number",
+          maximum: MAX_PACK_QUANTITY,
+          inclusive: true,
+          input: quantity,
+        });
+      }
+    });
+
 /** How much of the product's unit a pack holds: a decimal with up to 6 places, above 0. */
-export const PackQuantity = z
-  .string()
-  .trim()
-  .regex(/^\d+(\.\d{1,6})?$/)
-  .transform(canonicalQuantity)
-  .superRefine((quantity, ctx) => {
-    // Compared as text and bigint, never as a JavaScript number: "0.000001" stays exact.
-    const [whole = "0", fraction = ""] = quantity.split(".");
-    const units = BigInt(whole);
-    const max = BigInt(MAX_PACK_QUANTITY);
-    if (units === 0n && fraction === "") {
-      ctx.addIssue({
-        code: "too_small",
-        origin: "number",
-        minimum: 0,
-        inclusive: false,
-        input: quantity,
-      });
-    } else if (units > max || (units === max && fraction !== "")) {
-      ctx.addIssue({
-        code: "too_big",
-        origin: "number",
-        maximum: MAX_PACK_QUANTITY,
-        inclusive: true,
-        input: quantity,
-      });
-    }
-  });
+export const PackQuantity = decimalQuantity({ zero: false });
 
 /** A pack: a quantity in one of the product's units, its base unit included. */
 export const Pack = z.strictObject({ quantity: PackQuantity, unit: UnitName });

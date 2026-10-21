@@ -20,7 +20,12 @@ import {
   NewMapping,
 } from "./matching";
 import { DocumentPosting, PostDocument } from "./posting";
-import { ProductStock, RecordTransfer, RecordWaste } from "./stock";
+import {
+  ProductStock,
+  RecordCount,
+  RecordTransfer,
+  RecordWaste,
+} from "./stock";
 import {
   NewProduct,
   Product,
@@ -485,6 +490,17 @@ export const endpoints = {
     access: "signed-in",
     params: IdParams,
     body: RecordTransfer,
+    response: DocumentPosting,
+    conflict: true,
+  }),
+  recordCount: endpoint({
+    method: "PUT",
+    path: "/api/counts/:id",
+    summary:
+      "Record a count and post it, measured against the stock when it was counted, under an ID the client made: sent again, it answers what was posted",
+    access: "signed-in",
+    params: IdParams,
+    body: RecordCount,
     response: DocumentPosting,
     conflict: true,
   }),

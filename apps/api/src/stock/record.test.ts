@@ -7,11 +7,11 @@ import {
   Storeroom,
   Supplier,
 } from "@kitchen-ops/shared";
-import { eq, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../app";
 import { createAuth } from "../auth/auth";
-import { createDb } from "../db/client";
+import { createDb, type Db } from "../db/client";
 import {
   documentFiles,
   documents,
@@ -22,17 +22,22 @@ import {
   users,
 } from "../db/schema";
 import { today } from "../extraction/read";
-import { postDocument } from "../posting/posting";
+import {
+  databaseNow as readClock,
+  postDocument,
+  type ReviewedLine,
+} from "../posting/posting";
 import { createMemoryStorage } from "../storage/memory";
 import { signedInAs, signedInAsOwner } from "../test/auth";
 import { apiAs, syntheticCif } from "../test/catalogue";
 import { testConfig } from "../test/helpers";
 import { reviewedLine } from "../test/posting";
+import { recordStockDocument } from "./record";
 import { productStock } from "./stock";
 
-// Waste and transfers (#149, decision 0044): recorded under an ID the client made, and posted
-// at once, by any role. The same request sent again answers what was posted, and posts nothing
-// more; another one under the same ID is refused.
+// Waste, transfers and counts (#149, decision 0044): recorded under an ID the client made, and
+// posted at once, by any role. The same request sent again answers what was posted, and posts
+// nothing more; another one under the same ID is refused.
 
 const config = testConfig();
 const { db, close } = createDb(config.DATABASE_URL);
@@ -104,46 +109,64 @@ beforeEach(async () => {
     Product,
   );
 
+  delivery = await deliver("A-1", [
+    reviewedLine(tomate.id, "10", "kg", "1.80"),
+    reviewedLine(aceite.id, "10", "l", "4.90", { storeroomId: dryStore.id }),
+  ]);
+});
+
+/** Posts a delivery note from El Huerto into the cold room, and gives its ID. */
+async function deliver(number: string, lines: ReviewedLine[]) {
   const [row] = await db
     .insert(documents)
     .values({ status: "ready_for_review", uploadedBy: officeId })
     .returning({ id: documents.id });
-  delivery = row!.id;
+  const id = row!.id;
   // A supplier's document comes with its file, a photo here.
   await db.insert(documentFiles).values({
-    documentId: delivery,
+    documentId: id,
     position: 1,
     kind: "image",
     contentType: "image/jpeg",
     sizeBytes: 1,
-    sha256: delivery,
-    storageKey: `documents/${delivery}/1.jpg`,
+    sha256: id,
+    storageKey: `documents/${id}/1.jpg`,
   });
   const posted = await postDocument(
     db,
     { userId: officeId, requestId: "test" },
-    delivery,
+    id,
     {
       type: "delivery-note",
       supplierId: huerto.id,
-      number: "A-1",
+      number,
       date: "2026-10-20",
       storeroomId: coldRoom.id,
-      lines: [
-        reviewedLine(tomate.id, "10", "kg", "1.80"),
-        reviewedLine(aceite.id, "10", "l", "4.90", {
-          storeroomId: dryStore.id,
-        }),
-      ],
+      lines,
     },
   );
   expect(posted.ok).toBe(true);
-});
+  return id;
+}
+
+/**
+ * The database's clock, which stamps movements, to the millisecond: what a count's time is
+ * compared with. It waits for the clock to move on, so what's posted next is stamped later.
+ */
+async function databaseNow() {
+  const read = () => readClock(db);
+  const now = await read();
+  let later = await read();
+  while (later.getTime() === now.getTime()) later = await read();
+  return now;
+}
 
 const waste = (id: string, body: object, api = office) =>
   api.send("PUT", `/api/waste/${id}`, body);
 const transfer = (id: string, body: object, api = office) =>
   api.send("PUT", `/api/transfers/${id}`, body);
+const count = (id: string, body: object, api = office) =>
+  api.send("PUT", `/api/counts/${id}`, body);
 
 /** 2 kg of tomatoes from the cold room, spoiled. */
 const SPOILED = () => ({
@@ -158,6 +181,13 @@ const TO_DRY_STORE = () => ({
   storeroomId: coldRoom.id,
   toStoreroomId: dryStore.id,
   lines: [{ productId: tomate.id, quantity: "4", unit: "kg" }],
+});
+
+/** 7.5 kg of tomatoes in the cold room, counted at `countedAt`. */
+const COUNTED = (countedAt: Date) => ({
+  storeroomId: coldRoom.id,
+  countedAt: countedAt.toISOString(),
+  lines: [{ productId: tomate.id, quantity: "7.5", unit: "kg" }],
 });
 
 /** A product's stock in each storeroom, by storeroom ID. */
@@ -436,6 +466,199 @@ describe("PUT /api/transfers/:id", () => {
   });
 });
 
+describe("PUT /api/counts/:id", () => {
+  it("office counts 7.5 kg of tomatoes with 10 kg on hand: −2500 g at the average, €0.001800/g, posted at once, with where and when", async () => {
+    const id = randomUUIDv7();
+    const countedAt = await databaseNow();
+    const response = await count(id, COUNTED(countedAt));
+    expect(response.statusCode, response.body).toBe(200);
+    expect(DocumentPosting.parse(response.json()).lines).toMatchObject([
+      {
+        product: { id: tomate.id },
+        quantity: "7.5",
+        unit: "kg",
+        unitPrice: null,
+        storeroom: { id: coldRoom.id },
+        movements: [
+          {
+            storeroom: { id: coldRoom.id },
+            quantity: -2500,
+            unitCost: "0.001800",
+            kind: "count",
+          },
+        ],
+      },
+    ]);
+    const [row] = await db.select().from(documents).where(eq(documents.id, id));
+    expect(row).toMatchObject({
+      status: "posted",
+      type: "count",
+      storeroomId: coldRoom.id,
+      toStoreroomId: null,
+      wasteReason: null,
+      note: null,
+      supplierId: null,
+      countedAt,
+      date: today(countedAt),
+      uploadedBy: officeId,
+    });
+    expect(await stockOf(tomate.id)).toEqual({ [coldRoom.id]: 7500 });
+  });
+
+  it("counted before a delivery that's posted since, and synced after it: the delivery isn't counted away, so stock is what was counted plus its 5 kg", async () => {
+    const countedAt = await databaseNow();
+    await deliver("A-2", [reviewedLine(tomate.id, "5", "kg", "2.00")]);
+    const response = await count(randomUUIDv7(), COUNTED(countedAt));
+    expect(response.statusCode, response.body).toBe(200);
+    // Measured against the 10 kg there were, at their average then.
+    expect(
+      DocumentPosting.parse(response.json()).lines[0]!.movements,
+    ).toMatchObject([{ quantity: -2500, unitCost: "0.001800" }]);
+    expect(await stockOf(tomate.id)).toEqual({ [coldRoom.id]: 12_500 });
+  });
+
+  it("counted 0 before waste that's posted since: still posted, as a flagged adjustment, and the stock is below zero", async () => {
+    const countedAt = await databaseNow();
+    expect((await waste(randomUUIDv7(), SPOILED())).statusCode).toBe(200);
+    const id = randomUUIDv7();
+    const response = await count(id, {
+      ...COUNTED(countedAt),
+      lines: [{ productId: tomate.id, quantity: "0", unit: "kg" }],
+    });
+    expect(response.statusCode, response.body).toBe(200);
+    const moved = await db
+      .select({
+        quantity: movements.quantity,
+        adjustment: movements.adjustment,
+      })
+      .from(movements)
+      .where(eq(movements.kind, "count"));
+    expect(moved).toEqual([{ quantity: -10_000, adjustment: true }]);
+    expect(await stockOf(tomate.id)).toEqual({ [coldRoom.id]: -2000 });
+  });
+
+  it("a product left out of the count is left as it is; 0 counted of something never there posts a movement of 0", async () => {
+    const response = await count(randomUUIDv7(), {
+      storeroomId: dryStore.id,
+      countedAt: (await databaseNow()).toISOString(),
+      lines: [{ productId: tomate.id, quantity: "0", unit: "kg" }],
+    });
+    expect(response.statusCode, response.body).toBe(200);
+    expect(
+      DocumentPosting.parse(response.json()).lines[0]!.movements,
+    ).toMatchObject([{ storeroom: { id: dryStore.id }, quantity: 0 }]);
+    expect(await stockOf(tomate.id)).toEqual({
+      [coldRoom.id]: 10_000,
+      [dryStore.id]: 0,
+    });
+    expect(await stockOf(aceite.id)).toEqual({ [dryStore.id]: 10_000 });
+  });
+
+  it("is dated the day it was counted, in Madrid: 23:30 UTC on 29 March 2025 is the 30th there; counted that long ago, it's measured against nothing posted since", async () => {
+    const id = randomUUIDv7();
+    const response = await count(id, {
+      ...COUNTED(new Date("2025-03-29T23:30:00Z")),
+      lines: [{ productId: tomate.id, quantity: "0", unit: "kg" }],
+    });
+    expect(response.statusCode, response.body).toBe(200);
+    const [row] = await db.select().from(documents).where(eq(documents.id, id));
+    expect(row!.date).toBe("2025-03-30");
+    expect(
+      DocumentPosting.parse(response.json()).lines[0]!.movements,
+    ).toMatchObject([{ quantity: 0 }]);
+    expect(await stockOf(tomate.id)).toEqual({ [coldRoom.id]: 10_000 });
+  });
+
+  it("refuses a product counted twice, a time more than 5 minutes ahead, a negative quantity, and a unit the product doesn't have, on their fields, and posts nothing", async () => {
+    const now = await databaseNow();
+    const line = (more: object = {}) => ({
+      productId: tomate.id,
+      quantity: "1",
+      unit: "kg",
+      ...more,
+    });
+    const moved = await movementCount();
+    await expectRefused(
+      await count(randomUUIDv7(), {
+        ...COUNTED(now),
+        lines: [line(), line({ quantity: "500", unit: "g" })],
+      }),
+      400,
+      { error: "invalid_input", fields: { "lines.1.productId": "taken" } },
+    );
+    await expectRefused(
+      await count(
+        randomUUIDv7(),
+        COUNTED(new Date(now.getTime() + 10 * 60_000)),
+      ),
+      400,
+      { error: "invalid_input", fields: { countedAt: "invalid" } },
+    );
+    await expectRefused(
+      await count(randomUUIDv7(), {
+        ...COUNTED(now),
+        lines: [line({ quantity: "-1" })],
+      }),
+      400,
+      { error: "invalid_input", fields: { "lines.0.quantity": "invalid" } },
+    );
+    await expectRefused(
+      await count(randomUUIDv7(), {
+        ...COUNTED(now),
+        lines: [line({ unit: "caja" })],
+      }),
+      400,
+      { error: "invalid_input", fields: { "lines.0.unit": "unknown_unit" } },
+    );
+    await expectRefused(
+      await count(randomUUIDv7(), { ...COUNTED(now), storeroomId: closed.id }),
+      400,
+      { error: "invalid_input", fields: { storeroomId: "invalid" } },
+    );
+    expect(await movementCount()).toBe(moved);
+  });
+
+  it("takes a phone's clock a minute ahead", async () => {
+    const ahead = new Date((await databaseNow()).getTime() + 60_000);
+    expect((await count(randomUUIDv7(), COUNTED(ahead))).statusCode).toBe(200);
+  });
+
+  it("the same count sent again, its time written in Madrid's offset, answers what was posted and posts nothing more; another time under the same ID is refused", async () => {
+    const id = randomUUIDv7();
+    const countedAt = new Date("2026-10-21T08:00:00Z");
+    const first = await count(id, COUNTED(countedAt));
+    expect(first.statusCode, first.body).toBe(200);
+    const moved = await movementCount();
+    const again = await count(id, {
+      ...COUNTED(countedAt),
+      countedAt: "2026-10-21T10:00:00+02:00",
+    });
+    expect(again.statusCode, again.body).toBe(200);
+    expect(again.json()).toEqual(first.json());
+    await expectRefused(
+      await count(id, COUNTED(new Date("2026-10-21T08:01:00Z"))),
+      409,
+      { error: "conflict" },
+    );
+    expect(await movementCount()).toBe(moved);
+  });
+
+  it("a counter user counts; the owner reverses the count, and the stock is back, the reversal counted when the count was", async () => {
+    const id = randomUUIDv7();
+    const countedAt = await databaseNow();
+    expect((await count(id, COUNTED(countedAt), counter)).statusCode).toBe(200);
+    expect(await stockOf(tomate.id)).toEqual({ [coldRoom.id]: 7500 });
+    const undone = await owner.send("POST", `/api/documents/${id}/reverse`);
+    expect(undone.statusCode, undone.body).toBe(200);
+    expect(await stockOf(tomate.id)).toEqual({ [coldRoom.id]: 10_000 });
+    const [reversal] = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.reverses, id));
+    expect(reversal).toMatchObject({ type: "count", countedAt });
+  });
+});
+
 describe("stock documents among the rest", () => {
   it("stay out of Documentos, the list of supplier documents, and have no document page there; their posting reads like any other", async () => {
     const id = randomUUIDv7();
@@ -498,5 +721,50 @@ describe("stock documents among the rest", () => {
     expect(
       (await owner.send("POST", `/api/documents/${id}/copy`)).statusCode,
     ).toBe(404);
+  });
+});
+
+describe("movements' times", () => {
+  it("follow the order they're posted in, even for a request whose transaction began before another that posted ahead of it", async () => {
+    const wasteOf = (kg: string) =>
+      ({
+        type: "waste",
+        storeroomId: coldRoom.id,
+        reason: "spoiled",
+        note: null,
+        lines: [{ productId: tomate.id, quantity: kg, unit: "kg" }],
+      }) as const;
+    const context = { userId: officeId, requestId: "times" };
+    await db.transaction(async (begunFirst) => {
+      // While this transaction is open, another request records waste and commits.
+      const ahead = await recordStockDocument(
+        db,
+        context,
+        randomUUIDv7(),
+        wasteOf("1"),
+        { date: today(new Date()) },
+      );
+      expect(ahead.ok).toBe(true);
+      // Then this one posts: `audited` runs it in a savepoint of the transaction begun first,
+      // so the transaction stands in for the database here.
+      const behind = await recordStockDocument(
+        begunFirst as unknown as Db,
+        context,
+        randomUUIDv7(),
+        wasteOf("2"),
+        { date: today(new Date()) },
+      );
+      expect(behind.ok).toBe(true);
+    });
+    const stamped = await db
+      .select({ createdAt: movements.createdAt })
+      .from(movements)
+      .orderBy(asc(movements.sequence));
+    expect(stamped).toHaveLength(4);
+    for (let i = 1; i < stamped.length; i++) {
+      expect(stamped[i]!.createdAt.getTime()).toBeGreaterThanOrEqual(
+        stamped[i - 1]!.createdAt.getTime(),
+      );
+    }
   });
 });

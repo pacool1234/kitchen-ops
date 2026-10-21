@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { EXTRACTED_DOCUMENT_TYPES } from "./extraction";
+import { fieldError } from "./errors";
 import { optionalText } from "./fields";
 import { UnitName } from "./products";
-import { PackQuantity } from "./supplier-products";
+import { decimalQuantity, PackQuantity } from "./supplier-products";
 
 // A product's stock and average cost in each storeroom (#120): what its page shows office and
 // the owner, so an invoice's correction can be seen. M8 adds its value and the movements
@@ -78,3 +79,41 @@ export const RecordTransfer = z.strictObject({
   lines: StockLines,
 });
 export type RecordTransfer = z.input<typeof RecordTransfer>;
+
+/** One counted line: as a stock line, but 0 is a count too, "none left". */
+export const CountLine = StockLine.extend({
+  quantity: decimalQuantity({ zero: true }),
+});
+export type CountLine = z.infer<typeof CountLine>;
+
+/**
+ * Body of `PUT /api/counts/:id`: what was counted in a storeroom, and when. A count made offline
+ * is synced later (#153); it's measured against the stock as it was when it was counted.
+ */
+export const RecordCount = z.strictObject({
+  storeroomId: z.uuid(),
+  /** With its offset, kept as UTC: the same instant, however it's written, is the same count. */
+  countedAt: z.iso
+    .datetime({ offset: true })
+    .transform((at) => new Date(at).toISOString()),
+  lines: z
+    .array(CountLine)
+    .min(1)
+    .max(MAX_STOCK_LINES)
+    .superRefine((lines, ctx) => {
+      // Two counts of one product in one place can't both be true.
+      const seen = new Set<string>();
+      lines.forEach(({ productId }, i) => {
+        if (seen.has(productId)) {
+          ctx.addIssue({
+            code: "custom",
+            path: [i, "productId"],
+            message: "counted twice",
+            ...fieldError("taken"),
+          });
+        }
+        seen.add(productId);
+      });
+    }),
+});
+export type RecordCount = z.input<typeof RecordCount>;

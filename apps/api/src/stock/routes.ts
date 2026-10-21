@@ -9,8 +9,9 @@ import { readPosting } from "../posting/read";
 import { recordStockDocument, type RecordResult } from "./record";
 import { productStock } from "./stock";
 
-// A product's stock and average cost in each storeroom (#120), for office and the owner. Waste
-// and transfers, recorded by anyone under an ID their client made, and posted at once (#149).
+// A product's stock and average cost in each storeroom (#120), for office and the owner. Waste,
+// transfers and counts, recorded by anyone under an ID their client made, and posted at once
+// (#149).
 
 /** A refusal from recording, as the API answers it. */
 function refusal(result: Exclude<RecordResult, { ok: true }>): HttpError {
@@ -63,6 +64,23 @@ export const stockRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
         id,
         { type: "transfer", ...request.body },
         { date: today(new Date()) },
+      );
+      if (!result.ok) throw refusal(result);
+      return (await readPosting(db, id))!;
+    },
+  });
+
+  app.route({
+    ...routeFor(endpoints.recordCount),
+    handler: async (request) => {
+      const { id } = request.params;
+      const result = await recordStockDocument(
+        db,
+        auditContext(request),
+        id,
+        { type: "count", ...request.body },
+        // Dated the day it was counted, which a count synced late isn't today.
+        { date: today(new Date(request.body.countedAt)) },
       );
       if (!result.ok) throw refusal(result);
       return (await readPosting(db, id))!;

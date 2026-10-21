@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-21
+- Updated: 2026-10-21, by #149's second PR: counts, recorded as point 3 says. A count's lines may be 0, and name each product once. Its `counted_at` is measured against the movements stamped by then, which are stamped once the posting lock is taken; it may be up to 5 minutes ahead of the database's clock, a phone's running fast, and any time before.
 
 ## Context
 
