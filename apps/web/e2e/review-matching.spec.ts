@@ -198,3 +198,85 @@ test("a counter user sees no supplier or product to choose", async ({
   ).toHaveCount(0);
   await expectAccessible(page);
 });
+
+// A load that fails (#140): what's left says so, with a way to try again, rather than nothing.
+const loadFailed =
+  "No se ha podido cargar lo que falta antes de registrarlo. Comprueba la conexión y vuelve a intentarlo.";
+
+/** Answers 503 to the requests `matches` picks while `failing()` says so; the rest go through. */
+async function failWhile(
+  page: Page,
+  matches: (url: URL) => boolean,
+  failing: () => boolean,
+) {
+  await page.route(matches, (route) =>
+    failing()
+      ? route.fulfill({ status: 503, json: { error: "unavailable" } })
+      : route.fallback(),
+  );
+}
+const isMatching = (url: URL) => url.pathname.endsWith("/matching");
+
+test("what's left can't be loaded: the page says so, offers nothing to post, and trying again loads it (#140)", async ({
+  page,
+}, testInfo) => {
+  await signedIn(page, accounts.office);
+  let failing = true;
+  await failWhile(page, isMatching, () => failing);
+  await readDocument(page, unique(testInfo, "Albaran sin cargar"));
+
+  await expect(left(page)).toContainText(loadFailed);
+  await expect(
+    left(page).getByRole("button", { name: "Registrar el albarán" }),
+  ).toHaveCount(0);
+  await expect(supplier(page)).toHaveCount(0);
+  await expectAccessible(page);
+
+  failing = false;
+  await left(page).getByRole("button", { name: "Reintentar" }).click();
+  await expect(left(page)).toContainText("Falta el proveedor.");
+  await expect(left(page)).not.toContainText(loadFailed);
+  await expect(supplier(page)).toBeVisible();
+});
+
+test("what's left can't be loaded again after saving: what was shown goes, and trying again brings it back (#140)", async ({
+  page,
+}, testInfo) => {
+  await signedIn(page, accounts.office);
+  let failing = false;
+  await failWhile(page, isMatching, () => failing);
+  await readDocument(page, unique(testInfo, "Albaran que no recarga"));
+  await expect(left(page)).toContainText("Falta el proveedor.");
+
+  failing = true;
+  await line(page, 1).getByRole("textbox", { name: "Cantidad" }).fill("6");
+  await page.getByRole("button", { name: "Guardar correcciones" }).click();
+  await expect(toast(page, "Correcciones guardadas")).toBeVisible();
+  await expect(left(page)).toContainText(loadFailed);
+  await expect(left(page)).not.toContainText("Falta el proveedor.");
+  await expect(supplier(page)).toHaveCount(0);
+
+  failing = false;
+  await left(page).getByRole("button", { name: "Reintentar" }).click();
+  await expect(left(page)).toContainText("Falta el proveedor.");
+  await expect(supplier(page)).toBeVisible();
+});
+
+test("the storerooms can't be loaded: the page says so too, and trying again loads them (#140)", async ({
+  page,
+}, testInfo) => {
+  await signedIn(page, accounts.office);
+  let failing = true;
+  await failWhile(
+    page,
+    (url) => url.pathname === "/api/storerooms",
+    () => failing,
+  );
+  await readDocument(page, unique(testInfo, "Albaran sin almacenes"));
+
+  await expect(left(page)).toContainText(loadFailed);
+  failing = false;
+  await left(page).getByRole("button", { name: "Reintentar" }).click();
+  await expect(left(page)).toContainText("Falta el proveedor.");
+  await expect(left(page)).not.toContainText(loadFailed);
+});

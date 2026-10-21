@@ -30,6 +30,8 @@ import { useUnsavedGuard } from "../catalogue/unsaved";
 import UiAlert from "../components/ui/UiAlert.vue";
 import UiButton from "../components/ui/UiButton.vue";
 import UiDialog from "../components/ui/UiDialog.vue";
+import UiErrorState from "../components/ui/UiErrorState.vue";
+import UiLoadingState from "../components/ui/UiLoadingState.vue";
 import type { SelectOption } from "../components/ui/options";
 import { showToast } from "../components/ui/toasts";
 import { useT, type MessageKey } from "../i18n";
@@ -113,13 +115,19 @@ watch(values, recheck, { deep: true });
 
 /** The supplier, each saved line's product and what's left before posting (#117). */
 const matching = ref<DocumentMatching>();
+/** Loading it failed (#140): the page says so where what's left goes, and tries again. */
+const matchingFailed = ref(false);
 async function loadMatching() {
   try {
     matching.value = await call(endpoints.getDocumentMatching, {
       params: { id: props.document.id },
     });
+    matchingFailed.value = false;
   } catch {
-    // Without it, the screen still corrects the draft; the next save asks again.
+    // What was shown may be out of date now: none of it, so nothing is posted on it. The
+    // draft can still be corrected.
+    matching.value = undefined;
+    matchingFailed.value = true;
   }
 }
 onMounted(loadMatching);
@@ -240,17 +248,36 @@ function lineMapping(index: number) {
 
 /** Active storerooms, for each line's choice (#119): undefined until they've come. */
 const storerooms = shallowRef<Storeroom[]>();
-onMounted(async () => {
+/** Loading them failed (#140): said with the matching's, not as a storeroom missing on each line. */
+const storeroomsFailed = ref(false);
+async function loadStorerooms() {
   try {
     const page = await call(endpoints.listStorerooms, {
       query: { status: "active", pageSize: 200 },
     });
     storerooms.value = page.items;
+    storeroomsFailed.value = false;
   } catch {
-    // No storeroom to choose: posting then says so on each line.
-    storerooms.value = [];
+    storeroomsFailed.value = true;
   }
-});
+}
+onMounted(loadStorerooms);
+
+/** Either failed: what's left before posting can't be shown, and posting isn't offered. */
+const loadFailed = computed(
+  () => matchingFailed.value || storeroomsFailed.value,
+);
+/** Loads again what failed; meanwhile, what's left shows as loading. */
+function retryLoading() {
+  if (matchingFailed.value) {
+    matchingFailed.value = false;
+    void loadMatching();
+  }
+  if (storeroomsFailed.value) {
+    storeroomsFailed.value = false;
+    void loadStorerooms();
+  }
+}
 /**
  * Whether a line's storeroom can be shown: it's matched, and both the storerooms and its
  * product's own have come. A select keeps the words of the option it first showed, so it
@@ -526,35 +553,46 @@ const guard = useUnsavedGuard(dirty);
     </p>
 
     <section
-      v-if="matching"
       class="flex flex-col gap-2 rounded-lg border border-line bg-surface p-5"
       aria-labelledby="left-heading"
     >
       <h3 id="left-heading" class="font-semibold">
         {{ t("documents.left") }}
       </h3>
-      <ul v-if="reasons.length > 0" class="flex list-disc flex-col gap-1 ps-5">
-        <li v-for="reason in reasons" :key="reason">
-          {{ t(`documents.reasons.${reason}`) }}
-        </li>
-      </ul>
-      <p v-else>{{ t("documents.nothingLeft") }}</p>
-      <div class="flex flex-wrap items-center gap-3 pt-2">
-        <UiButton
-          :disabled="!postState.offered"
-          :aria-describedby="postState.blocked ? postHintId : undefined"
-          @click="askToPost"
+      <UiErrorState
+        v-if="loadFailed"
+        :message="t('documents.review.loadFailed')"
+        retryable
+        @retry="retryLoading"
+      />
+      <UiLoadingState v-else-if="!matching || !storerooms" :lines="2" />
+      <template v-else>
+        <ul
+          v-if="reasons.length > 0"
+          class="flex list-disc flex-col gap-1 ps-5"
         >
-          {{ t(`documents.posting.post.${savedType}`) }}
-        </UiButton>
-        <p
-          v-if="postState.blocked"
-          :id="postHintId"
-          class="text-sm text-fg-muted"
-        >
-          {{ t(`documents.posting.blocked.${postState.blocked}`) }}
-        </p>
-      </div>
+          <li v-for="reason in reasons" :key="reason">
+            {{ t(`documents.reasons.${reason}`) }}
+          </li>
+        </ul>
+        <p v-else>{{ t("documents.nothingLeft") }}</p>
+        <div class="flex flex-wrap items-center gap-3 pt-2">
+          <UiButton
+            :disabled="!postState.offered"
+            :aria-describedby="postState.blocked ? postHintId : undefined"
+            @click="askToPost"
+          >
+            {{ t(`documents.posting.post.${savedType}`) }}
+          </UiButton>
+          <p
+            v-if="postState.blocked"
+            :id="postHintId"
+            class="text-sm text-fg-muted"
+          >
+            {{ t(`documents.posting.blocked.${postState.blocked}`) }}
+          </p>
+        </div>
+      </template>
     </section>
 
     <DocumentSupplier

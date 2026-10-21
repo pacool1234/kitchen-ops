@@ -300,6 +300,9 @@ export const es = {
       saved: "Correcciones guardadas",
       modelRead: "Lo que leyó el modelo",
       readLines: "Líneas leídas",
+      // What's left before posting, or the storerooms, couldn't be loaded (#140).
+      loadFailed:
+        "No se ha podido cargar lo que falta antes de registrarlo. Comprueba la conexión y vuelve a intentarlo.",
     },
     // What's left before posting a document in review (#117's review reasons).
     left: "Antes de registrarlo",

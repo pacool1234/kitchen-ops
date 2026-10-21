@@ -9,7 +9,7 @@ For everyone who receives deliveries; what each role may do is said at each step
 Once a document is **Listo para revisar** (Ready for review), its page opens on **Revisar lo leído** (Review what was read): the original on one side (above it on a phone), and what was read on the other.
 
 - **Tap a photo to enlarge it.** Zoom in and out with the buttons, or with the + and − keys.
-- **Antes de registrarlo** (Before posting it) lists what's left before the document can be posted: a missing supplier, a failed check, a line without its product, an invoice's line without its delivery note, or a new supplier.
+- **Antes de registrarlo** (Before posting it) lists what's left before the document can be posted: a missing supplier, a failed check, a line without its product, an invoice's line without its delivery note, or a new supplier. If it can't be loaded, it says so: tap **Reintentar** (Try again). Until it loads, the document can be corrected but not posted.
 - **Comprobaciones** (Checks) lists each failed check. Tap one to go to its field.
 - **Correct any field,** or add and remove lines. The checks run again a moment after each change.
 - **Tap Guardar correcciones** (Save corrections). What the model read is kept apart from your corrections, and shows under **Lo que leyó el modelo** (What the model read).
