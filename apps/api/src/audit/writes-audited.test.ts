@@ -1,3 +1,4 @@
+import { randomUUIDv7 } from "node:crypto";
 import {
   Document,
   endpoints,
@@ -15,6 +16,7 @@ import { createDb } from "../db/client";
 import {
   auditLog,
   documentFiles,
+  documentLines,
   documents,
   products,
   storerooms,
@@ -754,6 +756,85 @@ const WRITE_CASES: Record<string, () => Promise<void>> = {
     expect(await allEntries("document")).toHaveLength(2);
   },
 
+  async recordWaste() {
+    const office = await officeUser();
+    const { productId, storeroomId } = await somethingInStock(office);
+    const id = randomUUIDv7();
+    const body = {
+      storeroomId,
+      reason: "expired",
+      lines: [{ productId, quantity: "1", unit: "kg" }],
+    };
+    const record = (sent: object) =>
+      office.send("PUT", `/api/waste/${id}`, sent);
+
+    const response = await record(body);
+    expect(response.statusCode).toBe(200);
+    // A stock document is created posted (#149): its creation is the entry.
+    expect(await entriesFor("document", id)).toEqual([
+      expect.objectContaining({
+        userId: office.id,
+        action: "create",
+        requestId: response.headers["x-request-id"],
+        documentId: id,
+        changes: expect.objectContaining({
+          type: { before: null, after: "waste" },
+          status: { before: null, after: "posted" },
+          storeroomId: { before: null, after: storeroomId },
+          wasteReason: { before: null, after: "expired" },
+        }),
+      }),
+    ]);
+
+    // Sent again, it answers what was posted, and records nothing; another body is refused.
+    expect((await record(body)).statusCode).toBe(200);
+    expect((await record({ ...body, reason: "other" })).statusCode).toBe(409);
+    expect(await entriesFor("document", id)).toHaveLength(1);
+  },
+
+  async recordTransfer() {
+    const office = await officeUser();
+    const { productId, storeroomId } = await somethingInStock(office);
+    const bar = Storeroom.parse(
+      (
+        await office.send("POST", "/api/storerooms", {
+          name: "Barra",
+          type: "bar",
+        })
+      ).json(),
+    );
+    const id = randomUUIDv7();
+    const body = {
+      storeroomId,
+      toStoreroomId: bar.id,
+      lines: [{ productId, quantity: "1", unit: "kg" }],
+    };
+    const record = (sent: object) =>
+      office.send("PUT", `/api/transfers/${id}`, sent);
+
+    const response = await record(body);
+    expect(response.statusCode).toBe(200);
+    expect(await entriesFor("document", id)).toEqual([
+      expect.objectContaining({
+        userId: office.id,
+        action: "create",
+        requestId: response.headers["x-request-id"],
+        documentId: id,
+        changes: expect.objectContaining({
+          type: { before: null, after: "transfer" },
+          storeroomId: { before: null, after: storeroomId },
+          toStoreroomId: { before: null, after: bar.id },
+        }),
+      }),
+    ]);
+
+    expect((await record(body)).statusCode).toBe(200);
+    expect(
+      (await record({ ...body, toStoreroomId: storeroomId })).statusCode,
+    ).toBe(400);
+    expect(await entriesFor("document", id)).toHaveLength(1);
+  },
+
   async createDocumentCopy() {
     const office = await officeUser();
     const supplier = Supplier.parse(
@@ -822,6 +903,25 @@ async function ownerUser() {
  * A delivery note ready to post: one line of tomatoes, T-01, a supplier product of its
  * supplier, kept in a storeroom of its own. Its file is there, as an upload leaves it.
  */
+/** A delivery note posted, and the product it brought, where it went: 5 kg of tomatoes. */
+async function somethingInStock(
+  office: Awaited<ReturnType<typeof officeUser>>,
+) {
+  const id = await postable(office);
+  const posted = await office.send("POST", `/api/documents/${id}/post`, {
+    storerooms: [null],
+  });
+  expect(posted.statusCode).toBe(200);
+  const [line] = await db
+    .select({
+      productId: documentLines.productId,
+      storeroomId: documentLines.storeroomId,
+    })
+    .from(documentLines)
+    .where(eq(documentLines.documentId, id));
+  return { productId: line!.productId, storeroomId: line!.storeroomId! };
+}
+
 async function postable(office: Awaited<ReturnType<typeof officeUser>>) {
   const { supplier, product } = await supplierAndProduct(office);
   const storeroom = Storeroom.parse(
