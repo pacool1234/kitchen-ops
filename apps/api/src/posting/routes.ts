@@ -26,24 +26,42 @@ import {
   type PostingResult,
 } from "./posting";
 import { readPosting } from "./read";
-import { deliveryNoteToPost, type MatchedLine } from "./reviewed";
+import {
+  deliveryNoteToPost,
+  invoiceToPost,
+  type InvoiceLinePlan,
+  type MatchedLine,
+} from "./reviewed";
+import {
+  billedAlready,
+  invoiceBilling,
+  isCreditNote,
+  storedChoices,
+} from "../billing/billing";
 
 // Posting a reviewed delivery note, reversing a posted document, and a corrected copy of a
 // reversed one to review and post again (#119, decision 0038). Posting works out the document's
 // matching again inside its transaction, under the posting lock, so what's posted is the draft
 // and the matches as they stand at that moment.
 
-/** Each line's supplier product, its pack, and its product's own storeroom. */
+/**
+ * The supplier product, pack and product's own storeroom of the lines given (by index), or of
+ * every line.
+ */
 async function matchedLines(
   tx: Tx,
   matching: DocumentMatching,
-): Promise<MatchedLine[]> {
-  const offers = matching.lines.map(({ match }) => {
-    // Posting is refused while a line is unmapped, so each one has its supplier product.
+  only?: (i: number) => boolean,
+): Promise<(MatchedLine | null)[]> {
+  const offers = matching.lines.map(({ match }, i) => {
+    if (only && !only(i)) return null;
+    // Posting is refused while such a line is unmapped, so each one has its supplier product.
     if (!match || match.by === "suggestion") throw new Error("unmapped line");
     return match.supplierProduct;
   });
-  const productIds = [...new Set(offers.map((o) => o.product.id))];
+  const wanted = offers.filter((o) => o !== null);
+  const productIds = [...new Set(wanted.map((o) => o.product.id))];
+  if (productIds.length === 0) return offers.map(() => null);
   const defaults = await tx
     .select({
       id: products.id,
@@ -51,13 +69,45 @@ async function matchedLines(
     })
     .from(products)
     .where(inArray(products.id, productIds));
-  return offers.map((offer) => ({
-    supplierProductId: offer.id,
-    productId: offer.product.id,
-    packBaseUnits: offer.packBaseUnits,
-    defaultStoreroomId:
-      defaults.find((d) => d.id === offer.product.id)?.storeroomId ?? null,
-  }));
+  return offers.map((offer) =>
+    offer === null
+      ? null
+      : {
+          supplierProductId: offer.id,
+          productId: offer.product.id,
+          packBaseUnits: offer.packBaseUnits,
+          defaultStoreroomId:
+            defaults.find((d) => d.id === offer.product.id)?.storeroomId ??
+            null,
+        },
+  );
+}
+
+/**
+ * 409 already_billed, on each line's field, if a line of this invoice is confirmed for a
+ * delivery-note line another invoice that stands bills: one posted since it was chosen. Said
+ * before what's left, which the choice no longer counting would otherwise be.
+ */
+async function refuseBilledMeanwhile(
+  tx: Tx,
+  id: string,
+  draft: ExtractedDocument | null,
+) {
+  if (draft?.documentType !== "invoice" || isCreditNote(draft)) return;
+  const stored = await storedChoices(tx, id);
+  const taken = await billedAlready(
+    tx,
+    stored.flatMap((c) => c.deliveryNoteLineId ?? []),
+  );
+  const fields: Record<string, FieldErrorCode> = {};
+  for (const choice of stored) {
+    if (choice.deliveryNoteLineId && taken.has(choice.deliveryNoteLineId)) {
+      fields[`lines.${choice.position - 1}`] = "taken";
+    }
+  }
+  if (Object.keys(fields).length > 0) {
+    throw new HttpError(409, "already_billed", fields);
+  }
 }
 
 /** The storerooms chosen, one per line: each must be one of ours, and active. 400 otherwise. */
@@ -125,6 +175,38 @@ function refusal(
   }
 }
 
+/** A reviewed invoice as posting takes it: each line's plan, worked out in the transaction. */
+async function invoiceToPostNow(
+  tx: Tx,
+  id: string,
+  draft: ExtractedDocument,
+  supplierId: string,
+  matching: DocumentMatching,
+  storerooms: readonly (string | null)[],
+) {
+  const { plans } = await invoiceBilling(tx, {
+    documentId: id,
+    draft,
+    supplierId,
+    matches: matching.lines.map((l) => l.match),
+  });
+  const matched = await matchedLines(
+    tx,
+    matching,
+    (i) => plans[i]!.kind === "received",
+  );
+  return invoiceToPost({
+    draft,
+    supplierId,
+    plans: plans.map((plan, i): InvoiceLinePlan =>
+      plan.kind === "received"
+        ? { kind: "received", matched: matched[i]! }
+        : plan,
+    ),
+    storerooms,
+  });
+}
+
 export const postingRoutes: FastifyPluginAsyncZod<{
   db: Db;
   storage: Storage | null;
@@ -141,25 +223,36 @@ export const postingRoutes: FastifyPluginAsyncZod<{
         id,
         async (tx) => {
           const document = await documentInReview(tx, id);
+          await refuseBilledMeanwhile(tx, id, currentDraft(document));
           const matching = (await readMatching(tx, id))!;
           const left = matching.reviewReasons;
           if (left.some((reason) => reason !== "new_supplier")) {
             throw new HttpError(409, "review_pending");
           }
-          if (!mayPost(role, left)) throw new HttpError(403, "forbidden");
           // Nothing left: it has a draft, and a supplier.
           draft = currentDraft(document)!;
-          if (draft.documentType !== "delivery-note") {
-            throw new HttpError(409, "not_a_delivery_note");
+          if (!mayPost(role, left, draft.documentType)) {
+            throw new HttpError(403, "forbidden");
           }
           const chosen = request.body.storerooms;
           await checkStorerooms(tx, chosen, draft.lines.length);
-          const reviewed = deliveryNoteToPost({
-            draft,
-            supplierId: matching.supplier!.id,
-            matched: await matchedLines(tx, matching),
-            storerooms: chosen,
-          });
+          const supplierId = matching.supplier!.id;
+          const reviewed =
+            draft.documentType === "delivery-note"
+              ? deliveryNoteToPost({
+                  draft,
+                  supplierId,
+                  matched: (await matchedLines(tx, matching)).map((m) => m!),
+                  storerooms: chosen,
+                })
+              : await invoiceToPostNow(
+                  tx,
+                  id,
+                  draft,
+                  supplierId,
+                  matching,
+                  chosen,
+                );
           if (!reviewed.ok) {
             throw new HttpError(409, "cannot_post", reviewed.fields);
           }

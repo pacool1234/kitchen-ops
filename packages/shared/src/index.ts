@@ -6,6 +6,7 @@ export * from "./fields";
 export * from "./health";
 export * from "./lists";
 export * from "./locale";
+export * from "./billing";
 export * from "./matching";
 export * from "./posting";
 export * from "./products";

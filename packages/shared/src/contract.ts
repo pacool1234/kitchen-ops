@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AuditLogPage, AuditLogQuery } from "./audit";
+import { BillingCandidates, DocumentBilling } from "./billing";
 import { MeResponse, UpdateMe, type Role } from "./auth";
 import { HealthResponse } from "./health";
 import {
@@ -389,6 +390,30 @@ export const endpoints = {
     params: LineParams,
     body: NewMapping,
     status: 201,
+    response: DocumentMatching,
+    conflict: true,
+  }),
+
+  // Which delivery-note line each line of an invoice bills (#120, decision 0041): office's and
+  // the owner's, who review invoices (spec section 6).
+  listBillingCandidates: endpoint({
+    method: "GET",
+    path: "/api/documents/:id/billing/candidates",
+    summary:
+      "The posted delivery-note lines an invoice in review may bill, with their price now",
+    access: CATALOGUE_WRITERS,
+    params: IdParams,
+    response: BillingCandidates,
+    conflict: true,
+  }),
+  setDocumentBilling: endpoint({
+    method: "PUT",
+    path: "/api/documents/:id/billing",
+    summary:
+      "Confirm or change what each line of an invoice in review bills, or receive it with the invoice",
+    access: CATALOGUE_WRITERS,
+    params: IdParams,
+    body: DocumentBilling,
     response: DocumentMatching,
     conflict: true,
   }),

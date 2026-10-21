@@ -329,6 +329,44 @@ export const documentLines = pgTable(
   ],
 );
 
+/**
+ * What a line of an invoice in review bills, as office or the owner confirmed it (#120, decision
+ * 0041): a posted delivery-note line, or nothing, received with the invoice. Suggestions aren't
+ * stored: they're worked out each time. `position` is the line's in the draft, from 1; choices
+ * are cleared when a correction adds or removes lines.
+ */
+export const invoiceLineBills = pgTable(
+  "invoice_line_bills",
+  {
+    id: primaryId(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id),
+    position: integer("position").notNull(),
+    deliveryNoteLineId: uuid("delivery_note_line_id").references(
+      () => documentLines.id,
+    ),
+    received: boolean("received").notNull().default(false),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("invoice_line_bills_document_position_unique").on(
+      table.documentId,
+      table.position,
+    ),
+    index("invoice_line_bills_delivery_note_line_idx").on(
+      table.deliveryNoteLineId,
+    ),
+    check("invoice_line_bills_position_positive", sql`${table.position} > 0`),
+    // One choice: a delivery-note line, or received with the invoice.
+    check(
+      "invoice_line_bills_one_choice",
+      sql`(${table.deliveryNoteLineId} is not null) <> ${table.received}`,
+    ),
+  ],
+);
+
 /** What caused a movement: packages/ledger's MovementKind, every one (schema.test.ts). */
 export const MOVEMENT_KINDS = [
   "receipt",

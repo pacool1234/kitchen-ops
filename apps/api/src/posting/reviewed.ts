@@ -102,6 +102,58 @@ export interface MatchedLine {
   readonly defaultStoreroomId: string | null;
 }
 
+/** A draft line received at its match's pack, or why it can't be, on `fields` (decision 0038). */
+function receivedLine(
+  line: ExtractedDocument["lines"][number],
+  i: number,
+  match: MatchedLine,
+  chosen: string | null,
+  fields: Record<string, FieldErrorCode>,
+): ReviewedLine | null {
+  const storeroomId = chosen ?? match.defaultStoreroomId;
+  if (storeroomId === null) fields[`lines.${i}.storeroomId`] = "required";
+  if (line.quantity === null) fields[`lines.${i}.quantity`] = "required";
+  if (line.unit === null) fields[`lines.${i}.unit`] = "required";
+  if (storeroomId === null || line.quantity === null || line.unit === null) {
+    return null;
+  }
+  try {
+    ledger.toBaseUnits(
+      { productId: match.productId, quantity: line.quantity, unit: line.unit },
+      [
+        {
+          productId: match.productId,
+          unit: line.unit,
+          factor: match.packBaseUnits,
+        },
+      ],
+    );
+  } catch {
+    fields[`lines.${i}.quantity`] = "not_whole_base_units";
+    return null;
+  }
+  return {
+    productId: match.productId,
+    quantity: line.quantity,
+    unit: line.unit,
+    // No price printed: received at 0 until an invoice corrects it (decision 0032).
+    unitPrice: ledger.parseUnitCost(line.unitPrice ?? "0"),
+    ...(line.discountPercent === null
+      ? {}
+      : { discountPercent: line.discountPercent }),
+    ...(line.vatRate === null ? {} : { vatRate: line.vatRate }),
+    storeroomId,
+    supplierProduct: {
+      id: match.supplierProductId,
+      baseUnitsPerUnit: match.packBaseUnits,
+    },
+  };
+}
+
+type ToPost =
+  | { ok: true; document: ReviewedDocument }
+  | { ok: false; fields: Record<string, FieldErrorCode> };
+
 /**
  * A reviewed delivery note's draft, as it stands, as posting takes it; or why a line can't be
  * posted, by its field in the draft ("lines.1.storeroomId"). `matched` and `storerooms` have one
@@ -117,56 +169,17 @@ export function deliveryNoteToPost({
   supplierId: string;
   matched: readonly MatchedLine[];
   storerooms: readonly (string | null)[];
-}):
-  | { ok: true; document: ReviewedDocument }
-  | { ok: false; fields: Record<string, FieldErrorCode> } {
+}): ToPost {
   const fields: Record<string, FieldErrorCode> = {};
-  const lines = draft.lines.flatMap((line, i): ReviewedLine[] => {
-    const match = matched[i]!;
-    const storeroomId = storerooms[i] ?? match.defaultStoreroomId;
-    if (storeroomId === null) fields[`lines.${i}.storeroomId`] = "required";
-    if (line.quantity === null) fields[`lines.${i}.quantity`] = "required";
-    if (line.unit === null) fields[`lines.${i}.unit`] = "required";
-    if (storeroomId === null || line.quantity === null || line.unit === null) {
-      return [];
-    }
-    try {
-      ledger.toBaseUnits(
-        {
-          productId: match.productId,
-          quantity: line.quantity,
-          unit: line.unit,
-        },
-        [
-          {
-            productId: match.productId,
-            unit: line.unit,
-            factor: match.packBaseUnits,
-          },
-        ],
-      );
-    } catch {
-      fields[`lines.${i}.quantity`] = "not_whole_base_units";
-      return [];
-    }
-    return [
-      {
-        productId: match.productId,
-        quantity: line.quantity,
-        unit: line.unit,
-        // No price printed: received at 0 until an invoice corrects it (decision 0032).
-        unitPrice: ledger.parseUnitCost(line.unitPrice ?? "0"),
-        ...(line.discountPercent === null
-          ? {}
-          : { discountPercent: line.discountPercent }),
-        ...(line.vatRate === null ? {} : { vatRate: line.vatRate }),
-        storeroomId,
-        supplierProduct: {
-          id: match.supplierProductId,
-          baseUnitsPerUnit: match.packBaseUnits,
-        },
-      },
-    ];
+  const lines = draft.lines.flatMap((line, i) => {
+    const received = receivedLine(
+      line,
+      i,
+      matched[i]!,
+      storerooms[i] ?? null,
+      fields,
+    );
+    return received === null ? [] : [received];
   });
   if (draft.issueDate === null) fields.issueDate = "required";
   if (Object.keys(fields).length > 0 || draft.issueDate === null) {
@@ -181,6 +194,111 @@ export function deliveryNoteToPost({
       date: draft.issueDate,
       // Every line names its own; the document's is the first one's.
       storeroomId: lines[0]!.storeroomId!,
+      lines,
+    },
+  };
+}
+
+/** How an invoice's line is posted, once it's confirmed (#120, decision 0041). */
+export type InvoiceLinePlan =
+  | {
+      readonly kind: "billed";
+      readonly deliveryNoteLineId: string;
+      /** The delivery-note line's product: what it received. */
+      readonly productId: string;
+      /** The pack the invoice's quantity is converted with, if there's one. */
+      readonly pack: { readonly id: string; readonly baseUnits: number } | null;
+      /** Per printed unit; for a credit note's difference, on top of the line's price now. */
+      readonly unitPrice: ledger.UnitCost | null;
+      /** A credit note's difference, restated as the line's new price. */
+      readonly restated: boolean;
+    }
+  | { readonly kind: "received"; readonly matched: MatchedLine }
+  | { readonly kind: "undecided" };
+
+/**
+ * A reviewed invoice's draft, as it stands, as posting takes it (decision 0032): a line it bills
+ * corrects that delivery-note line's price, at the delivery note's product, and goes to no
+ * storeroom; a line received with it is received like a delivery note's. Or why a line can't be
+ * posted, by its field. `plans` and `storerooms` have one entry per line.
+ */
+export function invoiceToPost({
+  draft,
+  supplierId,
+  plans,
+  storerooms,
+}: {
+  draft: ExtractedDocument;
+  supplierId: string;
+  plans: readonly InvoiceLinePlan[];
+  storerooms: readonly (string | null)[];
+}): ToPost {
+  const fields: Record<string, FieldErrorCode> = {};
+  const lines = draft.lines.flatMap((line, i): ReviewedLine[] => {
+    const plan = plans[i]!;
+    if (plan.kind === "undecided") {
+      // Posting is refused while a line is undecided: it never gets here.
+      throw new Error(`line ${i + 1} is undecided`);
+    }
+    if (plan.kind === "received") {
+      const received = receivedLine(
+        line,
+        i,
+        plan.matched,
+        storerooms[i] ?? null,
+        fields,
+      );
+      return received === null ? [] : [received];
+    }
+    if (line.quantity === null) fields[`lines.${i}.quantity`] = "required";
+    if (line.unit === null) fields[`lines.${i}.unit`] = "required";
+    if (plan.unitPrice === null) fields[`lines.${i}.unitPrice`] = "required";
+    if (plan.pack === null) fields[`lines.${i}.quantity`] = "invalid";
+    // A difference has no discount to take: the price it restates has its own.
+    if (plan.restated && line.discountPercent !== null) {
+      fields[`lines.${i}.discountPercent`] = "invalid";
+    }
+    if (
+      line.quantity === null ||
+      line.unit === null ||
+      plan.unitPrice === null ||
+      plan.pack === null ||
+      (plan.restated && line.discountPercent !== null)
+    ) {
+      return [];
+    }
+    return [
+      {
+        productId: plan.productId,
+        quantity: line.quantity,
+        unit: line.unit,
+        unitPrice: plan.unitPrice,
+        ...(line.discountPercent === null
+          ? {}
+          : { discountPercent: line.discountPercent }),
+        ...(line.vatRate === null ? {} : { vatRate: line.vatRate }),
+        billsLineId: plan.deliveryNoteLineId,
+        supplierProduct: {
+          id: plan.pack.id,
+          baseUnitsPerUnit: plan.pack.baseUnits,
+        },
+      },
+    ];
+  });
+  if (draft.issueDate === null) fields.issueDate = "required";
+  if (Object.keys(fields).length > 0 || draft.issueDate === null) {
+    return { ok: false, fields };
+  }
+  return {
+    ok: true,
+    document: {
+      type: "invoice",
+      supplierId,
+      number: draft.number,
+      date: draft.issueDate,
+      // A line it bills stays where its delivery note received it; the document's storeroom is
+      // only for lines received with it, which name their own.
+      storeroomId: lines.find((l) => l.storeroomId)?.storeroomId ?? "",
       lines,
     },
   };

@@ -604,6 +604,42 @@ const WRITE_CASES: Record<string, () => Promise<void>> = {
     expect(await allEntries("supplier_product")).toHaveLength(1);
   },
 
+  async setDocumentBilling() {
+    const office = await officeUser();
+    const { supplier } = await supplierAndProduct(office);
+    const id = await documentRead(db, {
+      uploadedBy: office.id,
+      supplierId: supplier.id,
+      draft: {
+        ...draftWith([{ supplierCode: "T-01", description: "Tomate pera" }]),
+        documentType: "invoice",
+      },
+    });
+    const bill = (lines: object[]) =>
+      office.send("PUT", `/api/documents/${id}/billing`, { lines });
+
+    const response = await bill([{ received: true }]);
+    expect(response.statusCode).toBe(200);
+    expect(await allEntries("invoice_line_bill")).toEqual([
+      expect.objectContaining({
+        userId: office.id,
+        action: "create",
+        requestId: response.headers["x-request-id"],
+        documentId: id,
+        // No delivery-note line: null before and after, so not a change.
+        changes: {
+          position: { before: null, after: 1 },
+          received: { before: null, after: true },
+        },
+      }),
+    ]);
+
+    // The same choice again changes nothing; the wrong number of lines is refused.
+    expect((await bill([{ received: true }])).statusCode).toBe(200);
+    expect((await bill([])).statusCode).toBe(400);
+    expect(await allEntries("invoice_line_bill")).toHaveLength(1);
+  },
+
   async saveDocumentDraft() {
     const office = await officeUser();
     const id = await documentRead(db, {

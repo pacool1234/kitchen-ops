@@ -9,6 +9,7 @@ import {
   type Movement,
   type MovementKind,
 } from "./movement";
+import { standingReceipt } from "./invoice";
 import { addQuantities, type Quantity } from "./quantity";
 
 /** Draft and review are editable; posted is final (invariant 7). */
@@ -351,33 +352,24 @@ function lineTotalOf(line: DeliveryNoteLine) {
 }
 
 /**
- * The receipt that stands for a delivery-note line's goods now: the line's receipt, or the last
- * correction of it. Throws if there is none, or if it was reversed.
+ * The receipt that stands for a delivery-note line's goods now (`standingReceipt`). Throws,
+ * saying why, if there is none: no receipt, or one that was reversed.
  */
 function billedReceipt(
   movements: readonly Movement[],
   latest: (movement: Movement) => Movement,
   deliveryNoteLineId: string,
 ): Movement {
-  const received = movements.find(
-    (m) =>
-      m.documentLineId === deliveryNoteLineId &&
-      m.kind === "receipt" &&
-      m.reverses === undefined &&
-      m.corrects === undefined,
+  const current = standingReceipt(movements, deliveryNoteLineId, latest);
+  if (current !== undefined) return current;
+  const received = movements.some(
+    (m) => m.documentLineId === deliveryNoteLineId && m.kind === "receipt",
   );
-  if (received === undefined) {
-    throw new Error(
-      `delivery-note line ${deliveryNoteLineId} has no receipt in the movements given`,
-    );
-  }
-  const current = latest(received);
-  if (movements.some((m) => m.reverses === current.id)) {
-    throw new Error(
-      `delivery-note line ${deliveryNoteLineId} was reversed: there is no received stock to bill`,
-    );
-  }
-  return current;
+  throw new Error(
+    received
+      ? `delivery-note line ${deliveryNoteLineId} was reversed: there is no received stock to bill`
+      : `delivery-note line ${deliveryNoteLineId} has no receipt in the movements given`,
+  );
 }
 
 /**

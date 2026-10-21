@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Role } from "./auth";
+import type { ExtractedDocument } from "./extraction";
 import type { ReviewReason } from "./matching";
 import { BaseUnit } from "./products";
 
@@ -8,14 +9,20 @@ import { BaseUnit } from "./products";
 // its lines and the movements each one made.
 
 /**
- * Whether `role` may post a delivery note with these reasons left before posting it (decision
- * 0038, spec section 6). Nobody may while anything but a new supplier is left. A counter user,
- * who receives deliveries, only when nothing is: a new supplier's documents are reviewed first
- * (spec 11.1), and office and owner, who review, may post them.
+ * Whether `role` may post a document of `type` with these reasons left before posting it
+ * (decision 0038, spec section 6). Nobody may while anything but a new supplier is left. A
+ * counter user, who receives deliveries, only a delivery note, and only when nothing is: a new
+ * supplier's documents are reviewed first (spec 11.1). Office and owner, who review and post
+ * invoices, may post them (#120).
  */
-export function mayPost(role: Role, left: readonly ReviewReason[]): boolean {
+export function mayPost(
+  role: Role,
+  left: readonly ReviewReason[],
+  type: ExtractedDocument["documentType"],
+): boolean {
   if (left.some((reason) => reason !== "new_supplier")) return false;
-  return role !== "counter" || left.length === 0;
+  if (role !== "counter") return true;
+  return type === "delivery-note" && left.length === 0;
 }
 
 /**

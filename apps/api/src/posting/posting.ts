@@ -1,6 +1,16 @@
 import { randomUUIDv7 } from "node:crypto";
 import * as ledger from "@kitchen-ops/ledger";
-import { and, asc, eq, inArray, isNull, notExists, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  gt,
+  inArray,
+  isNull,
+  ne,
+  notExists,
+  sql,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { audited, type AuditContext, type Tx } from "../audit/audited";
 import type { Db } from "../db/client";
@@ -300,6 +310,40 @@ async function billedByStanding(
 }
 
 /**
+ * Whether an invoice that stands, posted after `postedAt`, bills any of these delivery-note
+ * lines: a later correction of their prices, or a credit note restating one (#120). A posted
+ * document is never changed, so its `updated_at` is when it was posted.
+ */
+async function billedLater(
+  tx: Tx,
+  invoiceId: string,
+  postedAt: Date,
+  lineIds: readonly string[],
+): Promise<boolean> {
+  if (lineIds.length === 0) return false;
+  const [found] = await tx
+    .select({ id: documentLines.id })
+    .from(documentLines)
+    .innerJoin(billing, eq(billing.id, documentLines.documentId))
+    .where(
+      and(
+        inArray(documentLines.billsLineId, [...lineIds]),
+        ne(billing.id, invoiceId),
+        isNull(billing.reverses),
+        gt(billing.updatedAt, postedAt),
+        notExists(
+          tx
+            .select({ id: billingReversal.id })
+            .from(billingReversal)
+            .where(eq(billingReversal.reverses, billing.id)),
+        ),
+      ),
+    )
+    .limit(1);
+  return found !== undefined;
+}
+
+/**
  * Reverses a posted document (spec section 6: the owner's; the endpoint checks it): a new posted
  * document reversing it, with copies of its lines and the ledger's reversing movements. The
  * posted document itself is never changed (invariant 7). All of it, or nothing.
@@ -338,12 +382,23 @@ export async function reverseDocument(
       .where(eq(documentLines.documentId, documentId))
       .orderBy(asc(documentLines.position));
     // An invoice that stands still bills its goods: reversing them first would quietly drop its
-    // price (decision 0032). Reversing an invoice under a later one is #120's.
+    // price (decision 0032). So would reversing an invoice under a later one (#120).
     if (
       row.type === "delivery-note" &&
       (await billedByStanding(
         tx,
         lineRows.map((l) => l.id),
+      ))
+    ) {
+      return refused("billed");
+    }
+    if (
+      row.type === "invoice" &&
+      (await billedLater(
+        tx,
+        documentId,
+        row.updatedAt,
+        lineRows.flatMap((l) => l.billsLineId ?? []),
       ))
     ) {
       return refused("billed");

@@ -293,6 +293,10 @@ export const en: Messages = {
       no_supplier: "The supplier is missing.",
       failed_checks: "It fails a check.",
       unmapped_lines: "Some lines have no confirmed product.",
+      unbilled_lines:
+        "Some lines have no confirmed delivery note, and aren't received with the invoice.",
+      quantity_differs:
+        "A line bills a different quantity from the one its delivery note received.",
       new_supplier: "New supplier: its first documents are always reviewed.",
     },
     // The document's supplier, and each line's product, in review (#118).

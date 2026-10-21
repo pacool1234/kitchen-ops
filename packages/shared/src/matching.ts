@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LineBilling } from "./billing";
 import { BaseUnit } from "./products";
 import { Pack, SupplierProduct } from "./supplier-products";
 
@@ -20,8 +21,15 @@ export const REVIEW_REASONS = [
   "no_supplier",
   /** Its supplier has fewer than NEW_SUPPLIER_DOCUMENTS posted documents (spec 11.1). */
   "new_supplier",
-  /** At least one line isn't matched to a supplier product: a suggestion isn't a match yet. */
+  /**
+   * At least one line isn't matched to a supplier product: a suggestion isn't a match yet. On an
+   * invoice, only the lines received with it: a line it bills is the delivery note's product.
+   */
   "unmapped_lines",
+  /** An invoice line bills no delivery-note line, nor is it received with it (#120). */
+  "unbilled_lines",
+  /** An invoice line bills a delivery-note line with another quantity (decision 0032). */
+  "quantity_differs",
 ] as const;
 export const ReviewReason = z.enum(REVIEW_REASONS);
 export type ReviewReason = z.infer<typeof ReviewReason>;
@@ -56,8 +64,15 @@ export const DocumentMatching = z.object({
     z.object({
       line: z.number().int().min(1),
       match: LineMatch.nullable(),
+      /** What an invoice's line bills (#120): null for a delivery note's, and for one undecided. */
+      billing: LineBilling.nullable(),
     }),
   ),
+  /**
+   * An invoice's lines' differences added up, in euros: what it changes the delivery notes'
+   * value by. Null for a delivery note.
+   */
+  difference: z.string().nullable(),
   /** Empty when nothing stands in the way of posting it. */
   reviewReasons: z.array(ReviewReason),
 });

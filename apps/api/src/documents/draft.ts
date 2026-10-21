@@ -4,7 +4,8 @@ import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { audited, auditContext } from "../audit/audited";
 import { routeFor } from "../contract";
 import type { Db } from "../db/client";
-import { documents } from "../db/schema";
+import { documents, invoiceLineBills } from "../db/schema";
+import { storedChoices } from "../billing/billing";
 import { HttpError } from "../errors";
 import {
   checksOf,
@@ -57,9 +58,32 @@ export const draftRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
           .update(documents)
           .set({ ...after, checkFailures: failures })
           .where(eq(documents.id, id));
+        // An invoice's choices are by line (#120): once lines are added or removed, line 3 could
+        // be what line 2 was, so they're cleared. A correction of values keeps them.
+        const cleared =
+          currentDraft(before)?.lines.length === corrected.lines.length
+            ? []
+            : await storedChoices(tx, id);
+        if (cleared.length > 0) {
+          await tx
+            .delete(invoiceLineBills)
+            .where(eq(invoiceLineBills.documentId, id));
+        }
         return {
           result: { corrected, checkFailures: withoutMessages(failures) },
           changes: [
+            ...cleared.map((choice) => ({
+              action: "delete" as const,
+              entityType: "invoice_line_bill",
+              entityId: choice.id,
+              documentId: id,
+              before: {
+                position: choice.position,
+                deliveryNoteLineId: choice.deliveryNoteLineId,
+                received: choice.received,
+              },
+              after: null,
+            })),
             {
               action: "update",
               entityType: "document",

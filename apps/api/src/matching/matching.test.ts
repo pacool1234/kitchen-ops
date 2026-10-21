@@ -145,14 +145,21 @@ describe("GET /api/documents/:id/matching", () => {
     expect(await matching(id)).toEqual({
       supplier: { id: huerto.id, name: huerto.name, taxId: huerto.taxId },
       newSupplier: true,
+      // A delivery note's lines bill nothing (#120).
       lines: [
-        { line: 1, match: { by: "code", supplierProduct: tomateKilo } },
+        {
+          line: 1,
+          match: { by: "code", supplierProduct: tomateKilo },
+          billing: null,
+        },
         {
           line: 2,
           match: { by: "description", supplierProduct: aceiteGarrafa },
+          billing: null,
         },
-        { line: 3, match: null },
+        { line: 3, match: null, billing: null },
       ],
+      difference: null,
       reviewReasons: ["new_supplier", "unmapped_lines"],
     });
   });
@@ -178,7 +185,8 @@ describe("GET /api/documents/:id/matching", () => {
     expect(await matching(id)).toEqual({
       supplier: null,
       newSupplier: false,
-      lines: [1, 2, 3].map((line) => ({ line, match: null })),
+      lines: [1, 2, 3].map((line) => ({ line, match: null, billing: null })),
+      difference: null,
       reviewReasons: ["failed_checks", "no_supplier", "unmapped_lines"],
     });
   });
