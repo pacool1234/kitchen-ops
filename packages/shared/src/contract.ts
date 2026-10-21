@@ -21,10 +21,14 @@ import {
 } from "./matching";
 import { DocumentPosting, PostDocument } from "./posting";
 import {
+  ProductMovementPage,
+  ProductMovementQuery,
   ProductStock,
   RecordCount,
   RecordTransfer,
   RecordWaste,
+  StockPage,
+  StockQuery,
 } from "./stock";
 import {
   NewProduct,
@@ -267,6 +271,26 @@ export const endpoints = {
     access: CATALOGUE_WRITERS,
     params: IdParams,
     response: ProductStock,
+  }),
+  listProductMovements: endpoint({
+    method: "GET",
+    path: "/api/products/:id/movements",
+    summary:
+      "A product's movements, newest first, with their documents; costs for office and the owner only",
+    access: "signed-in",
+    params: IdParams,
+    query: ProductMovementQuery,
+    response: ProductMovementPage,
+  }),
+  // Stock per storeroom (#150): everyone counts it, office and the owner value it.
+  listStock: endpoint({
+    method: "GET",
+    path: "/api/stock",
+    summary:
+      "Every product in every storeroom it has moved through, with its stock; costs, values and totals for office and the owner only",
+    access: "signed-in",
+    query: StockQuery,
+    response: StockPage,
   }),
   listSupplierProducts: endpoint({
     method: "GET",
