@@ -136,7 +136,8 @@ export const router = createRouter({
             },
           ],
         },
-        // Stock per storeroom (#150): the list, and a product's stock and movements.
+        // Stock per storeroom (#150): the list, and a product's stock and movements. Waste and
+        // transfers, recorded from it, and the page of each (#151).
         {
           path: "stock",
           children: [
@@ -145,6 +146,28 @@ export const router = createRouter({
               name: "stock",
               component: () => import("./stock/StockView.vue"),
               meta: { title: "stock.title", parent: "home" },
+            },
+            {
+              path: "waste/new",
+              name: "new-waste",
+              component: () => import("./stock/StockRecordView.vue"),
+              props: { type: "waste" },
+              meta: { title: "stock.newWaste", parent: "stock" },
+            },
+            {
+              path: "transfers/new",
+              name: "new-transfer",
+              component: () => import("./stock/StockRecordView.vue"),
+              props: { type: "transfer" },
+              meta: { title: "stock.newTransfer", parent: "stock" },
+            },
+            {
+              path: "documents/:id",
+              name: "stock-document",
+              component: () => import("./stock/StockDocumentView.vue"),
+              props: true,
+              // Until it has loaded; then the page is titled with its type and date.
+              meta: { title: "stock.posted.movements", parent: "stock" },
             },
             {
               path: ":id",

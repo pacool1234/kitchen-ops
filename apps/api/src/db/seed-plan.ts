@@ -39,6 +39,8 @@ const LOCAL_USERS: SeedUser[] = [
   // A third owner, for the browser test that reverses a posted document (#119): it sets up this
   // one's 2FA too.
   ["director", "owner", "local-only-director"], // gitleaks:allow
+  // A fourth owner, for the browser test that reverses waste (#151): it sets up its 2FA too.
+  ["keeper", "owner", "local-only-keeper"], // gitleaks:allow
 ].map(([name, role, password]) => ({
   email: `${name}@example.test`,
   name: `Local ${name}`,

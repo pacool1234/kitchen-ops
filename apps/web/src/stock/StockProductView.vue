@@ -158,6 +158,11 @@ const movementCost = (m: ProductMovement) =>
     ? ""
     : formatUnitCost(m.unitCost, baseUnit.value, language.value);
 const date = (m: ProductMovement) => formatDate(m.date, language.value);
+/** Where a movement's document is shown, if it has a page. */
+function linkOf(m: ProductMovement) {
+  const link = movementDocument(m.document).link;
+  return link && { name: link.name, params: { id: link.id } };
+}
 /** "Albarán ALB-0001", or a stock document's kind: "Merma". */
 function documentText(m: ProductMovement) {
   const { type, number } = movementDocument(m.document);
@@ -259,11 +264,8 @@ const movementColumns = computed<Column<ProductMovement>[]>(() => [
         </template>
         <template #cell-document="{ row }">
           <RouterLink
-            v-if="movementDocument(row.document).pageId"
-            :to="{
-              name: 'document',
-              params: { id: movementDocument(row.document).pageId },
-            }"
+            v-if="linkOf(row)"
+            :to="linkOf(row)!"
             class="text-primary underline-offset-4 hover:underline"
           >
             {{ documentText(row) }}
@@ -283,11 +285,8 @@ const movementColumns = computed<Column<ProductMovement>[]>(() => [
                 {{ date(row) }} · {{ row.storeroom.name }}
               </span>
               <RouterLink
-                v-if="movementDocument(row.document).pageId"
-                :to="{
-                  name: 'document',
-                  params: { id: movementDocument(row.document).pageId },
-                }"
+                v-if="linkOf(row)"
+                :to="linkOf(row)!"
                 class="text-sm text-primary underline-offset-4 hover:underline"
               >
                 {{ documentText(row) }}
