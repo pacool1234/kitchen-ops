@@ -25,6 +25,7 @@ import { matchesSearch } from "../components/ui/search";
 import { showToast } from "../components/ui/toasts";
 import { useT } from "../i18n";
 import { formatQuantity, formatUnitCost } from "../i18n/format";
+import AppUpdateNotice from "../shell/AppUpdateNotice.vue";
 import LanguageMenu from "../shell/LanguageMenu.vue";
 import GallerySection from "./GallerySection.vue";
 import { sampleProducts, type SampleProduct } from "./sample";
@@ -402,6 +403,16 @@ const swatches = [
           >Los precios se actualizan con cada factura.</UiAlert
         >
       </div>
+    </GallerySection>
+
+    <GallerySection
+      title="Versión nueva"
+      description="Encima de cada página cuando hay una versión nueva de la app esperando (#139)."
+    >
+      <AppUpdateNotice
+        @reload="showToast({ tone: 'info', title: 'Recargaría la app' })"
+        @close="showToast({ tone: 'info', title: 'Cerraría el aviso' })"
+      />
     </GallerySection>
 
     <GallerySection title="Tarjetas">

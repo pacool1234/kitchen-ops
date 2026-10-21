@@ -562,6 +562,12 @@ export const es = {
     breadcrumb: "Estás en",
     userMenu: "Menú de usuario",
     signOut: "Cerrar sesión",
+    // A new version of the app, waiting for an open tab (#139).
+    update: {
+      available: "Hay una versión nueva de la app.",
+      reload: "Recargar",
+      close: "Ahora no",
+    },
   },
   // The components' own text (src/components/ui).
   ui: {

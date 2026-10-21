@@ -550,6 +550,12 @@ export const en: Messages = {
     breadcrumb: "You are here",
     userMenu: "User menu",
     signOut: "Sign out",
+    // A new version of the app, waiting for an open tab (#139).
+    update: {
+      available: "There's a new version of the app.",
+      reload: "Reload",
+      close: "Not now",
+    },
   },
   ui: {
     optional: "optional",
