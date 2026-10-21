@@ -9,23 +9,39 @@ import { DocumentPosting, mayPost, PostDocument } from "./posting";
 
 const reasons = fc.uniqueArray(fc.constantFrom(...REVIEW_REASONS));
 
-describe("mayPost: who may post a delivery note, by what's left before posting it", () => {
-  it("a counter user may post exactly when nothing is left; office and owner exactly when nothing but a new supplier is left", () => {
+describe("mayPost: who may post a document, by its type and what's left before posting it", () => {
+  it("a delivery note: a counter user exactly when nothing is left; office and owner exactly when nothing but a new supplier is left", () => {
     fc.assert(
       fc.property(fc.constantFrom(...ROLES), reasons, (role, left) => {
         const onlyNewSupplier = left.every((r) => r === "new_supplier");
         const expected =
           role === "counter" ? left.length === 0 : onlyNewSupplier;
-        expect(mayPost(role, left)).toBe(expected);
+        expect(mayPost(role, left, "delivery-note")).toBe(expected);
       }),
     );
   });
 
-  it("examples: a new supplier's document waits for the office", () => {
-    expect(mayPost("counter", [])).toBe(true);
-    expect(mayPost("counter", ["new_supplier"])).toBe(false);
-    expect(mayPost("office", ["new_supplier"])).toBe(true);
-    expect(mayPost("owner", ["new_supplier", "unmapped_lines"])).toBe(false);
+  it("an invoice: never a counter user; office and owner exactly as for a delivery note (spec section 6, #120)", () => {
+    fc.assert(
+      fc.property(fc.constantFrom(...ROLES), reasons, (role, left) => {
+        expect(mayPost(role, left, "invoice")).toBe(
+          role !== "counter" && mayPost(role, left, "delivery-note"),
+        );
+      }),
+    );
+  });
+
+  it("examples: a new supplier's document waits for the office; an invoice is always the office's", () => {
+    expect(mayPost("counter", [], "delivery-note")).toBe(true);
+    expect(mayPost("counter", ["new_supplier"], "delivery-note")).toBe(false);
+    expect(mayPost("office", ["new_supplier"], "delivery-note")).toBe(true);
+    expect(
+      mayPost("owner", ["new_supplier", "unmapped_lines"], "delivery-note"),
+    ).toBe(false);
+    expect(mayPost("counter", [], "invoice")).toBe(false);
+    expect(mayPost("office", [], "invoice")).toBe(true);
+    expect(mayPost("office", ["unbilled_lines"], "invoice")).toBe(false);
+    expect(mayPost("owner", ["quantity_differs"], "invoice")).toBe(false);
   });
 });
 

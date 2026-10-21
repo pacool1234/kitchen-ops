@@ -74,6 +74,8 @@ describe("endpoints: the API's contract (decision 0022)", () => {
       ["GET", "/api/documents/:id/matching", "signed-in"],
       ["PUT", "/api/documents/:id/supplier", writers],
       ["POST", "/api/documents/:id/lines/:line/mapping", writers],
+      ["GET", "/api/documents/:id/billing/candidates", writers],
+      ["PUT", "/api/documents/:id/billing", writers],
       ["POST", "/api/documents/:id/post", "signed-in"],
       ["GET", "/api/documents/:id/posting", "signed-in"],
       ["POST", "/api/documents/:id/reverse", { roles: ["owner"] }],
