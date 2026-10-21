@@ -9,12 +9,13 @@ import { readStockDocument } from "./document";
 import { stockList } from "./list";
 import { productMovements } from "./movements";
 import { recordStockDocument, type RecordResult } from "./record";
+import { countSheet } from "./sheet";
 import { productStock } from "./stock";
 
 // A product's stock and average cost in each storeroom (#120), for office and the owner. The
 // stock list and a product's movements, for everyone, with euros for office and the owner only
 // (#150). Waste, transfers and counts, recorded by anyone under an ID their client made, and
-// posted at once (#149), each read on its own page (#151).
+// posted at once (#149), each read on its own page (#151). A storeroom's count sheet, blind (#152).
 
 /** A refusal from recording, as the API answers it. */
 function refusal(result: Exclude<RecordResult, { ok: true }>): HttpError {
@@ -66,6 +67,15 @@ export const stockRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
       });
       if (!document) throw notFound();
       return document;
+    },
+  });
+
+  app.route({
+    ...routeFor(endpoints.getCountSheet),
+    handler: async ({ params }) => {
+      const sheet = await countSheet(db, params.id);
+      if (!sheet) throw notFound();
+      return sheet;
     },
   });
 

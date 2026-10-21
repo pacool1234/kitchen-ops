@@ -21,6 +21,7 @@ import {
 } from "./matching";
 import { DocumentPosting, PostDocument } from "./posting";
 import {
+  CountSheet,
   PostedStockDocument,
   ProductMovementPage,
   ProductMovementQuery,
@@ -538,6 +539,16 @@ export const endpoints = {
     access: "signed-in",
     params: IdParams,
     response: PostedStockDocument,
+  }),
+  // A storeroom's count sheet (#152): the products a count of it starts with, blind.
+  getCountSheet: endpoint({
+    method: "GET",
+    path: "/api/storerooms/:id/count-sheet",
+    summary:
+      "The products a count of a storeroom lists: those with stock there and those it's the default storeroom of, with their units, never how much there is",
+    access: "signed-in",
+    params: IdParams,
+    response: CountSheet,
   }),
   createDocumentCopy: endpoint({
     method: "POST",

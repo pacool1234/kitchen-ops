@@ -5,7 +5,7 @@ import { fieldError } from "./errors";
 import { optionalText } from "./fields";
 import { PageQuery, pageOf, SearchText } from "./lists";
 import { MOVEMENT_KINDS } from "./posting";
-import { BaseUnit, ProductCategory, UnitName } from "./products";
+import { BaseUnit, Product, ProductCategory, UnitName } from "./products";
 import { decimalQuantity, PackQuantity } from "./supplier-products";
 
 // A product's stock and average cost in each storeroom (#120): what its page shows office and
@@ -216,6 +216,11 @@ export const StockDocumentMovement = z.object({
   quantity: z.number().int(),
   /** Per base unit, 6 decimals as text. */
   unitCost: z.string().optional(),
+  /**
+   * Office and the owner only (#152): quantity × unit cost in euros, rounded once to cents
+   * (decision 0043). What waste cost, or a count's difference is worth.
+   */
+  value: z.string().optional(),
   kind: z.enum(MOVEMENT_KINDS),
 });
 export type StockDocumentMovement = z.infer<typeof StockDocumentMovement>;
@@ -263,3 +268,15 @@ export const PostedStockDocument = z.object({
     .nullable(),
 });
 export type PostedStockDocument = z.infer<typeof PostedStockDocument>;
+
+/**
+ * Answer of `GET /api/storerooms/:id/count-sheet` (#152): what a count of a storeroom lists to
+ * begin with, the products with stock there and the active ones whose default storeroom it is,
+ * each with its units. By category, in the catalogue's order, then by name: the same order every
+ * time. It says nothing of how much there is: a count is blind, for every role.
+ */
+export const CountSheet = z.object({
+  storeroom: Named,
+  products: z.array(Product),
+});
+export type CountSheet = z.infer<typeof CountSheet>;
