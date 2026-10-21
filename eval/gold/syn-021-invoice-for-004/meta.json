@@ -3,5 +3,8 @@
   "kind": "text-pdf",
   "made": "rendered",
   "notes": "The invoice for syn-004's priced delivery note, which it lists under its date: the same five lines, two at new prices (one up, one down) and three as delivered. Weights with three decimals. The staging demo's invoice (#120).",
-  "checked": null
+  "checked": {
+    "by": "pacool1234",
+    "on": "2026-10-21"
+  }
 }
