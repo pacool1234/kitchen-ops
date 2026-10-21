@@ -12,10 +12,35 @@ export function unique(testInfo: TestInfo, name: string): string {
 }
 
 /**
- * A valid CIF for a fictional company, almost surely one no other test uses: "B00", five
- * random digits and the control digit. Province 00 doesn't exist, so it's no real company's.
+ * The tax IDs the seed uses: its catalogue's suppliers, and its demo documents', one of them
+ * left to create in review (apps/api/src/db/seed-catalogue.ts, seed-documents.ts). A test's own
+ * CIF is never one of them, or its supplier would be found instead of created.
+ */
+const SEEDED_CIFS = new Set([
+  "B00100016",
+  "B00100024",
+  "B00100032",
+  "B00100040",
+  "B00100057",
+  "B00100065",
+  "B00100073",
+  "B00100081",
+  "B00123455",
+  "B00555664",
+  "B00777029",
+]);
+
+/**
+ * A valid CIF for a fictional company, almost surely one no other test uses, and never a seeded
+ * supplier's: "B00", five random digits and the control digit. Province 00 doesn't exist, so
+ * it's no real company's.
  */
 export function syntheticCif(): string {
+  const cif = randomCif();
+  return SEEDED_CIFS.has(cif) ? syntheticCif() : cif;
+}
+
+function randomCif(): string {
   const digits = `00${String(Math.floor(Math.random() * 100_000)).padStart(5, "0")}`;
   let sum = 0;
   [...digits].forEach((character, i) => {
