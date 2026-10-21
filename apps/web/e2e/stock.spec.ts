@@ -164,6 +164,10 @@ test("a counter user sees the stock and its movements without a euro", async ({
   await page.getByRole("searchbox", { name: "Buscar" }).fill(label);
   await expect(rowOf(page, isMobile, tomato)).toContainText("5 kg");
   await expect(page.getByRole("main")).not.toContainText("€");
+  // Nor empty places for them: no column for a cost or a value.
+  await expect(
+    page.getByRole("columnheader", { name: /^(Coste|Coste medio|Valor)$/ }),
+  ).toHaveCount(0);
   await expect(
     page.getByRole("region", { name: "Valor del stock" }),
   ).toHaveCount(0);
@@ -175,6 +179,10 @@ test("a counter user sees the stock and its movements without a euro", async ({
   await arrivedAt(page, tomato);
   await expect(rowOf(page, isMobile, "Entrada")).toContainText("+5 kg");
   await expect(page.getByRole("main")).not.toContainText("€");
+  // Nor empty places for them: no column for a cost or a value.
+  await expect(
+    page.getByRole("columnheader", { name: /^(Coste|Coste medio|Valor)$/ }),
+  ).toHaveCount(0);
   await expectAccessible(page);
 });
 
