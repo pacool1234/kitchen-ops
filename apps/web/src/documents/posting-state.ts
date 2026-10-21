@@ -6,13 +6,13 @@ import {
 } from "@kitchen-ops/shared";
 
 // Whether the review screen offers to post a document, and why not when it doesn't (#119,
-// decision 0038); and which storeroom a line starts on.
+// decision 0038; invoices, #120); and which storeroom a line starts on.
 
-/** Why "Registrar el albarán" can't be used now, in the order the screen says them. */
+/** Why "Registrar el albarán" or "la factura" can't be used now, in the order the screen says them. */
 export const POST_BLOCKS = [
   /** Something other than a new supplier is left: listed above it. */
   "pending",
-  /** Invoices are posted later (#120). */
+  /** A counter user, and an invoice: office or owner reviews and posts it (spec section 6). */
   "invoice",
   /** A counter user, and a new supplier: office or owner reviews and posts it. */
   "new_supplier",
@@ -22,8 +22,8 @@ export const POST_BLOCKS = [
 export type PostBlock = (typeof POST_BLOCKS)[number];
 
 /**
- * Posting is offered when the role may post with what's left (`mayPost`, as the API decides),
- * nothing is unsaved, and the draft on screen is a delivery note; otherwise the first reason.
+ * Posting is offered when something was read, the role may post it with what's left (`mayPost`,
+ * as the API decides), and nothing is unsaved; otherwise the first reason.
  */
 export function posting(state: {
   role: Role;
@@ -36,9 +36,11 @@ export function posting(state: {
   if (reasons.some((r) => r !== "new_supplier") || type === null) {
     return { offered: false, blocked: "pending" };
   }
-  if (type !== "delivery-note") return { offered: false, blocked: "invoice" };
   if (!mayPost(role, reasons, type)) {
-    return { offered: false, blocked: "new_supplier" };
+    return {
+      offered: false,
+      blocked: type === "invoice" ? "invoice" : "new_supplier",
+    };
   }
   if (dirty) return { offered: false, blocked: "unsaved" };
   return { offered: true };

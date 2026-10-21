@@ -129,6 +129,16 @@ export const es = {
     emptyDescription: "Da de alta lo que compras, cuentas y cocinas.",
     loadFailed:
       "No se han podido cargar los productos. Comprueba la conexión y vuelve a intentarlo.",
+    // A product's stock and average cost in each storeroom (#120).
+    stock: {
+      heading: "Stock",
+      caption: "Stock y coste medio por almacén",
+      storeroom: "Almacén",
+      onHand: "En stock",
+      averageCost: "Coste medio",
+      none: "Todavía no ha entrado en ningún almacén.",
+      loadFailed: "No se ha podido cargar su stock. Vuelve a cargar la página.",
+    },
   },
   supplierProducts: {
     title: "Productos de este proveedor",
@@ -339,20 +349,79 @@ export const es = {
       descriptionRequired:
         "La línea no tiene descripción ni código: corrígela y guarda antes.",
     },
-    // Posting a reviewed delivery note, from the review screen (#119, decision 0038).
+    // What each line of an invoice bills, in review (#120, decision 0041).
+    billing: {
+      suggested:
+        "Sugerido: albarán {number} del {date}, línea {line} · {quantity}",
+      confirmed:
+        "Factura el albarán {number} del {date}, línea {line} · {quantity}",
+      noNumber: "sin número",
+      received: "Entra en stock con la factura.",
+      none: "Sin albarán elegido.",
+      prices:
+        "Precio del albarán: {before} · De la factura: {after} · Diferencia: {difference}",
+      noPrice: "La línea no tiene precio: no hay nada que comparar.",
+      quantityDiffers:
+        "Las cantidades no coinciden: el albarán recibió {received}. Corrige la línea o elige otro albarán.",
+      confirm: "Confirmar el albarán",
+      choose: "Elegir otro albarán",
+      chooseOne: "Elegir un albarán",
+      receive: "Sin albarán: entra en stock con la factura",
+      saved: "Albarán de la línea guardado",
+      taken: "Otra factura ya factura esa línea del albarán: elige otra.",
+      blocked: {
+        no_supplier: "Elige antes el proveedor.",
+        unsaved: "Guarda las correcciones para elegir albaranes.",
+      },
+      dialogTitle: "Albarán de la línea {n}",
+      dialogText:
+        "Elige la línea de un albarán registrado de este proveedor que factura.",
+      group: "Albarán {number} · {date}",
+      candidate: "Línea {n}: {product} · {quantity} · {cost}",
+      chosenFor: "ahora en la línea {n}",
+      noCandidates:
+        "Este proveedor no tiene albaranes registrados por facturar.",
+      loadFailed:
+        "No se han podido cargar sus albaranes. Comprueba la conexión y vuelve a intentarlo.",
+      differences: "Diferencias de precio",
+      differencesCaption:
+        "Precio de cada albarán y de la factura, por unidad, y la diferencia en euros",
+      line: "Línea",
+      product: "Producto",
+      deliveryNote: "Albarán",
+      before: "Precio del albarán",
+      after: "De la factura",
+      difference: "Diferencia",
+      total: "Total",
+      noDifferences: "Ninguna línea factura todavía un albarán.",
+    },
+    // Posting a reviewed document, from the review screen (#119, decision 0038; invoices, #120).
     posting: {
-      post: "Registrar el albarán",
+      post: {
+        "delivery-note": "Registrar el albarán",
+        invoice: "Registrar la factura",
+      },
       blocked: {
         pending: "Antes, resuelve lo que falta.",
-        invoice: "Las facturas aún no se registran.",
+        invoice: "Una factura la registran la oficina o el propietario.",
         new_supplier: "Proveedor nuevo: lo registra la oficina.",
         unsaved: "Guarda las correcciones antes de registrarlo.",
       },
-      confirmTitle: "¿Registrar el albarán {number}?",
-      confirmText:
-        "Entra en stock y ya no se puede cambiar: solo el propietario puede anularlo.",
+      confirmTitle: {
+        "delivery-note": "¿Registrar el albarán {number}?",
+        invoice: "¿Registrar la factura {number}?",
+      },
+      confirmText: {
+        "delivery-note":
+          "Entra en stock y ya no se puede cambiar: solo el propietario puede anularlo.",
+        invoice:
+          "Corrige el coste de lo que trajeron sus albaranes y ya no se puede cambiar: solo el propietario puede anularla.",
+      },
       confirm: "Registrar",
-      posted: "Albarán registrado",
+      posted: {
+        "delivery-note": "Albarán registrado",
+        invoice: "Factura registrada",
+      },
       storeroom: "Almacén",
       own: "{name} (el suyo)",
       chooseStoreroom: "Elige el almacén.",
@@ -370,7 +439,14 @@ export const es = {
         "transfer-out": "Traspaso, salida",
         "transfer-in": "Traspaso, entrada",
         reversal: "Anulación",
+        correction: "Corrección de precio",
       },
+      // What an invoice's line billed, and what bills a delivery note's (#120).
+      bills: "Factura la línea {line} del",
+      billsNote: "albarán {number}",
+      samePrice: "Mismo precio: nada que corregir.",
+      billedBy: "Facturada en:",
+      noNumber: "sin número",
       loadFailed:
         "No se han podido cargar sus movimientos. Vuelve a cargar la página.",
       reversalHeading: "Anulación",
@@ -537,7 +613,9 @@ export const es = {
     no_supplier: "Elige antes el proveedor del documento.",
     review_pending:
       "Ha cambiado algo mientras tanto: revisa lo que falta antes de registrarlo.",
-    not_a_delivery_note: "Las facturas aún no se registran.",
+    not_an_invoice: "Este documento no es una factura.",
+    already_billed:
+      "Otra factura ya factura alguna de sus líneas: elige otro albarán.",
     cannot_post: "Alguna línea no se puede registrar: mira cada línea.",
     not_posted: "Este documento no está registrado.",
     already_reversed: "Ya estaba anulado.",

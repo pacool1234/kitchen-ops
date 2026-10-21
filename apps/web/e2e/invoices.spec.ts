@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type APIResponse, type Page } from "@playwright/test";
 import { expectAccessible } from "./a11y.ts";
 import { accounts } from "./accounts.ts";
 import { loadedAt, signedIn, syntheticCif, unique } from "./catalogue.ts";
@@ -18,7 +18,8 @@ const line = (page: Page, n: number) =>
 const differences = (page: Page) =>
   page.getByRole("region", { name: "Diferencias de precio" });
 const inStock = (page: Page) => page.getByRole("region", { name: "En stock" });
-const stock = (page: Page) => page.getByRole("region", { name: "Stock" });
+const stock = (page: Page) =>
+  page.getByRole("region", { name: "Stock", exact: true });
 const postButton = (page: Page) =>
   page.getByRole("button", { name: "Registrar la factura" });
 // Reka names the notices' region with its key too: "Avisos (F8)".
@@ -51,9 +52,8 @@ async function idOf(
   return items.find((p) => p.name === name)!.id;
 }
 
-async function ok(
-  answer: Promise<{ status(): number; text(): Promise<string> }>,
-) {
+/** Waits for an API call, and checks it succeeded, saying why not if it didn't. */
+async function ok(answer: Promise<APIResponse>) {
   const response = await answer;
   expect(response.status(), await response.text()).toBeLessThan(300);
   return response;
@@ -259,45 +259,24 @@ test("M7: an invoice corrects its delivery note's price: each line's delivery-no
   await expectAccessible(page);
 });
 
-test("a counter user sees what an invoice bills, but neither chooses it nor posts it: office and the owner do", async ({
+test("a counter user sees an invoice in review read-only, with nothing to choose or post: office and the owner review and post it (decision 0037)", async ({
   page,
 }, testInfo) => {
   await signedIn(page, accounts.office);
-  const { note, invoice } = await deliveredAndInvoiced(
+  const { invoice } = await deliveredAndInvoiced(
     page,
     unique(testInfo, "Factura para el mostrador"),
-  );
-  const candidates = await ok(
-    page.request.get(`/api/documents/${invoice}/billing/candidates`),
-  );
-  const { lines } = (await candidates.json()) as {
-    lines: { id: string; position: number; deliveryNote: { id: string } }[];
-  };
-  const chosen = lines
-    .filter((l) => l.deliveryNote.id === note)
-    .sort((a, b) => a.position - b.position)
-    .map((l) => ({ deliveryNoteLineId: l.id }));
-  await ok(
-    page.request.put(`/api/documents/${invoice}/billing`, {
-      data: { lines: chosen },
-    }),
   );
   await page.context().clearCookies();
 
   await signedIn(page, accounts.counter);
   await page.goto(`/documents/${invoice}`);
-  await expect(left(page).getByRole("listitem")).toHaveText([
-    "Proveedor nuevo: sus primeros documentos se revisan siempre.",
-  ]);
-  await expect(line(page, 2)).toContainText(
-    `Factura el albarán ALB-0001 del ${today()}, línea 2`,
-  );
+  await expect(statusOf(page)).toHaveText("Listo para revisar");
   await expect(
-    page.getByRole("button", { name: "Elegir otro albarán" }),
-  ).toHaveCount(0);
-  await expect(postButton(page)).toBeDisabled();
-  await expect(left(page)).toContainText(
-    "Una factura la registran la oficina o el propietario.",
-  );
+    page.getByRole("heading", { name: "Lo leído", exact: true }),
+  ).toBeVisible();
+  await expect(left(page)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /albarán/ })).toHaveCount(0);
+  await expect(postButton(page)).toHaveCount(0);
   await expectAccessible(page);
 });

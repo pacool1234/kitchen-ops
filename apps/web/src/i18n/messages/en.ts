@@ -126,6 +126,16 @@ export const en: Messages = {
     emptyDescription: "Add what you buy, count and cook.",
     loadFailed:
       "Could not load the products. Check your connection and try again.",
+    // A product's stock and average cost in each storeroom (#120).
+    stock: {
+      heading: "Stock",
+      caption: "Stock and average cost by storeroom",
+      storeroom: "Storeroom",
+      onHand: "In stock",
+      averageCost: "Average cost",
+      none: "It hasn't been in any storeroom yet.",
+      loadFailed: "Its stock couldn't be loaded. Reload the page.",
+    },
   },
   supplierProducts: {
     title: "This supplier's products",
@@ -333,19 +343,77 @@ export const en: Messages = {
         "The line has no description or code: correct it and save first.",
     },
     // Posting a reviewed delivery note, from the review screen (#119, decision 0038).
+    billing: {
+      suggested:
+        "Suggested: delivery note {number} of {date}, line {line} · {quantity}",
+      confirmed:
+        "Bills delivery note {number} of {date}, line {line} · {quantity}",
+      noNumber: "with no number",
+      received: "It goes into stock with the invoice.",
+      none: "No delivery note chosen.",
+      prices:
+        "Delivery note's price: {before} · Invoice's: {after} · Difference: {difference}",
+      noPrice: "The line has no price: there's nothing to compare.",
+      quantityDiffers:
+        "The quantities don't match: the delivery note received {received}. Correct the line or choose another delivery note.",
+      confirm: "Confirm the delivery note",
+      choose: "Choose another delivery note",
+      chooseOne: "Choose a delivery note",
+      receive: "No delivery note: it goes into stock with the invoice",
+      saved: "Line's delivery note saved",
+      taken:
+        "Another invoice already bills that delivery-note line: choose another.",
+      blocked: {
+        no_supplier: "Choose the supplier first.",
+        unsaved: "Save the corrections to choose delivery notes.",
+      },
+      dialogTitle: "Delivery note of line {n}",
+      dialogText:
+        "Choose the line of a posted delivery note from this supplier that it bills.",
+      group: "Delivery note {number} · {date}",
+      candidate: "Line {n}: {product} · {quantity} · {cost}",
+      chosenFor: "now on line {n}",
+      noCandidates: "This supplier has no posted delivery notes left to bill.",
+      loadFailed:
+        "Its delivery notes couldn't be loaded. Check your connection and try again.",
+      differences: "Price differences",
+      differencesCaption:
+        "Each delivery note's price and the invoice's, per unit, and the difference in euros",
+      line: "Line",
+      product: "Product",
+      deliveryNote: "Delivery note",
+      before: "Delivery note's price",
+      after: "Invoice's",
+      difference: "Difference",
+      total: "Total",
+      noDifferences: "No line bills a delivery note yet.",
+    },
     posting: {
-      post: "Post the delivery note",
+      post: {
+        "delivery-note": "Post the delivery note",
+        invoice: "Post the invoice",
+      },
       blocked: {
         pending: "First, deal with what's left.",
-        invoice: "Invoices can't be posted yet.",
+        invoice: "Invoices are posted by the office or the owner.",
         new_supplier: "New supplier: the office posts it.",
         unsaved: "Save the corrections before posting it.",
       },
-      confirmTitle: "Post delivery note {number}?",
-      confirmText:
-        "It goes into stock and can't be changed after: only the owner can reverse it.",
+      confirmTitle: {
+        "delivery-note": "Post delivery note {number}?",
+        invoice: "Post invoice {number}?",
+      },
+      confirmText: {
+        "delivery-note":
+          "It goes into stock and can't be changed after: only the owner can reverse it.",
+        invoice:
+          "It corrects the cost of what its delivery notes brought in, and can't be changed after: only the owner can reverse it.",
+      },
       confirm: "Post",
-      posted: "Delivery note posted",
+      posted: {
+        "delivery-note": "Delivery note posted",
+        invoice: "Invoice posted",
+      },
       storeroom: "Storeroom",
       own: "{name} (its own)",
       chooseStoreroom: "Choose the storeroom.",
@@ -363,7 +431,13 @@ export const en: Messages = {
         "transfer-out": "Transfer, out",
         "transfer-in": "Transfer, in",
         reversal: "Reversal",
+        correction: "Price correction",
       },
+      bills: "Bills line {line} of",
+      billsNote: "delivery note {number}",
+      samePrice: "Same price: nothing to correct.",
+      billedBy: "Billed by:",
+      noNumber: "with no number",
       loadFailed: "Its movements couldn't be loaded. Reload the page.",
       reversalHeading: "Reversal",
       reversedOn: "Reversed on {date} by {name}.",
@@ -523,7 +597,9 @@ export const en: Messages = {
     no_supplier: "Choose the document's supplier first.",
     review_pending:
       "Something changed meanwhile: check what's left before posting it.",
-    not_a_delivery_note: "Invoices can't be posted yet.",
+    not_an_invoice: "This document isn't an invoice.",
+    already_billed:
+      "Another invoice already bills one of its lines: choose another delivery note.",
     cannot_post: "A line can't be posted: check each line.",
     not_posted: "This document isn't posted.",
     already_reversed: "It was already reversed.",
