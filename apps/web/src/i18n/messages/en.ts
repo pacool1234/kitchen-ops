@@ -294,6 +294,9 @@ export const en: Messages = {
       saved: "Corrections saved",
       modelRead: "What the model read",
       readLines: "Lines read",
+      // What's left before posting, or the storerooms, couldn't be loaded (#140).
+      loadFailed:
+        "What's left before posting it couldn't be loaded. Check the connection and try again.",
     },
     // What's left before posting a document in review (#117's review reasons).
     left: "Before posting it",
