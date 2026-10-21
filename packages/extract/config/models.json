@@ -1,5 +1,5 @@
 {
-  "default": { "model": "google/gemini-3.8-flash", "prompt": "v2" },
+  "default": { "model": "google/gemini-3.8-flash", "prompt": "v3" },
   "suggestion": { "model": "google/gemini-3.8-flash", "prompt": "v1" },
   "models": [
     {

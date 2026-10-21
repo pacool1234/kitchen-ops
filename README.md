@@ -213,7 +213,7 @@ pnpm --filter @kitchen-ops/extract eval -- --set gold --model openai/gpt-6-luna 
 ```
 
 - **Calls cost money.** A run stops at its spending cap: `--max-usd`, or $1.00 from `packages/extract/config/eval.json`. Agree each paid run, and its expected cost, with the repo owner first.
-- **Models** must be listed in `packages/extract/config/models.json`, which also sets each one's structured output and temperature. Its `default` is the model and prompt the pipeline uses: Gemini 3.8 Flash with prompt v2 (decision 0018). Its `suggestion` is the model and prompt that suggest products for lines nothing matches: Gemini 3.8 Flash with the suggestions prompt v1 (decision 0036).
+- **Models** must be listed in `packages/extract/config/models.json`, which also sets each one's structured output and temperature. Its `default` is the model and prompt the pipeline uses: Gemini 3.8 Flash (decision 0018) with prompt v3 (decision 0040). Its `suggestion` is the model and prompt that suggest products for lines nothing matches: Gemini 3.8 Flash with the suggestions prompt v1 (decision 0036).
 - **Prompts** are versioned files in `packages/extract/prompts/` (`v1.md`, `v2.md`, `v3.md`: v3 also reads the delivery notes an invoice lists, decision 0040), and those suggesting products in `prompts/suggestions/`. A new prompt is a new file, so runs stay comparable.
 - **Results** go to `eval/results/<date>-<model>-<prompt>.json`, with a Markdown summary next to it. They are committed and never overwritten. Running the same model and prompt again the same day writes `-run2`, `-run3`, and so on.
 

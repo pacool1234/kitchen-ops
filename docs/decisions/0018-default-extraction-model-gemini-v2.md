@@ -1,6 +1,6 @@
 # 0018. Default extraction model and prompt: Gemini 3.8 Flash, prompt v2, temperature 0
 
-- Status: Accepted; its temperature 0 is superseded by 0031
+- Status: Accepted; its temperature 0 is superseded by 0031, and its prompt v2 by v3 in 0040
 - Date: 2026-10-18
 - Supersedes: 0017
 

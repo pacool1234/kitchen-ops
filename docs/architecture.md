@@ -47,7 +47,7 @@ Spec section 5's stages:
 
 Paths in the table are under `packages/extract/` unless they say otherwise.
 
-**Default model and prompt:** Gemini 3.8 Flash with prompt v2 (decision 0018), at the provider's own temperature: the only zero-retention endpoints don't take one (decision 0031). They're set in `packages/extract/config/models.json` and read with `defaultExtraction()` (`src/llm/config.ts`). Suggesting products uses the same model with its own prompt, `prompts/suggestions/v1.md`, read with `defaultSuggestion()` (decision 0036). Prompts are versioned files in `packages/extract/prompts/`. Prompt v3 also asks for the delivery notes an invoice lists (`deliveryNotes` in the draft), which the Facturae reader takes from `DeliveryNotesReferences`; the eval reports that field without scoring it (decision 0040).
+**Default model and prompt:** Gemini 3.8 Flash (decision 0018) with prompt v3 (decision 0040), at the provider's own temperature: the only zero-retention endpoints don't take one (decision 0031). They're set in `packages/extract/config/models.json` and read with `defaultExtraction()` (`src/llm/config.ts`). Suggesting products uses the same model with its own prompt, `prompts/suggestions/v1.md`, read with `defaultSuggestion()` (decision 0036). Prompts are versioned files in `packages/extract/prompts/`. Prompt v3 is v2 plus a rule asking for the delivery notes an invoice lists (`deliveryNotes` in the draft), which the Facturae reader takes from `DeliveryNotesReferences`; the eval reports that field without scoring it (decision 0040).
 
 ## The eval harness
 

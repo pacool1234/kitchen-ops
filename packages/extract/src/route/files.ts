@@ -12,7 +12,7 @@ import { extractFile, sha256Hex, type FileResult, type Route } from "./route";
 // One document from its files (#103): a PDF or Facturae file on its own, or one or several photos
 // of a delivery note or invoice, a page each, read as one document in the order they were taken.
 // Several photos go to the model as images in one request, as a scanned PDF's pages already do;
-// prompt v2 asks for every line "including lines on later pages", so nothing is added to it.
+// the prompt asks for every line "including lines on later pages", so nothing is added to it.
 
 /** The most photos one document may have: the upload's own limit (#102), one number for both. */
 export const MAX_PHOTOS = UPLOAD_LIMITS.maxPhotos;

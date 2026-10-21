@@ -1,6 +1,6 @@
 # 0040. Reading the delivery notes an invoice lists: a field of the draft, prompt v3, scored apart
 
-- Status: Accepted. Prompt v3 becomes the default once its eval holds (below)
+- Status: Accepted; prompt v3 is the default since its eval held (point 6)
 - Date: 2026-10-21
 
 ## Context
@@ -19,7 +19,16 @@ Spec section 5 is Decided only on "a Zod schema (header + lines)". A header fiel
 3. **The eval reports the field but doesn't score it.** It's compared like a document number, in any order. A wrong list is named as a difference, but the document can still be correct, and its silent error rate doesn't change. A missed number only leaves matching to fall back on dates and lines, which a person confirms (#120). Runs from before the field stay comparable.
 4. **Every gold answer writes the list,** `[]` for none. The schema refuses one that doesn't.
 5. **A draft saved before** has no list, and is read as listing none. That happens in the API's column type for stored drafts, `storedDraft`, as each row is read. A migration can't add the list: posted documents' rows can't be updated.
-6. **v3 becomes the default** (`packages/extract/config/models.json`) once the repo owner's eval over the gold set shows a silent error rate and review rate no worse than v2's, over the same number of runs. Until then, the default stays v2. Its results are committed and linked here.
+6. **v3 becomes the default** (`packages/extract/config/models.json`) once the repo owner's eval over the gold set shows a silent error rate and review rate no worse than v2's, over the same number of runs. It did, on 2026-10-21, with Gemini 3.8 Flash at the provider's temperature:
+
+   | Prompt | Runs | Silent errors | Review | Correct | Delivery notes listed right | Cost per document |
+   | --- | --- | --- | --- | --- | --- | --- |
+   | v2 | 3 | 0 of 60 | 0 of 60 | 60 of 60 | (not asked) | $0.0109 |
+   | v3 | 3 | 0 of 60 | 0 of 60 | 60 of 60 | 60 of 60 | $0.0117 |
+
+   v3 costs about 7% more a document, for the longer prompt and answer. Results: `eval/results/2026-10-20-google-gemini-3.8-flash-v2*.json` and `eval/results/2026-10-21-google-gemini-3.8-flash-v3*.json`.
+
+   This changes decision 0018's prompt, not its model.
 
 ## Alternatives considered
 
