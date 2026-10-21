@@ -68,7 +68,7 @@ pnpm --filter @kitchen-ops/api db:seed  # synthetic products, users and demo doc
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-The seed creates one **local-only** login per role, a second counter and two more owners. The passwords are deliberately fake; never use them anywhere real. They don't work on staging, which has logins of its own (below, "Deploying"). The seed refuses to run in production unless `SEED_DEMO=true` says it's staging's demo (decision 0028). With the `S3_*` variables set, it also adds three demo documents ready for review (decision 0039, below).
+The seed creates one **local-only** login per role, a second counter and two more owners. The passwords are deliberately fake; never use them anywhere real. They don't work on staging, which has logins of its own (below, "Deploying"). The seed refuses to run in production unless `SEED_DEMO=true` says it's staging's demo (decision 0028). With the `S3_*` variables set, it also adds four demo documents ready for review: three delivery notes and an invoice (decision 0039, below).
 
 | Email                  | Password             | Role    |
 | ---------------------- | -------------------- | ------- |
@@ -260,7 +260,7 @@ Each deploy applies the database migrations before the new version takes traffic
 - **Sign in** at https://kitchen-ops-web-staging.onrender.com as `counter@example.test`, `office@example.test` or `owner@example.test`. The owner sets up 2FA on the first sign-in.
 - **The passwords** are the staging API's `DEMO_PASSWORD_COUNTER`, `DEMO_PASSWORD_OFFICE` and `DEMO_PASSWORD_OWNER`, entered in Render's dashboard (the service's **Environment**), at least 12 characters each. They're never written in the repo; keep them in a password manager. Without them, the staging API refuses to start, and its log names the one missing.
 - **Changing a password** after the first start doesn't change a login: the seed only creates users while there are none.
-- **Three demo documents** wait in **Documentos**, ready for review (decision 0039): synthetic delivery notes from the gold set, with the suppliers and products they need, to try reviewing, posting and reversing. A photo of a priced one, from a supplier the demo knows; a photo of one without prices, whose supplier you create in review; and a long PDF without prices. They're added on the first start after they're merged, and kept as you change them. A document whose file was uploaded already is skipped.
+- **Four demo documents** wait in **Documentos**, ready for review (decision 0039): synthetic documents from the gold set, with the suppliers and products they need, to try reviewing, posting and reversing. A photo of a priced delivery note, from a supplier the demo knows; a photo of one without prices, whose supplier you create in review; a long PDF without prices; and the invoice for the first, which corrects two of its prices once that delivery note is posted (#120). They're added on the first start after they're merged, and kept as you change them. A document whose file was uploaded already is skipped.
 
 **Changing `render.yaml`:** the Blueprint applies changes only when you click **Manual Sync** on its page in Render. A sync that changes a service also redeploys it from the latest commit on `main`, **production included**, without a release tag. Sync only when `main` is ready for production, ideally right after releasing it.
 
