@@ -29,9 +29,9 @@ import { movementsOf } from "./stored";
 
 // Spec 11.2 (M7): database-level property tests showing that stored movements and
 // packages/ledger agree on stock and cost. Each run posts a random sequence of delivery notes,
-// invoices (correcting delivery-note prices, and with lines of their own), waste and transfers
-// (#149), reversals and documents that can't be posted, through the posting and recording
-// services into the test database.
+// invoices (correcting delivery-note prices, and with lines of their own), waste, transfers and
+// counts (#149), some counted before steps they're posted after, reversals and documents that
+// can't be posted, through the posting and recording services into the test database.
 
 const config = testConfig();
 const { db, close } = createDb(config.DATABASE_URL);
@@ -103,6 +103,20 @@ const step = fc.oneof(
     }),
   },
   {
+    weight: 2,
+    arbitrary: fc.record({
+      kind: fc.constant("count" as const),
+      storeroom,
+      lines: fc.uniqueArray(
+        fc.record({ product, quantity: fc.integer({ min: 0, max: 12 }) }),
+        { minLength: 1, maxLength: 2, selector: (l) => l.product },
+      ),
+      // Counted now, or before an earlier step: a count synced late (#153).
+      before: fc.option(fc.nat()),
+      twice: fc.boolean(),
+    }),
+  },
+  {
     weight: 1,
     arbitrary: fc.record({
       kind: fc.constant("reverse" as const),
@@ -164,13 +178,30 @@ const postedDocuments = () =>
     .where(and(eq(documents.status, "posted"), isNull(documents.reverses)))
     .orderBy(asc(documents.id));
 
+/**
+ * The database's clock, which stamps movements, to the millisecond: what a count's time is
+ * compared with. It waits for the clock to move on, so what's posted next is stamped later.
+ */
+async function databaseNow() {
+  const read = async () =>
+    (await db.execute<{ now: Date }>(sql`select clock_timestamp() as now`))
+      .rows[0]!.now;
+  const now = await read();
+  let later = await read();
+  while (later.getTime() === now.getTime()) later = await read();
+  return now;
+}
+
 /** Runs the steps from an empty ledger. */
 async function run(sequence: readonly Step[]) {
   await db.execute(sql`truncate ${documents} cascade`);
   const returned: Movement[] = [];
   const failures: { step: Step; before: Snapshot; after: Snapshot }[] = [];
+  // Before each step: the time, and how many movements were posted by then.
+  const marks: { at: Date; posted: number }[] = [];
 
   for (const s of sequence) {
+    marks.push({ at: await databaseNow(), posted: returned.length });
     let lines: ReviewedLine[] = [];
     let type: "delivery-note" | "invoice" = "delivery-note";
     let storeroomId = c.coldRoom;
@@ -236,7 +267,52 @@ async function run(sequence: readonly Step[]) {
       case "reverse":
       case "waste":
       case "transfer":
+      case "count":
         break;
+    }
+
+    if (s.kind === "count") {
+      const storeroomId = storeroomOf(s.storeroom);
+      const mark =
+        s.before === null
+          ? { at: await databaseNow(), posted: returned.length }
+          : marks[s.before % marks.length]!;
+      const id = randomUUIDv7();
+      const record = () =>
+        recordStockDocument(
+          db,
+          context(),
+          id,
+          {
+            type: "count",
+            storeroomId,
+            countedAt: mark.at.toISOString(),
+            lines: s.lines.map((l) => ({
+              productId: productOf(l.product),
+              quantity: String(l.quantity),
+              unit: UNIT[l.product],
+            })),
+          },
+          { date: "2026-10-21" },
+        );
+      const result = await record();
+      // A count can't be refused: late and below zero, it's a flagged adjustment.
+      if (!result.ok)
+        throw new Error(`count refused: ${JSON.stringify(result)}`);
+      // Each line is measured against the stock posted by the time it was counted.
+      const then = returned.slice(0, mark.posted);
+      s.lines.forEach((l, i) => {
+        const p = productOf(l.product);
+        const perUnit = l.product === "tomatoes" ? 1000 : 12_000;
+        expect(result.movements[i]!.quantity).toBe(
+          l.quantity * perUnit - stockOnHand(then, p, storeroomId),
+        );
+      });
+      returned.push(...result.movements);
+      if (s.twice) {
+        expect(await record()).toEqual({ ok: true, movements: [] });
+      }
+      continue;
     }
 
     if (s.kind === "waste" || s.kind === "transfer") {

@@ -836,6 +836,49 @@ const WRITE_CASES: Record<string, () => Promise<void>> = {
     expect(await entriesFor("document", id)).toHaveLength(1);
   },
 
+  async recordCount() {
+    const office = await officeUser();
+    const { productId, storeroomId } = await somethingInStock(office);
+    const id = randomUUIDv7();
+    const countedAt = new Date(Date.now() - 60_000).toISOString();
+    const body = {
+      storeroomId,
+      countedAt,
+      lines: [{ productId, quantity: "0.5", unit: "kg" }],
+    };
+    const record = (sent: object) =>
+      office.send("PUT", `/api/counts/${id}`, sent);
+
+    const response = await record(body);
+    expect(response.statusCode).toBe(200);
+    expect(await entriesFor("document", id)).toEqual([
+      expect.objectContaining({
+        userId: office.id,
+        action: "create",
+        requestId: response.headers["x-request-id"],
+        documentId: id,
+        changes: expect.objectContaining({
+          type: { before: null, after: "count" },
+          status: { before: null, after: "posted" },
+          storeroomId: { before: null, after: storeroomId },
+          countedAt: { before: null, after: countedAt },
+        }),
+      }),
+    ]);
+
+    expect((await record(body)).statusCode).toBe(200);
+    // Another body under the same ID is refused (409), and records nothing.
+    expect(
+      (
+        await record({
+          ...body,
+          lines: [{ productId, quantity: "0.4", unit: "kg" }],
+        })
+      ).statusCode,
+    ).toBe(409);
+    expect(await entriesFor("document", id)).toHaveLength(1);
+  },
+
   async createDocumentCopy() {
     const office = await officeUser();
     const supplier = Supplier.parse(
