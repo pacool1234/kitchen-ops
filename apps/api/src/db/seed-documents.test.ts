@@ -376,8 +376,9 @@ describe("the demo invoice (#120)", () => {
     )[0]!.id;
 
   it("bills the demo's Carnes Ficticias delivery note: until it's posted, its lines are received with the invoice; then each is suggested its delivery-note line, two at new prices, and posting it moves their average costs", async () => {
-    await seed(createMemoryStorage());
+    // Signed in first: the seed keeps a login that's there, and uploads the demo as it.
     const office = apiAs(app, await signedInAs(app, auth, "office"));
+    await seed(createMemoryStorage());
     const [note, , , invoice] = ids as [string, string, string, string];
     const matching = () =>
       office.read(`/api/documents/${invoice}/matching`, DocumentMatching);
@@ -450,8 +451,11 @@ describe("the demo invoice (#120)", () => {
         )
       ).storerooms.map((s) => [s.onHand, s.averageCost]);
     expect(await cost("Solomillo de ternera")).toEqual([[2350, "0.033400"]]);
-    expect(await cost("Panceta curada")).toEqual([[1080, "0.010900"]]);
-    expect(await cost("Pollo entero")).toEqual([[4125, "0.004850"]]);
+    // The invoice's line total over its base units (decision 0041): €11.77 for 1080 g, not the
+    // €10.90 a kilo printed, which the line total rounds.
+    expect(await cost("Panceta curada")).toEqual([[1080, "0.010898"]]);
+    // At the same price, as the delivery note put it in: €20.01 for 4125 g.
+    expect(await cost("Pollo entero")).toEqual([[4125, "0.004851"]]);
   });
 });
 
