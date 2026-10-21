@@ -137,6 +137,8 @@ export const StockQuery = PageQuery.extend({
   q: SearchText,
   category: ProductCategory.optional(),
   storeroomId: z.uuid().optional(),
+  /** One product's stock in each storeroom: its own page's. */
+  productId: z.uuid().optional(),
 });
 export type StockQuery = z.infer<typeof StockQuery>;
 
