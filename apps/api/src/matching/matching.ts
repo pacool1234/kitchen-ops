@@ -1,3 +1,4 @@
+import * as ledger from "@kitchen-ops/ledger";
 import {
   NEW_SUPPLIER_DOCUMENTS,
   type BaseUnit,
@@ -17,6 +18,7 @@ import {
   supplierProducts,
   suppliers,
 } from "../db/schema";
+import { invoiceBilling } from "../billing/billing";
 import { currentDraft } from "../documents/review";
 import { lineKey, matchLine, type Offer } from "./match";
 
@@ -177,6 +179,25 @@ export async function readMatching(
     ),
   );
 
+  // An invoice's lines say what they bill (#120): a line it bills is the delivery note's
+  // product, so only the lines received with it need theirs.
+  const invoice =
+    draft?.documentType === "invoice"
+      ? await invoiceBilling(db, {
+          documentId,
+          draft,
+          supplierId: supplier?.id ?? null,
+          matches: lines.map((l) => l.match),
+        })
+      : null;
+  const billed = lines.map((l, i) => ({
+    ...l,
+    billing: invoice?.lines[i] ?? null,
+  }));
+  const needsProduct = billed.filter(
+    (l) => invoice === null || l.billing?.by === "received",
+  );
+
   const reasons: [ReviewReason, boolean][] = [
     ["no_draft", draft === null],
     ["failed_checks", (document.checkFailures ?? []).length > 0],
@@ -185,14 +206,25 @@ export async function readMatching(
     // A suggestion waits for a person to confirm it.
     [
       "unmapped_lines",
-      lines.some((l) => l.match === null || l.match.by === "suggestion"),
+      needsProduct.some((l) => l.match === null || l.match.by === "suggestion"),
+    ],
+    [
+      "unbilled_lines",
+      invoice !== null &&
+        billed.some((l) => l.billing === null || l.billing.by === "suggested"),
+    ],
+    [
+      "quantity_differs",
+      billed.some(
+        (l) => l.billing?.by === "confirmed" && !l.billing.quantityMatches,
+      ),
     ],
   ];
   return {
     supplier: supplier ?? null,
-    difference: null,
     newSupplier,
-    lines,
+    lines: billed,
+    difference: invoice ? ledger.formatMoney(invoice.difference) : null,
     reviewReasons: reasons.filter(([, applies]) => applies).map(([r]) => r),
   };
 }

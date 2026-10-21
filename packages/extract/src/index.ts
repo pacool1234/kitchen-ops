@@ -20,6 +20,7 @@ export {
 export {
   CHECKS,
   MAX_AGE_DAYS,
+  normalizedNumber,
   validate,
   type CheckFailure,
   type CheckName,

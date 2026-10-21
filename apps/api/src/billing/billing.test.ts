@@ -146,8 +146,8 @@ const noteNumbered = (number: string, date = today(new Date())) => ({
 });
 
 /**
- * An invoice for that delivery note: the same lines at these prices, each line's total worked
- * out; it lists the delivery notes given.
+ * An invoice for that delivery note: the same lines at these prices, or the note's own, each
+ * line's total worked out; it lists the delivery notes given.
  */
 function invoiceFor(
   prices: readonly string[] = ["2.00", "24.50"],
@@ -161,11 +161,11 @@ function invoiceFor(
     deliveryNotes: ["ALB-0001"],
     lines: read.lines.map((line, i) => ({
       ...line,
-      unitPrice: prices[i]!,
+      unitPrice: prices[i] ?? line.unitPrice,
       lineTotal: ledger.formatMoney(
         ledger.lineTotal({
           quantity: line.quantity!,
-          unitPrice: ledger.parseUnitCost(prices[i]!),
+          unitPrice: ledger.parseUnitCost(prices[i] ?? line.unitPrice!),
         }),
       ),
     })),
@@ -454,28 +454,35 @@ describe("PUT /api/documents/:id/billing", () => {
       deliveryNoteLineId: { before: null, after: line },
       received: { before: null, after: false },
     });
-    expect(entries).toEqual([
-      { action: "create", changes: made(1, tomatoes!.deliveryNoteLineId) },
-      { action: "create", changes: made(2, oil!.deliveryNoteLineId) },
-      {
-        action: "update",
-        changes: {
-          deliveryNoteLineId: {
-            before: tomatoes!.deliveryNoteLineId,
-            after: null,
+    // Written together, in one insert: their IDs don't keep their order.
+    expect(entries).toHaveLength(4);
+    expect(entries).toEqual(
+      expect.arrayContaining([
+        { action: "create", changes: made(1, tomatoes!.deliveryNoteLineId) },
+        { action: "create", changes: made(2, oil!.deliveryNoteLineId) },
+        {
+          action: "update",
+          changes: {
+            deliveryNoteLineId: {
+              before: tomatoes!.deliveryNoteLineId,
+              after: null,
+            },
+            received: { before: false, after: true },
           },
-          received: { before: false, after: true },
         },
-      },
-      {
-        action: "delete",
-        changes: {
-          position: { before: 2, after: null },
-          deliveryNoteLineId: { before: oil!.deliveryNoteLineId, after: null },
-          received: { before: false, after: null },
+        {
+          action: "delete",
+          changes: {
+            position: { before: 2, after: null },
+            deliveryNoteLineId: {
+              before: oil!.deliveryNoteLineId,
+              after: null,
+            },
+            received: { before: false, after: null },
+          },
         },
-      },
-    ]);
+      ]),
+    );
   });
 
   it("refuses: a counter user (403), a delivery note (409), the wrong number of lines (400), a line that isn't a candidate (400), one line for two (409); and saves nothing", async () => {

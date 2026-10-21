@@ -378,13 +378,14 @@ describe("POST /api/documents/:id/post", () => {
     expect(await snapshot()).toEqual(before);
   });
 
-  it("refuses an invoice until invoices are posted (#120): 409 not_a_delivery_note", async () => {
+  it("an invoice from a supplier that has never posted a delivery note is received like one (#120); how invoices bill delivery notes is in src/billing", async () => {
     const id = await inReview({ ...printed(), documentType: "invoice" });
-    await db
-      .update(documents)
-      .set({ type: "invoice" })
-      .where(eq(documents.id, id));
-    await expectRefused(await post(id), 409, { error: "not_a_delivery_note" });
+    const result = await posted(id);
+    expect(result.lines.map((l) => l.movements.map((m) => m.kind))).toEqual([
+      ["receipt"],
+      ["receipt"],
+    ]);
+    expect(await stock(tomate.id, coldRoom.id)).toBe(5000);
   });
 
   it("refuses a document that isn't in review, and one that doesn't exist", async () => {

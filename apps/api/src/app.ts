@@ -15,6 +15,7 @@ import { catalogueRoutes } from "./catalogue/routes";
 import { extractionConfig, storageConfig, type Config } from "./config";
 import { openApiRoutes, registerOpenApi } from "./contract";
 import { createDb } from "./db/client";
+import { billingRoutes } from "./billing/routes";
 import { draftRoutes } from "./documents/draft";
 import { documentRoutes } from "./documents/routes";
 import { registerErrors } from "./errors";
@@ -136,6 +137,7 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   app.register(documentRoutes, { db, storage, jobs });
   app.register(draftRoutes, { db });
   app.register(matchingRoutes, { db });
+  app.register(billingRoutes, { db });
   app.register(postingRoutes, { db, storage });
 
   return app;
