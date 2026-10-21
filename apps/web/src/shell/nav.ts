@@ -1,5 +1,5 @@
 import { ROLES, type Role } from "@kitchen-ops/shared";
-import { BookOpen, FileText, House } from "lucide-vue-next";
+import { BookOpen, Boxes, FileText, House } from "lucide-vue-next";
 import type { Component } from "vue";
 import type { MessageKey } from "../i18n";
 
@@ -25,6 +25,14 @@ export const NAV: NavItem[] = [
     label: "documents.title",
     description: "documents.description",
     icon: FileText,
+    roles: ROLES,
+  },
+  // Everyone counts stock; office and the owner also see what it's worth (#150).
+  {
+    name: "stock",
+    label: "stock.title",
+    description: "stock.description",
+    icon: Boxes,
     roles: ROLES,
   },
   // Everyone reads the catalogue; office and owner change it (spec section 6). Its pages

@@ -112,18 +112,27 @@ interface Page<Item> {
 
 /**
  * A catalogue list: the URL's state, the search as typed, and the page the API answered. Set a
- * filter or the page with `set`; each change goes back to page 1, except the page itself.
+ * filter or the page with `set`; each change goes back to page 1, except the page itself. The
+ * stock list (#150) uses it too: it has no status to filter by, and longer pages.
  */
 export function useCatalogueList<
   E extends Endpoint & { response: z.ZodType<Page<unknown>> },
->(endpoint: E, filterNames: readonly string[], loadFailed: MessageKey) {
-  type Item = z.output<E["response"]>["items"][number];
+>(
+  endpoint: E,
+  filterNames: readonly string[],
+  loadFailed: MessageKey,
+  { statuses = true, pageSize = PAGE_SIZE } = {},
+) {
+  type Answer = z.output<E["response"]>;
+  type Item = Answer["items"][number];
   const route = useRoute();
   const router = useRouter();
   const state = computed(() => readListQuery(route.query, filterNames));
 
   const items = shallowRef<Item[]>([]);
   const total = ref(0);
+  /** The whole page the API last answered, for what a list has besides its rows. */
+  const answer = shallowRef<Answer>();
   const loading = ref(true);
   const error = ref<MessageKey>();
   const latest = latestOnly();
@@ -158,15 +167,15 @@ export function useCatalogueList<
     loading.value = true;
     error.value = undefined;
     try {
-      const answer = await latest(() =>
+      const latestAnswer = await latest(() =>
         call(
           endpoint as Endpoint,
           {
             query: {
               q: q.trim() || undefined,
-              status,
+              status: statuses ? status : undefined,
               page,
-              pageSize: PAGE_SIZE,
+              pageSize,
               ...Object.fromEntries(
                 Object.entries(filters).map(([name, value]) => [
                   name,
@@ -177,8 +186,9 @@ export function useCatalogueList<
           } as never,
         ),
       );
-      if (answer.stale) return;
-      const { items: rows, total: count } = answer.value as Page<Item>;
+      if (latestAnswer.stale) return;
+      const { items: rows, total: count } = latestAnswer.value as Page<Item>;
+      answer.value = latestAnswer.value as Answer;
       items.value = rows;
       total.value = count;
       loading.value = false;
@@ -204,6 +214,7 @@ export function useCatalogueList<
     set,
     items,
     total,
+    answer,
     loading,
     error,
     filtering,

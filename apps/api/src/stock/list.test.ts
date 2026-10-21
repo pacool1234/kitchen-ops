@@ -265,6 +265,23 @@ describe("GET /api/stock", () => {
     ).toEqual(["Tomate pera / Almacén"]);
   });
 
+  it("filters by product: its stock in each storeroom, for its own page", async () => {
+    const tomatoes = await stock(office, `?productId=${tomate.id}`);
+    expect(placesOf(tomatoes)).toEqual([
+      "Tomate pera / Almacén",
+      "Tomate pera / Cámara",
+    ]);
+    expect(
+      placesOf(
+        await stock(
+          office,
+          `?productId=${tomate.id}&storeroomId=${coldRoom.id}`,
+        ),
+      ),
+    ).toEqual(["Tomate pera / Cámara"]);
+    expect((await stock(office, `?productId=${MISSING}`)).items).toEqual([]);
+  });
+
   it("answers a page at a time, with the total of every place the filters match", async () => {
     const page = await stock(office, "?page=2&pageSize=3");
     expect(placesOf(page)).toEqual(["Tomate pera / Cámara"]);

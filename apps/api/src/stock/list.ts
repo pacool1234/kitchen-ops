@@ -37,7 +37,7 @@ async function currentValuation(db: Db): Promise<ledger.Valuation> {
 export async function stockList(
   db: Db,
   query: Pick<StockQuery, "page" | "pageSize"> &
-    Partial<Pick<StockQuery, "q" | "category" | "storeroomId">>,
+    Partial<Pick<StockQuery, "q" | "category" | "storeroomId" | "productId">>,
   { costs }: { costs: boolean },
 ): Promise<StockPage> {
   const [valuation, found, rooms] = await Promise.all([
@@ -54,6 +54,7 @@ export async function stockList(
         and(
           query.q ? contains(products.name, query.q) : undefined,
           query.category ? eq(products.category, query.category) : undefined,
+          query.productId ? eq(products.id, query.productId) : undefined,
         ),
       )
       .orderBy(spanishOrder(products.name), asc(products.id)),

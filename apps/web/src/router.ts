@@ -136,6 +136,26 @@ export const router = createRouter({
             },
           ],
         },
+        // Stock per storeroom (#150): the list, and a product's stock and movements.
+        {
+          path: "stock",
+          children: [
+            {
+              path: "",
+              name: "stock",
+              component: () => import("./stock/StockView.vue"),
+              meta: { title: "stock.title", parent: "home" },
+            },
+            {
+              path: ":id",
+              name: "stock-product",
+              component: () => import("./stock/StockProductView.vue"),
+              props: true,
+              // Until it has loaded; then the page is titled with the product's name.
+              meta: { title: "stock.item", parent: "stock" },
+            },
+          ],
+        },
         // The catalogue (#89): its sections' lists, and a page for each item.
         {
           path: "catalogue",
