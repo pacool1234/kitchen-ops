@@ -13,9 +13,11 @@ import { photo } from "../test/documents";
 import {
   createFakeClient,
   FAKE_FAILURE_MARKER,
+  FAKE_INVOICE_MARKER,
   FAKE_MISREAD_MARKER,
   FAKE_MODEL,
   fakeDocument,
+  fakeInvoice,
   fakeMisread,
 } from "./fake";
 import { JOB_SETTINGS } from "./jobs";
@@ -91,6 +93,36 @@ describe("the fake model", () => {
         knownNumbers: [],
       }).failures.map(({ check, path }) => ({ check, path })),
     ).toEqual([{ check: "line-total", path: "lines.0.lineTotal" }]);
+  });
+
+  it(`reads an invoice for its delivery note when the document's text says "${FAKE_INVOICE_MARKER}": the same supplier and lines, listing ALB-0001, the oil at €26.00 a garrafa, and it passes every check (#120)`, async () => {
+    const client = createFakeClient(() => new Date(`${TODAY}T10:00:00Z`));
+    const reply = await client.complete({
+      provider: CLIENT_ROUTING,
+      messages: [{ role: "user", content: `Factura ${FAKE_INVOICE_MARKER}` }],
+    });
+    const document = ExtractedDocument.parse(JSON.parse(reply.content ?? ""));
+    expect(document).toEqual(fakeInvoice(TODAY));
+
+    const note = fakeDocument(TODAY);
+    expect(document).toMatchObject({
+      documentType: "invoice",
+      supplier: note.supplier,
+      issueDate: TODAY,
+      deliveryNotes: [note.number],
+    });
+    expect(document.number).not.toBe(note.number);
+    expect(document.lines).toEqual([
+      note.lines[0],
+      { ...note.lines[1], unitPrice: "26.00", lineTotal: "52.00" },
+    ]);
+    expect(
+      validate(document, {
+        today: TODAY,
+        maxAgeDays: MAX_AGE_DAYS,
+        knownNumbers: [note.number!],
+      }),
+    ).toEqual({ passed: true, failures: [] });
   });
 
   it(`finds its markers in a photo's own bytes too, as a photo has no text: "${FAKE_MISREAD_MARKER}" in a PNG's text chunk (#119)`, async () => {

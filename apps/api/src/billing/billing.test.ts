@@ -6,6 +6,7 @@ import {
   MeResponse,
   NEW_SUPPLIER_DOCUMENTS,
   Product,
+  ProductStock,
   Storeroom,
   Supplier,
   SupplierProduct,
@@ -749,6 +750,115 @@ describe("reversing an invoice", () => {
     expect((await reverse(first)).statusCode).toBe(200);
     expect(await average(tomate.id, coldRoom.id)).toBe("0.001800");
     expect(await stock(tomate.id, coldRoom.id)).toBe(5000);
+  });
+});
+
+const postingOf = (id: string) =>
+  office.read(`/api/documents/${id}/posting`, DocumentPosting);
+
+describe("what a posted invoice billed, and what bills a delivery note (GET /api/documents/:id/posting)", () => {
+  it("each invoice line says the delivery-note line it billed; each delivery-note line, the invoices that stand and bill it; a line received with the invoice bills nothing", async () => {
+    const note = await postedNote();
+    const id = await inReview(invoiceFor());
+    const [tomatoes] = await noteLines(id, note);
+    await confirmed(id, [
+      { deliveryNoteLineId: tomatoes!.id },
+      { received: true },
+    ]);
+    await posted(id, [null, dryStore.id]);
+
+    const invoice = await postingOf(id);
+    expect(invoice.lines.map((l) => l.bills)).toEqual([
+      { deliveryNote: { id: note, number: "ALB-0001" }, position: 1 },
+      null,
+    ]);
+    expect(invoice.lines.map((l) => l.billedBy)).toEqual([[], []]);
+    const delivery = await postingOf(note);
+    expect(delivery.lines.map((l) => l.bills)).toEqual([null, null]);
+    expect(delivery.lines.map((l) => l.billedBy)).toEqual([
+      [{ id, number: "F-1" }],
+      [],
+    ]);
+  });
+
+  it("a credit note after the invoice is listed after it, in the order they were posted; once reversed it's no longer listed, and still says what it billed", async () => {
+    const note = await postedNote();
+    const first = await inReview(invoiceFor());
+    const lines = await billingAll(first, note);
+    await confirmed(first, lines);
+    await posted(first, [null, null]);
+    const read = invoiceFor(["-0.10"]);
+    const credit = await inReview({
+      ...read,
+      number: "R-1",
+      totals: { net: "-0.50", vat: [], total: "-0.55" },
+      lines: [{ ...read.lines[0]!, lineTotal: "-0.50" }],
+    });
+    await confirmed(credit, [lines[0]!]);
+    await posted(credit, [null]);
+
+    const invoice = { id: first, number: "F-1" };
+    expect((await postingOf(note)).lines.map((l) => l.billedBy)).toEqual([
+      [invoice, { id: credit, number: "R-1" }],
+      [invoice],
+    ]);
+    expect((await reverse(credit)).statusCode).toBe(200);
+    expect((await postingOf(note)).lines.map((l) => l.billedBy)).toEqual([
+      [invoice],
+      [invoice],
+    ]);
+    expect((await postingOf(credit)).lines[0]!.bills).toEqual({
+      deliveryNote: { id: note, number: "ALB-0001" },
+      position: 1,
+    });
+  });
+});
+
+describe("a product's stock and average cost in each storeroom (GET /api/products/:id/stock)", () => {
+  const stockOf = (id: string, api = office) =>
+    api.read(`/api/products/${id}/stock`, ProductStock);
+
+  it("lists each storeroom the product has moved through, with its stock and average cost, which follows an invoice's price; office and the owner read it", async () => {
+    expect(await stockOf(tomate.id)).toEqual({ storerooms: [] });
+    const note = await postedNote();
+    const cold = { id: coldRoom.id, name: "Cámara" };
+    expect(await stockOf(tomate.id)).toEqual({
+      storerooms: [{ storeroom: cold, onHand: 5000, averageCost: "0.001800" }],
+    });
+
+    const id = await inReview(invoiceFor());
+    await confirmed(id, await billingAll(id, note));
+    await posted(id, [null, null]);
+    expect(await stockOf(tomate.id, owner)).toEqual({
+      storerooms: [{ storeroom: cold, onHand: 5000, averageCost: "0.002000" }],
+    });
+  });
+
+  it("several storerooms, by name", async () => {
+    await postedNote();
+    await posted(await inReview(noteNumbered("ALB-0002")), [
+      dryStore.id,
+      dryStore.id,
+    ]);
+    expect(
+      (await stockOf(tomate.id)).storerooms.map((s) => [
+        s.storeroom.name,
+        s.onHand,
+      ]),
+    ).toEqual([
+      ["Almacén", 5000],
+      ["Cámara", 5000],
+    ]);
+  });
+
+  it("refuses a counter user (403), and a product that doesn't exist (404)", async () => {
+    expect(
+      (await counter.send("GET", `/api/products/${tomate.id}/stock`))
+        .statusCode,
+    ).toBe(403);
+    const missing = await office.send("GET", `/api/products/${MISSING}/stock`);
+    expect(missing.statusCode).toBe(404);
+    expect(missing.json()).toEqual({ error: "not_found" });
   });
 });
 

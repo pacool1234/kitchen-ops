@@ -11,7 +11,7 @@ import { es } from "../i18n/messages/es";
 import { POST_BLOCKS, posting, startingStoreroom } from "./posting-state";
 
 // When the review screen offers to post a document, and why not when it doesn't (#119,
-// decision 0038); and which storeroom a line starts on.
+// decision 0038; invoices, #120); and which storeroom a line starts on.
 
 const state = fc.record({
   role: fc.constantFrom(...ROLES),
@@ -21,13 +21,11 @@ const state = fc.record({
 });
 
 describe("posting: whether the screen offers to post the document", () => {
-  it("is offered exactly when the role may post with what's left, nothing is unsaved, and it's a delivery note; otherwise it says one reason", () => {
+  it("is offered exactly when something was read, the role may post it with what's left, and nothing is unsaved; otherwise it says one reason", () => {
     fc.assert(
       fc.property(state, (s) => {
         const offered =
-          s.type === "delivery-note" &&
-          mayPost(s.role, s.reasons, s.type) &&
-          !s.dirty;
+          s.type !== null && mayPost(s.role, s.reasons, s.type) && !s.dirty;
         const shown = posting(s);
         expect(shown.offered).toBe(offered);
         if (offered) expect(shown.blocked).toBeUndefined();
@@ -36,12 +34,14 @@ describe("posting: whether the screen offers to post the document", () => {
     );
   });
 
-  it("says first what's left to do, then that invoices wait, then the new supplier, then the unsaved corrections", () => {
-    const pending = { role: "office", dirty: true, type: "invoice" } as const;
-    expect(posting({ ...pending, reasons: ["unmapped_lines"] }).blocked).toBe(
+  it("says first what's left to do, then that invoices are office's, then the new supplier, then the unsaved corrections", () => {
+    const pending = { role: "counter", dirty: true, type: "invoice" } as const;
+    expect(posting({ ...pending, reasons: ["unbilled_lines"] }).blocked).toBe(
       "pending",
     );
-    expect(posting({ ...pending, reasons: [] }).blocked).toBe("invoice");
+    expect(posting({ ...pending, reasons: ["new_supplier"] }).blocked).toBe(
+      "invoice",
+    );
     expect(
       posting({
         role: "counter",
@@ -58,6 +58,19 @@ describe("posting: whether the screen offers to post the document", () => {
         type: "delivery-note",
       }).blocked,
     ).toBe("unsaved");
+  });
+
+  it("office and the owner post an invoice with nothing left but a new supplier (#120)", () => {
+    for (const role of ["office", "owner"] as const) {
+      expect(
+        posting({
+          role,
+          reasons: ["new_supplier"],
+          dirty: false,
+          type: "invoice",
+        }),
+      ).toEqual({ offered: true });
+    }
   });
 
   it("a document nothing was read of waits for what's left", () => {
