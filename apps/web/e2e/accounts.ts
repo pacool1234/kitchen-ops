@@ -14,6 +14,8 @@ export const accounts = {
   // A third owner, for the one test that reverses a posted document (#119): it sets up this
   // account's 2FA itself, as the manager's test does.
   director: { email: "director@example.test", password: "local-only-director" }, // gitleaks:allow
+  // A fourth owner, for the one test that reverses waste (#151): it sets up its 2FA too.
+  keeper: { email: "keeper@example.test", password: "local-only-keeper" }, // gitleaks:allow
 };
 
 export async function signIn(

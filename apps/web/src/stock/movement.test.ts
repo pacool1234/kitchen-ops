@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { movementDocument, signedQuantity } from "./movement";
 
 // A movement on a product's stock page (#150): the document it came from, and its quantity.
+// Waste and transfers link to pages of their own (#151).
 
 const NBSP = String.fromCharCode(0xa0);
 const NOTE = "0199a000-0000-7000-8000-000000000001";
@@ -20,7 +21,7 @@ describe("movementDocument", () => {
       type: "delivery-note",
       number: "A-1",
       reversal: false,
-      pageId: NOTE,
+      link: { name: "document", id: NOTE },
     });
   });
 
@@ -32,18 +33,52 @@ describe("movementDocument", () => {
         number: "F-7",
         reverses: NOTE,
       }),
-    ).toEqual({ type: "invoice", number: "F-7", reversal: true, pageId: NOTE });
+    ).toEqual({
+      type: "invoice",
+      number: "F-7",
+      reversal: true,
+      link: { name: "document", id: NOTE },
+    });
   });
 
-  it("waste, a count or a transfer has no page to link to yet, reversed or not", () => {
-    for (const type of ["waste", "count", "transfer"] as const) {
+  it("waste and a transfer link to their own page (#151); a reversal, to the page of what it reverses", () => {
+    for (const type of ["waste", "transfer"] as const) {
       expect(
         movementDocument({ id: NOTE, type, number: null, reverses: null }),
-      ).toEqual({ type, number: null, reversal: false, pageId: null });
+      ).toEqual({
+        type,
+        number: null,
+        reversal: false,
+        link: { name: "stock-document", id: NOTE },
+      });
       expect(
         movementDocument({ id: REVERSAL, type, number: null, reverses: NOTE }),
-      ).toEqual({ type, number: null, reversal: true, pageId: null });
+      ).toEqual({
+        type,
+        number: null,
+        reversal: true,
+        link: { name: "stock-document", id: NOTE },
+      });
     }
+  });
+
+  it("a count has no page to link to yet (#152), reversed or not", () => {
+    expect(
+      movementDocument({
+        id: NOTE,
+        type: "count",
+        number: null,
+        reverses: null,
+      }),
+    ).toEqual({ type: "count", number: null, reversal: false, link: null });
+    expect(
+      movementDocument({
+        id: REVERSAL,
+        type: "count",
+        number: null,
+        reverses: NOTE,
+      }),
+    ).toEqual({ type: "count", number: null, reversal: true, link: null });
   });
 });
 
