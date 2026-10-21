@@ -99,6 +99,8 @@ export interface WasteDocument extends DocumentHeader {
 /** A physical count: each line is the quantity counted in the storeroom. */
 export interface CountDocument extends DocumentHeader {
   readonly type: "count";
+  /** Placeholder for #148: the tests come first. */
+  readonly movementsBeforeCount?: number;
   readonly lines: readonly DocumentLine[];
 }
 
