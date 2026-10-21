@@ -1,4 +1,4 @@
-import { endpoints } from "@kitchen-ops/shared";
+import { endpoints, seesCosts } from "@kitchen-ops/shared";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { auditContext } from "../audit/audited";
 import { routeFor } from "../contract";
@@ -6,12 +6,15 @@ import type { Db } from "../db/client";
 import { HttpError, notFound } from "../errors";
 import { today } from "../extraction/read";
 import { readPosting } from "../posting/read";
+import { stockList } from "./list";
+import { productMovements } from "./movements";
 import { recordStockDocument, type RecordResult } from "./record";
 import { productStock } from "./stock";
 
-// A product's stock and average cost in each storeroom (#120), for office and the owner. Waste,
-// transfers and counts, recorded by anyone under an ID their client made, and posted at once
-// (#149).
+// A product's stock and average cost in each storeroom (#120), for office and the owner. The
+// stock list and a product's movements, for everyone, with euros for office and the owner only
+// (#150). Waste, transfers and counts, recorded by anyone under an ID their client made, and
+// posted at once (#149).
 
 /** A refusal from recording, as the API answers it. */
 function refusal(result: Exclude<RecordResult, { ok: true }>): HttpError {
@@ -35,6 +38,23 @@ export const stockRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (
       const stock = await productStock(db, params.id);
       if (!stock) throw notFound();
       return stock;
+    },
+  });
+
+  app.route({
+    ...routeFor(endpoints.listStock),
+    handler: async ({ query, user }) =>
+      stockList(db, query, { costs: seesCosts(user!.role) }),
+  });
+
+  app.route({
+    ...routeFor(endpoints.listProductMovements),
+    handler: async ({ params, query, user }) => {
+      const page = await productMovements(db, params.id, query, {
+        costs: seesCosts(user!.role),
+      });
+      if (!page) throw notFound();
+      return page;
     },
   });
 
