@@ -207,3 +207,59 @@ export type ProductMovement = z.infer<typeof ProductMovement>;
 /** Answer of `GET /api/products/:id/movements`: newest first. */
 export const ProductMovementPage = pageOf(ProductMovement);
 export type ProductMovementPage = z.infer<typeof ProductMovementPage>;
+
+/** One of a stock document's movements (#151): `unitCost` for office and the owner only. */
+export const StockDocumentMovement = z.object({
+  id: z.uuid(),
+  storeroom: Named,
+  /** Whole base units, signed: positive into the storeroom, negative out of it. */
+  quantity: z.number().int(),
+  /** Per base unit, 6 decimals as text. */
+  unitCost: z.string().optional(),
+  kind: z.enum(MOVEMENT_KINDS),
+});
+export type StockDocumentMovement = z.infer<typeof StockDocumentMovement>;
+
+/** A line as it was recorded, with the movements it made, in the order they were posted. */
+export const StockDocumentLine = z.object({
+  position: z.number().int().min(1),
+  product: z.object({ id: z.uuid(), name: z.string(), baseUnit: BaseUnit }),
+  /** As it was typed, a decimal as text: "1.5". */
+  quantity: z.string(),
+  unit: z.string(),
+  movements: z.array(StockDocumentMovement),
+});
+export type StockDocumentLine = z.infer<typeof StockDocumentLine>;
+
+/**
+ * Answer of `GET /api/stock-documents/:id`, and of recording one: waste, a transfer or a count
+ * as it was recorded and posted, and its reversal if it's reversed (#151).
+ */
+export const PostedStockDocument = z.object({
+  id: z.uuid(),
+  type: z.enum(STOCK_DOCUMENT_TYPES),
+  /** YYYY-MM-DD: the day it was recorded, or a count's, the day it was counted. */
+  date: z.iso.date(),
+  /** Where it was taken from, or counted. */
+  storeroom: Named,
+  /** A transfer's destination; null otherwise. */
+  toStoreroom: Named.nullable(),
+  /** Waste's; null otherwise. */
+  reason: WasteReason.nullable(),
+  note: z.string().nullable(),
+  /** A count's, in UTC; null otherwise. */
+  countedAt: z.iso.datetime().nullable(),
+  recordedBy: Named,
+  lines: z.array(StockDocumentLine),
+  reversal: z
+    .object({
+      id: z.uuid(),
+      /** The day it was reversed, YYYY-MM-DD. */
+      date: z.iso.date(),
+      reversedBy: Named,
+      /** Copies of its lines, with the movements that undid each one. */
+      lines: z.array(StockDocumentLine),
+    })
+    .nullable(),
+});
+export type PostedStockDocument = z.infer<typeof PostedStockDocument>;

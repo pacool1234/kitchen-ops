@@ -3,7 +3,15 @@ import {
   type DocumentPosting,
   type PostedLine,
 } from "@kitchen-ops/shared";
-import { and, asc, eq, inArray, isNull, notExists } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  inArray,
+  isNull,
+  notExists,
+  type SQL,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Tx } from "../audit/audited";
 import type { Db } from "../db/client";
@@ -185,16 +193,18 @@ async function postedLines(
 
 /**
  * A posted document's lines and movements, and its reversal's: undefined if there's no such
- * document (a reversal is none: it's shown with what it reverses), null if it isn't posted.
+ * document (a reversal is none: it's shown with what it reverses), or none that's also `only`;
+ * null if it isn't posted.
  */
 export async function readPosting(
   db: Reader,
   documentId: string,
+  only?: SQL,
 ): Promise<DocumentPosting | null | undefined> {
   const [document] = await db
     .select({ status: documents.status })
     .from(documents)
-    .where(and(eq(documents.id, documentId), isNull(documents.reverses)));
+    .where(and(eq(documents.id, documentId), isNull(documents.reverses), only));
   if (!document) return undefined;
   if (document.status !== "posted") return null;
 

@@ -267,7 +267,8 @@ export const postingRoutes: FastifyPluginAsyncZod<{
   app.route({
     ...routeFor(endpoints.getDocumentPosting),
     handler: async ({ params }) => {
-      const found = await readPosting(db, params.id);
+      // A stock document is read on its own page, with euros by role (#151).
+      const found = await readPosting(db, params.id, supplierDocument);
       if (found === undefined) throw notFound();
       if (found === null) throw new HttpError(409, "not_posted");
       return found;

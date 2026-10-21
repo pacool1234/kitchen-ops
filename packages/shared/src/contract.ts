@@ -21,6 +21,7 @@ import {
 } from "./matching";
 import { DocumentPosting, PostDocument } from "./posting";
 import {
+  PostedStockDocument,
   ProductMovementPage,
   ProductMovementQuery,
   ProductStock,
@@ -477,7 +478,7 @@ export const endpoints = {
     method: "GET",
     path: "/api/documents/:id/posting",
     summary:
-      "A posted document's lines and their movements, and its reversal's; 409 not_posted otherwise",
+      "A posted supplier document's lines and their movements, and its reversal's; 409 not_posted otherwise",
     access: "signed-in",
     params: IdParams,
     response: DocumentPosting,
@@ -494,7 +495,8 @@ export const endpoints = {
     conflict: true,
   }),
   // Waste and transfers (#149, decision 0044): recorded under an ID the client made, so sending
-  // one again, after a timeout or from an offline queue, posts it once.
+  // one again, after a timeout or from an offline queue, posts it once. Each answers what its
+  // page shows (#151), with euros for office and the owner only.
   recordWaste: endpoint({
     method: "PUT",
     path: "/api/waste/:id",
@@ -503,7 +505,7 @@ export const endpoints = {
     access: "signed-in",
     params: IdParams,
     body: RecordWaste,
-    response: DocumentPosting,
+    response: PostedStockDocument,
     conflict: true,
   }),
   recordTransfer: endpoint({
@@ -514,7 +516,7 @@ export const endpoints = {
     access: "signed-in",
     params: IdParams,
     body: RecordTransfer,
-    response: DocumentPosting,
+    response: PostedStockDocument,
     conflict: true,
   }),
   recordCount: endpoint({
@@ -525,8 +527,17 @@ export const endpoints = {
     access: "signed-in",
     params: IdParams,
     body: RecordCount,
-    response: DocumentPosting,
+    response: PostedStockDocument,
     conflict: true,
+  }),
+  getStockDocument: endpoint({
+    method: "GET",
+    path: "/api/stock-documents/:id",
+    summary:
+      "Waste, a transfer or a count as it was recorded and posted, and its reversal; unit costs for office and the owner only",
+    access: "signed-in",
+    params: IdParams,
+    response: PostedStockDocument,
   }),
   createDocumentCopy: endpoint({
     method: "POST",
