@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-21
+- Updated: 2026-10-22, by #150's second PR: the stock list's screen budget (point 4).
 
 ## Context
 
@@ -19,7 +20,9 @@ Stock and cost come from packages/ledger, replaying a place's movements in order
 3. **The valuation is kept in memory until more is posted.** The API keeps the last one with the movements it came from: how many there were, and the last one's `sequence`. Each answer reads those two numbers and values again only if they changed.
    - That's sound because movements are append-only (invariant 3) and numbered under the posting lock, which is held until commit. Movements added later always have a higher `sequence`, so the same count and last number are the same movements.
    - Each API process keeps its own. One that hasn't valued yet does it on its first answer.
-4. **Screens get their budgets in the browser tests** (#150's second PR, and the screens after it): the time from opening a page to its rows showing, with the same amount of data.
+4. **Screens get their budgets in the browser tests:** the time from opening a page to its rows showing.
+   - The stock list's (`apps/web/e2e/stock.spec.ts`): a full page of 50 rows within 1500 ms of choosing **Stock** in the navigation, at desktop and phone sizes. The whole test, signing in included, takes about half a second locally.
+   - The API's answer is replaced with a page for 400 products, so the budget measures loading the page's code and drawing the rows; the API's own budget measures working the answer out. Seeding 400 products into the browser tests' database would change what the other tests, which share it, see.
 
 ## Alternatives considered
 
