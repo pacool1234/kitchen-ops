@@ -16864,7 +16864,7 @@
     },
     "/api/documents/{id}/posting": {
       "get": {
-        "summary": "A posted document's lines and their movements, and its reversal's; 409 not_posted otherwise",
+        "summary": "A posted supplier document's lines and their movements, and its reversal's; 409 not_posted otherwise",
         "parameters": [
           {
             "schema": {
@@ -20948,6 +20948,645 @@
         "x-roles": "any signed-in user"
       }
     },
+    "/api/stock-documents/{id}": {
+      "get": {
+        "summary": "Waste, a transfer or a count as it was recorded and posted, and its reversal; unit costs for office and the owner only",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "waste",
+                        "count",
+                        "transfer"
+                      ]
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                    },
+                    "storeroom": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "toStoreroom": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "expired",
+                            "spoiled",
+                            "broken",
+                            "prep_error",
+                            "other"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "note": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "countedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "recordedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "position": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          },
+                          "product": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "baseUnit": {
+                                "type": "string",
+                                "enum": [
+                                  "g",
+                                  "ml",
+                                  "unit"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "baseUnit"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "quantity": {
+                            "type": "string"
+                          },
+                          "unit": {
+                            "type": "string"
+                          },
+                          "movements": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "storeroom": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "name"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "quantity": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "unitCost": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "receipt",
+                                    "waste",
+                                    "count",
+                                    "transfer-out",
+                                    "transfer-in"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "storeroom",
+                                "quantity",
+                                "kind"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "position",
+                          "product",
+                          "quantity",
+                          "unit",
+                          "movements"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "reversal": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "reversedBy": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "lines": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "position": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "product": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "baseUnit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "g",
+                                          "ml",
+                                          "unit"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "name",
+                                      "baseUnit"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "quantity": {
+                                    "type": "string"
+                                  },
+                                  "unit": {
+                                    "type": "string"
+                                  },
+                                  "movements": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        },
+                                        "storeroom": {
+                                          "type": "object",
+                                          "properties": {
+                                            "id": {
+                                              "type": "string",
+                                              "format": "uuid",
+                                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                            },
+                                            "name": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "id",
+                                            "name"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        "quantity": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "unitCost": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "receipt",
+                                            "waste",
+                                            "count",
+                                            "transfer-out",
+                                            "transfer-in"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "storeroom",
+                                        "quantity",
+                                        "kind"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "position",
+                                  "product",
+                                  "quantity",
+                                  "unit",
+                                  "movements"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "date",
+                            "reversedBy",
+                            "lines"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "type",
+                    "date",
+                    "storeroom",
+                    "toStoreroom",
+                    "reason",
+                    "note",
+                    "countedAt",
+                    "recordedBy",
+                    "lines",
+                    "reversal"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "below_zero",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "below_zero",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "below_zero",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "below_zero",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-roles": "any signed-in user"
+      }
+    },
     "/api/waste/{id}": {
       "put": {
         "summary": "Record waste and post it, under an ID the client made: sent again, it answers what was posted",
@@ -21045,6 +21684,120 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "waste",
+                        "count",
+                        "transfer"
+                      ]
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                    },
+                    "storeroom": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "toStoreroom": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "expired",
+                            "spoiled",
+                            "broken",
+                            "prep_error",
+                            "other"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "note": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "countedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "recordedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
                     "lines": {
                       "type": "array",
                       "items": {
@@ -21087,49 +21840,6 @@
                           },
                           "unit": {
                             "type": "string"
-                          },
-                          "unitPrice": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "discountPercent": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "vatRate": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "storeroom": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid",
-                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  }
-                                },
-                                "required": [
-                                  "id",
-                                  "name"
-                                ],
-                                "additionalProperties": false
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
                           },
                           "movements": {
                             "type": "array",
@@ -21176,107 +21886,13 @@
                                     "transfer-out",
                                     "transfer-in"
                                   ]
-                                },
-                                "reverses": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string",
-                                      "format": "uuid",
-                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                "corrects": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string",
-                                      "format": "uuid",
-                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
                                 }
                               },
                               "required": [
                                 "id",
                                 "storeroom",
                                 "quantity",
-                                "unitCost",
-                                "kind",
-                                "reverses",
-                                "corrects"
-                              ],
-                              "additionalProperties": false
-                            }
-                          },
-                          "bills": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "deliveryNote": {
-                                    "type": "object",
-                                    "properties": {
-                                      "id": {
-                                        "type": "string",
-                                        "format": "uuid",
-                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                      },
-                                      "number": {
-                                        "type": [
-                                          "string",
-                                          "null"
-                                        ]
-                                      }
-                                    },
-                                    "required": [
-                                      "id",
-                                      "number"
-                                    ],
-                                    "additionalProperties": false
-                                  },
-                                  "position": {
-                                    "type": "integer",
-                                    "minimum": 1,
-                                    "maximum": 9007199254740991
-                                  }
-                                },
-                                "required": [
-                                  "deliveryNote",
-                                  "position"
-                                ],
-                                "additionalProperties": false
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "billedBy": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "id": {
-                                  "type": "string",
-                                  "format": "uuid",
-                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                },
-                                "number": {
-                                  "type": [
-                                    "string",
-                                    "null"
-                                  ]
-                                }
-                              },
-                              "required": [
-                                "id",
-                                "number"
+                                "kind"
                               ],
                               "additionalProperties": false
                             }
@@ -21287,13 +21903,7 @@
                           "product",
                           "quantity",
                           "unit",
-                          "unitPrice",
-                          "discountPercent",
-                          "vatRate",
-                          "storeroom",
-                          "movements",
-                          "bills",
-                          "billedBy"
+                          "movements"
                         ],
                         "additionalProperties": false
                       }
@@ -21374,49 +21984,6 @@
                                   "unit": {
                                     "type": "string"
                                   },
-                                  "unitPrice": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
-                                  },
-                                  "discountPercent": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
-                                  },
-                                  "vatRate": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
-                                  },
-                                  "storeroom": {
-                                    "anyOf": [
-                                      {
-                                        "type": "object",
-                                        "properties": {
-                                          "id": {
-                                            "type": "string",
-                                            "format": "uuid",
-                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                          },
-                                          "name": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": [
-                                          "id",
-                                          "name"
-                                        ],
-                                        "additionalProperties": false
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
                                   "movements": {
                                     "type": "array",
                                     "items": {
@@ -21462,107 +22029,13 @@
                                             "transfer-out",
                                             "transfer-in"
                                           ]
-                                        },
-                                        "reverses": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string",
-                                              "format": "uuid",
-                                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
-                                        },
-                                        "corrects": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string",
-                                              "format": "uuid",
-                                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
                                         }
                                       },
                                       "required": [
                                         "id",
                                         "storeroom",
                                         "quantity",
-                                        "unitCost",
-                                        "kind",
-                                        "reverses",
-                                        "corrects"
-                                      ],
-                                      "additionalProperties": false
-                                    }
-                                  },
-                                  "bills": {
-                                    "anyOf": [
-                                      {
-                                        "type": "object",
-                                        "properties": {
-                                          "deliveryNote": {
-                                            "type": "object",
-                                            "properties": {
-                                              "id": {
-                                                "type": "string",
-                                                "format": "uuid",
-                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                              },
-                                              "number": {
-                                                "type": [
-                                                  "string",
-                                                  "null"
-                                                ]
-                                              }
-                                            },
-                                            "required": [
-                                              "id",
-                                              "number"
-                                            ],
-                                            "additionalProperties": false
-                                          },
-                                          "position": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "maximum": 9007199254740991
-                                          }
-                                        },
-                                        "required": [
-                                          "deliveryNote",
-                                          "position"
-                                        ],
-                                        "additionalProperties": false
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "billedBy": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "properties": {
-                                        "id": {
-                                          "type": "string",
-                                          "format": "uuid",
-                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                        },
-                                        "number": {
-                                          "type": [
-                                            "string",
-                                            "null"
-                                          ]
-                                        }
-                                      },
-                                      "required": [
-                                        "id",
-                                        "number"
+                                        "kind"
                                       ],
                                       "additionalProperties": false
                                     }
@@ -21573,13 +22046,7 @@
                                   "product",
                                   "quantity",
                                   "unit",
-                                  "unitPrice",
-                                  "discountPercent",
-                                  "vatRate",
-                                  "storeroom",
-                                  "movements",
-                                  "bills",
-                                  "billedBy"
+                                  "movements"
                                 ],
                                 "additionalProperties": false
                               }
@@ -21600,6 +22067,15 @@
                     }
                   },
                   "required": [
+                    "id",
+                    "type",
+                    "date",
+                    "storeroom",
+                    "toStoreroom",
+                    "reason",
+                    "note",
+                    "countedAt",
+                    "recordedBy",
                     "lines",
                     "reversal"
                   ],
@@ -21958,6 +22434,120 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "waste",
+                        "count",
+                        "transfer"
+                      ]
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                    },
+                    "storeroom": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "toStoreroom": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "expired",
+                            "spoiled",
+                            "broken",
+                            "prep_error",
+                            "other"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "note": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "countedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "recordedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
                     "lines": {
                       "type": "array",
                       "items": {
@@ -22000,49 +22590,6 @@
                           },
                           "unit": {
                             "type": "string"
-                          },
-                          "unitPrice": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "discountPercent": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "vatRate": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "storeroom": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid",
-                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  }
-                                },
-                                "required": [
-                                  "id",
-                                  "name"
-                                ],
-                                "additionalProperties": false
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
                           },
                           "movements": {
                             "type": "array",
@@ -22089,107 +22636,13 @@
                                     "transfer-out",
                                     "transfer-in"
                                   ]
-                                },
-                                "reverses": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string",
-                                      "format": "uuid",
-                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                "corrects": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string",
-                                      "format": "uuid",
-                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
                                 }
                               },
                               "required": [
                                 "id",
                                 "storeroom",
                                 "quantity",
-                                "unitCost",
-                                "kind",
-                                "reverses",
-                                "corrects"
-                              ],
-                              "additionalProperties": false
-                            }
-                          },
-                          "bills": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "deliveryNote": {
-                                    "type": "object",
-                                    "properties": {
-                                      "id": {
-                                        "type": "string",
-                                        "format": "uuid",
-                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                      },
-                                      "number": {
-                                        "type": [
-                                          "string",
-                                          "null"
-                                        ]
-                                      }
-                                    },
-                                    "required": [
-                                      "id",
-                                      "number"
-                                    ],
-                                    "additionalProperties": false
-                                  },
-                                  "position": {
-                                    "type": "integer",
-                                    "minimum": 1,
-                                    "maximum": 9007199254740991
-                                  }
-                                },
-                                "required": [
-                                  "deliveryNote",
-                                  "position"
-                                ],
-                                "additionalProperties": false
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "billedBy": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "id": {
-                                  "type": "string",
-                                  "format": "uuid",
-                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                },
-                                "number": {
-                                  "type": [
-                                    "string",
-                                    "null"
-                                  ]
-                                }
-                              },
-                              "required": [
-                                "id",
-                                "number"
+                                "kind"
                               ],
                               "additionalProperties": false
                             }
@@ -22200,13 +22653,7 @@
                           "product",
                           "quantity",
                           "unit",
-                          "unitPrice",
-                          "discountPercent",
-                          "vatRate",
-                          "storeroom",
-                          "movements",
-                          "bills",
-                          "billedBy"
+                          "movements"
                         ],
                         "additionalProperties": false
                       }
@@ -22287,49 +22734,6 @@
                                   "unit": {
                                     "type": "string"
                                   },
-                                  "unitPrice": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
-                                  },
-                                  "discountPercent": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
-                                  },
-                                  "vatRate": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
-                                  },
-                                  "storeroom": {
-                                    "anyOf": [
-                                      {
-                                        "type": "object",
-                                        "properties": {
-                                          "id": {
-                                            "type": "string",
-                                            "format": "uuid",
-                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                          },
-                                          "name": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": [
-                                          "id",
-                                          "name"
-                                        ],
-                                        "additionalProperties": false
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
                                   "movements": {
                                     "type": "array",
                                     "items": {
@@ -22375,107 +22779,13 @@
                                             "transfer-out",
                                             "transfer-in"
                                           ]
-                                        },
-                                        "reverses": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string",
-                                              "format": "uuid",
-                                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
-                                        },
-                                        "corrects": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string",
-                                              "format": "uuid",
-                                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
                                         }
                                       },
                                       "required": [
                                         "id",
                                         "storeroom",
                                         "quantity",
-                                        "unitCost",
-                                        "kind",
-                                        "reverses",
-                                        "corrects"
-                                      ],
-                                      "additionalProperties": false
-                                    }
-                                  },
-                                  "bills": {
-                                    "anyOf": [
-                                      {
-                                        "type": "object",
-                                        "properties": {
-                                          "deliveryNote": {
-                                            "type": "object",
-                                            "properties": {
-                                              "id": {
-                                                "type": "string",
-                                                "format": "uuid",
-                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                              },
-                                              "number": {
-                                                "type": [
-                                                  "string",
-                                                  "null"
-                                                ]
-                                              }
-                                            },
-                                            "required": [
-                                              "id",
-                                              "number"
-                                            ],
-                                            "additionalProperties": false
-                                          },
-                                          "position": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "maximum": 9007199254740991
-                                          }
-                                        },
-                                        "required": [
-                                          "deliveryNote",
-                                          "position"
-                                        ],
-                                        "additionalProperties": false
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "billedBy": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "properties": {
-                                        "id": {
-                                          "type": "string",
-                                          "format": "uuid",
-                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                        },
-                                        "number": {
-                                          "type": [
-                                            "string",
-                                            "null"
-                                          ]
-                                        }
-                                      },
-                                      "required": [
-                                        "id",
-                                        "number"
+                                        "kind"
                                       ],
                                       "additionalProperties": false
                                     }
@@ -22486,13 +22796,7 @@
                                   "product",
                                   "quantity",
                                   "unit",
-                                  "unitPrice",
-                                  "discountPercent",
-                                  "vatRate",
-                                  "storeroom",
-                                  "movements",
-                                  "bills",
-                                  "billedBy"
+                                  "movements"
                                 ],
                                 "additionalProperties": false
                               }
@@ -22513,6 +22817,15 @@
                     }
                   },
                   "required": [
+                    "id",
+                    "type",
+                    "date",
+                    "storeroom",
+                    "toStoreroom",
+                    "reason",
+                    "note",
+                    "countedAt",
+                    "recordedBy",
                     "lines",
                     "reversal"
                   ],
@@ -22871,6 +23184,120 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "waste",
+                        "count",
+                        "transfer"
+                      ]
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                    },
+                    "storeroom": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "toStoreroom": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "expired",
+                            "spoiled",
+                            "broken",
+                            "prep_error",
+                            "other"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "note": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "countedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "recordedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
                     "lines": {
                       "type": "array",
                       "items": {
@@ -22913,49 +23340,6 @@
                           },
                           "unit": {
                             "type": "string"
-                          },
-                          "unitPrice": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "discountPercent": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "vatRate": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
-                          },
-                          "storeroom": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid",
-                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  }
-                                },
-                                "required": [
-                                  "id",
-                                  "name"
-                                ],
-                                "additionalProperties": false
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
                           },
                           "movements": {
                             "type": "array",
@@ -23002,107 +23386,13 @@
                                     "transfer-out",
                                     "transfer-in"
                                   ]
-                                },
-                                "reverses": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string",
-                                      "format": "uuid",
-                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                "corrects": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string",
-                                      "format": "uuid",
-                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
                                 }
                               },
                               "required": [
                                 "id",
                                 "storeroom",
                                 "quantity",
-                                "unitCost",
-                                "kind",
-                                "reverses",
-                                "corrects"
-                              ],
-                              "additionalProperties": false
-                            }
-                          },
-                          "bills": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "deliveryNote": {
-                                    "type": "object",
-                                    "properties": {
-                                      "id": {
-                                        "type": "string",
-                                        "format": "uuid",
-                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                      },
-                                      "number": {
-                                        "type": [
-                                          "string",
-                                          "null"
-                                        ]
-                                      }
-                                    },
-                                    "required": [
-                                      "id",
-                                      "number"
-                                    ],
-                                    "additionalProperties": false
-                                  },
-                                  "position": {
-                                    "type": "integer",
-                                    "minimum": 1,
-                                    "maximum": 9007199254740991
-                                  }
-                                },
-                                "required": [
-                                  "deliveryNote",
-                                  "position"
-                                ],
-                                "additionalProperties": false
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "billedBy": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "id": {
-                                  "type": "string",
-                                  "format": "uuid",
-                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                },
-                                "number": {
-                                  "type": [
-                                    "string",
-                                    "null"
-                                  ]
-                                }
-                              },
-                              "required": [
-                                "id",
-                                "number"
+                                "kind"
                               ],
                               "additionalProperties": false
                             }
@@ -23113,13 +23403,7 @@
                           "product",
                           "quantity",
                           "unit",
-                          "unitPrice",
-                          "discountPercent",
-                          "vatRate",
-                          "storeroom",
-                          "movements",
-                          "bills",
-                          "billedBy"
+                          "movements"
                         ],
                         "additionalProperties": false
                       }
@@ -23200,49 +23484,6 @@
                                   "unit": {
                                     "type": "string"
                                   },
-                                  "unitPrice": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
-                                  },
-                                  "discountPercent": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
-                                  },
-                                  "vatRate": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ]
-                                  },
-                                  "storeroom": {
-                                    "anyOf": [
-                                      {
-                                        "type": "object",
-                                        "properties": {
-                                          "id": {
-                                            "type": "string",
-                                            "format": "uuid",
-                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                          },
-                                          "name": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": [
-                                          "id",
-                                          "name"
-                                        ],
-                                        "additionalProperties": false
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
                                   "movements": {
                                     "type": "array",
                                     "items": {
@@ -23288,107 +23529,13 @@
                                             "transfer-out",
                                             "transfer-in"
                                           ]
-                                        },
-                                        "reverses": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string",
-                                              "format": "uuid",
-                                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
-                                        },
-                                        "corrects": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string",
-                                              "format": "uuid",
-                                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
                                         }
                                       },
                                       "required": [
                                         "id",
                                         "storeroom",
                                         "quantity",
-                                        "unitCost",
-                                        "kind",
-                                        "reverses",
-                                        "corrects"
-                                      ],
-                                      "additionalProperties": false
-                                    }
-                                  },
-                                  "bills": {
-                                    "anyOf": [
-                                      {
-                                        "type": "object",
-                                        "properties": {
-                                          "deliveryNote": {
-                                            "type": "object",
-                                            "properties": {
-                                              "id": {
-                                                "type": "string",
-                                                "format": "uuid",
-                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                              },
-                                              "number": {
-                                                "type": [
-                                                  "string",
-                                                  "null"
-                                                ]
-                                              }
-                                            },
-                                            "required": [
-                                              "id",
-                                              "number"
-                                            ],
-                                            "additionalProperties": false
-                                          },
-                                          "position": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "maximum": 9007199254740991
-                                          }
-                                        },
-                                        "required": [
-                                          "deliveryNote",
-                                          "position"
-                                        ],
-                                        "additionalProperties": false
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "billedBy": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "properties": {
-                                        "id": {
-                                          "type": "string",
-                                          "format": "uuid",
-                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                        },
-                                        "number": {
-                                          "type": [
-                                            "string",
-                                            "null"
-                                          ]
-                                        }
-                                      },
-                                      "required": [
-                                        "id",
-                                        "number"
+                                        "kind"
                                       ],
                                       "additionalProperties": false
                                     }
@@ -23399,13 +23546,7 @@
                                   "product",
                                   "quantity",
                                   "unit",
-                                  "unitPrice",
-                                  "discountPercent",
-                                  "vatRate",
-                                  "storeroom",
-                                  "movements",
-                                  "bills",
-                                  "billedBy"
+                                  "movements"
                                 ],
                                 "additionalProperties": false
                               }
@@ -23426,6 +23567,15 @@
                     }
                   },
                   "required": [
+                    "id",
+                    "type",
+                    "date",
+                    "storeroom",
+                    "toStoreroom",
+                    "reason",
+                    "note",
+                    "countedAt",
+                    "recordedBy",
                     "lines",
                     "reversal"
                   ],
