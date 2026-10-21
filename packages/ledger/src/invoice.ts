@@ -1,6 +1,30 @@
 import { toBaseUnits, type UnitConversion } from "./conversion";
 import type { DeliveryNote, DocumentLine, Invoice } from "./document";
+import { latestVersionOf, type Movement } from "./movement";
 import type { Quantity } from "./quantity";
+
+/**
+ * The receipt that stands for a delivery-note line's goods now (decision 0032): the line's own
+ * receipt, or the last correction of it, by an invoice or by reversing one. Undefined if the
+ * line has no receipt in the movements given, or if its goods were reversed. Its unit cost is the
+ * line's price now; an invoice that bills the line corrects this one.
+ */
+export function standingReceipt(
+  movements: readonly Movement[],
+  deliveryNoteLineId: string,
+  latest: (movement: Movement) => Movement = latestVersionOf(movements),
+): Movement | undefined {
+  const received = movements.find(
+    (m) =>
+      m.documentLineId === deliveryNoteLineId &&
+      m.kind === "receipt" &&
+      m.reverses === undefined &&
+      m.corrects === undefined,
+  );
+  if (received === undefined) return undefined;
+  const current = latest(received);
+  return movements.some((m) => m.reverses === current.id) ? undefined : current;
+}
 
 /** A suggestion that an invoice line bills a delivery-note line. */
 export interface BilledLine {
