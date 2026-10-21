@@ -16,7 +16,7 @@ import { documentFiles, documents } from "../db/schema";
 import { HttpError, notFound } from "../errors";
 import type { Jobs } from "../extraction/jobs";
 import type { Storage } from "../storage/storage";
-import { readDocument, toSummaries, withNames } from "./read";
+import { readDocument, supplierDocument, toSummaries, withNames } from "./read";
 import { checkUpload } from "./upload";
 
 // Supplier documents (#102): uploaded as one PDF or Facturae file or up to 10 photos, each file
@@ -179,6 +179,7 @@ export const documentRoutes: FastifyPluginAsyncZod<{
     handler: async ({ query }): Promise<DocumentPage> => {
       const matching = and(
         isNull(documents.reverses),
+        supplierDocument,
         query.status ? eq(documents.status, query.status) : undefined,
       );
       const [rows, [counted]] = await Promise.all([

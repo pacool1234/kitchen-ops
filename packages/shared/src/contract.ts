@@ -20,7 +20,7 @@ import {
   NewMapping,
 } from "./matching";
 import { DocumentPosting, PostDocument } from "./posting";
-import { ProductStock } from "./stock";
+import { ProductStock, RecordTransfer, RecordWaste } from "./stock";
 import {
   NewProduct,
   Product,
@@ -461,6 +461,30 @@ export const endpoints = {
       "Reverse a posted document today: its movements undone by a reversal of its own",
     access: { roles: ["owner"] },
     params: IdParams,
+    response: DocumentPosting,
+    conflict: true,
+  }),
+  // Waste and transfers (#149, decision 0044): recorded under an ID the client made, so sending
+  // one again, after a timeout or from an offline queue, posts it once.
+  recordWaste: endpoint({
+    method: "PUT",
+    path: "/api/waste/:id",
+    summary:
+      "Record waste and post it, under an ID the client made: sent again, it answers what was posted",
+    access: "signed-in",
+    params: IdParams,
+    body: RecordWaste,
+    response: DocumentPosting,
+    conflict: true,
+  }),
+  recordTransfer: endpoint({
+    method: "PUT",
+    path: "/api/transfers/:id",
+    summary:
+      "Record a transfer between storerooms and post it, under an ID the client made: sent again, it answers what was posted",
+    access: "signed-in",
+    params: IdParams,
+    body: RecordTransfer,
     response: DocumentPosting,
     conflict: true,
   }),

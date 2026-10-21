@@ -61,7 +61,7 @@ export type PostingResult =
  */
 const POSTING_LOCK = 116_034;
 
-async function takePostingLock(tx: Tx) {
+export async function takePostingLock(tx: Tx) {
   await tx.execute(sql`select pg_advisory_xact_lock(${POSTING_LOCK})`);
 }
 
@@ -89,14 +89,30 @@ function lineErrors(
 }
 
 /**
+ * A line as stored, whatever its document: a supplier's has a price, and maybe what it bills; a
+ * stock document's (#149) has neither.
+ */
+export type StoredLine = ledger.DocumentLine &
+  Partial<
+    Pick<
+      ledger.InvoiceLine,
+      | "unitPrice"
+      | "discountPercent"
+      | "vatRate"
+      | "storeroomId"
+      | "deliveryNoteLineId"
+    >
+  >;
+
+/**
  * A ledger line as a row. `storeroomId` is where it was received; none for a line that bills a
  * delivery-note line, whose goods stay where that one received them. `printed` is its unit as
  * printed, and the supplier product whose pack the ledger converted it with (decision 0038).
  */
-function lineRow(
+export function lineRow(
   documentId: string,
   position: number,
-  line: ledger.InvoiceLine,
+  line: StoredLine,
   storeroomId: string | null,
   printed: { unit: string; supplierProductId: string | null },
 ): typeof documentLines.$inferInsert {
@@ -108,7 +124,10 @@ function lineRow(
     quantity: line.quantity,
     unit: printed.unit,
     supplierProductId: printed.supplierProductId,
-    unitPrice: ledger.formatUnitCost(line.unitPrice),
+    unitPrice:
+      line.unitPrice === undefined
+        ? null
+        : ledger.formatUnitCost(line.unitPrice),
     discountPercent: line.discountPercent ?? null,
     vatRate: line.vatRate ?? null,
     storeroomId,
@@ -117,16 +136,16 @@ function lineRow(
   };
 }
 
-/** A stored line as the ledger's. */
-function lineFromRow(
-  row: typeof documentLines.$inferSelect,
-): ledger.InvoiceLine {
+/** A stored line as the ledger's: its price only when it has one. */
+function lineFromRow(row: typeof documentLines.$inferSelect): StoredLine {
   return {
     id: row.id,
     productId: row.productId,
     quantity: row.quantity,
     unit: row.unit,
-    unitPrice: ledger.parseUnitCost(row.unitPrice),
+    ...(row.unitPrice === null
+      ? {}
+      : { unitPrice: ledger.parseUnitCost(row.unitPrice) }),
     ...(row.discountPercent === null
       ? {}
       : { discountPercent: row.discountPercent }),
@@ -280,6 +299,62 @@ export async function postDocument(
   });
 }
 
+/** A line the ledger takes as a supplier document's: it was posted with its price. */
+function priced(line: StoredLine): ledger.InvoiceLine {
+  if (line.unitPrice === undefined) {
+    throw new Error(`line ${line.id} of a supplier's document has no price`);
+  }
+  return { ...line, unitPrice: line.unitPrice };
+}
+
+/** A posted document, as stored, as the ledger takes it to reverse it. */
+function postedAsLedger(
+  row: typeof documents.$inferSelect & {
+    type: NonNullable<(typeof documents.$inferSelect)["type"]>;
+    date: string;
+  },
+  lines: readonly StoredLine[],
+): ledger.Document {
+  const header = {
+    id: row.id,
+    date: row.date,
+    ...(row.number === null ? {} : { number: row.number }),
+    status: "posted" as const,
+  };
+  switch (row.type) {
+    case "waste":
+    case "count":
+      return {
+        ...header,
+        type: row.type,
+        storeroomId: row.storeroomId!,
+        lines,
+      };
+    case "transfer":
+      return {
+        ...header,
+        type: "transfer",
+        storeroomId: row.storeroomId!,
+        toStoreroomId: row.toStoreroomId!,
+        lines,
+      };
+    case "delivery-note":
+    case "invoice": {
+      const supplier = {
+        ...header,
+        // Unused when reversing: each received line keeps the storeroom it went to, and a
+        // reversal takes the goods out of the storerooms their movements name.
+        storeroomId: lines.find((l) => l.storeroomId)?.storeroomId ?? "",
+        supplierId: row.supplierId!,
+        lines: lines.map(priced),
+      };
+      return row.type === "invoice"
+        ? { ...supplier, type: "invoice" }
+        : { ...supplier, type: "delivery-note" };
+    }
+  }
+}
+
 const billing = alias(documents, "billing");
 const billingReversal = alias(documents, "billing_reversal");
 
@@ -362,12 +437,7 @@ export async function reverseDocument(
       .where(eq(documents.id, documentId));
     if (!row) return refused("not_found");
     if (row.reverses !== null) return refused("is_reversal");
-    if (
-      row.status !== "posted" ||
-      row.type === null ||
-      row.supplierId === null ||
-      row.date === null
-    ) {
+    if (row.status !== "posted" || row.type === null || row.date === null) {
       return refused("not_posted");
     }
     const [earlier] = await tx
@@ -407,22 +477,9 @@ export async function reverseDocument(
     const existing = await movementsOf(tx, [
       ...new Set(lines.map((l) => l.productId)),
     ]);
-    const header = {
-      id: documentId,
-      date: row.date,
-      ...(row.number === null ? {} : { number: row.number }),
-      status: "posted" as const,
-      // Unused when reversing: each received line keeps the storeroom it went to, and a
-      // reversal takes the goods out of the storerooms their movements name.
-      storeroomId: lines.find((l) => l.storeroomId)?.storeroomId ?? "",
-      supplierId: row.supplierId,
-      lines,
-    };
     const reversalId = randomUUIDv7();
     const result = ledger.reverseDocument(
-      row.type === "invoice"
-        ? { ...header, type: "invoice" }
-        : { ...header, type: "delivery-note" },
+      postedAsLedger({ ...row, type: row.type, date: row.date }, lines),
       existing,
       { id: reversalId, date, newId: randomUUIDv7 },
     );
@@ -440,11 +497,17 @@ export async function reverseDocument(
       number: row.number,
       date,
       reverses: documentId,
+      // A stock document's own, which a reversal of one needs too (#149).
+      storeroomId: row.storeroomId,
+      toStoreroomId: row.toStoreroomId,
+      wasteReason: row.wasteReason,
+      note: row.note,
+      countedAt: row.countedAt,
     };
     await tx
       .insert(documents)
       .values({ id: reversalId, ...created, uploadedBy: context.userId });
-    const copies = result.document.lines as readonly ledger.InvoiceLine[];
+    const copies = result.document.lines as readonly StoredLine[];
     await tx.insert(documentLines).values(
       copies.map((line, i) =>
         lineRow(reversalId, i + 1, line, line.storeroomId ?? null, {

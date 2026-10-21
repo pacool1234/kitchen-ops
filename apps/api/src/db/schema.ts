@@ -1,12 +1,14 @@
 import {
   AUDIT_ACTIONS,
   DOCUMENT_STATUSES,
-  EXTRACTED_DOCUMENT_TYPES,
   EXTRACTION_FAILURES,
   FILE_KINDS,
   BASE_UNITS,
   PRODUCT_CATEGORIES,
+  STOCK_DOCUMENT_TYPES,
   STOREROOM_TYPES,
+  STORED_DOCUMENT_TYPES,
+  WASTE_REASONS,
 } from "@kitchen-ops/shared";
 import type { CheckFailure } from "@kitchen-ops/extract";
 import type { MovementKind } from "@kitchen-ops/ledger";
@@ -170,8 +172,15 @@ export const supplierProducts = pgTable(
 
 /** Where a document is on its way to review (#102); values come from packages/shared. */
 export const documentStatus = pgEnum("document_status", DOCUMENT_STATUSES);
-/** A delivery note or an invoice, once read: the extraction's own values. */
-export const documentType = pgEnum("document_type", EXTRACTED_DOCUMENT_TYPES);
+/**
+ * A delivery note or an invoice, once read, or a stock document: waste, a count or a transfer,
+ * recorded by staff (#149, decision 0044).
+ */
+export const documentType = pgEnum("document_type", STORED_DOCUMENT_TYPES);
+/** Why stock was thrown away (#149); values come from packages/shared. */
+export const wasteReason = pgEnum("waste_reason", WASTE_REASONS);
+/** The stock documents' types, as SQL for the checks below: ('waste', 'count', 'transfer'). */
+const STOCK_TYPES = `(${STOCK_DOCUMENT_TYPES.map((t) => `'${t}'`).join(", ")})`;
 export const documentFileKind = pgEnum("document_file_kind", FILE_KINDS);
 /** Why reading a document failed (#104); values come from packages/shared. */
 export const extractionFailure = pgEnum(
@@ -182,6 +191,9 @@ export const extractionFailure = pgEnum(
 /**
  * A supplier document (spec section 3, #102): one PDF or Facturae file, or one or several photos,
  * on its way to review. Its type, supplier, number and date are filled in once it's read (#104).
+ *
+ * Or a stock document (#149, decision 0044): waste, a count or a transfer, recorded by staff and
+ * posted at once. It has no files and no supplier, but a storeroom, and an ID the client made.
  */
 export const documents = pgTable(
   "documents",
@@ -218,6 +230,21 @@ export const documents = pgTable(
      * posted in its place. Its files are that one's. At most one copy per document.
      */
     copyOf: uuid("copy_of").references((): AnyPgColumn => documents.id),
+    /** A stock document's storeroom: where waste or a count was, or a transfer's source. */
+    storeroomId: uuid("storeroom_id").references(() => storerooms.id),
+    /** A transfer's destination. */
+    toStoreroomId: uuid("to_storeroom_id").references(() => storerooms.id),
+    /** Why waste was thrown away. */
+    wasteReason: wasteReason("waste_reason"),
+    /** A few words more about waste, if its reason needs them. */
+    note: text("note"),
+    /** When a count was made, which may be well before it reached us: offline (#153). */
+    countedAt: timestamp("counted_at", { withTimezone: true }),
+    /**
+     * The sha256 of the request that recorded a stock document: the same ID sent again with the
+     * same body answers what was posted, and with another one is refused.
+     */
+    requestSha256: text("request_sha256"),
     // No cascade: a user who uploaded documents can't be deleted, only deactivated.
     uploadedBy: uuid("uploaded_by")
       .notNull()
@@ -234,9 +261,39 @@ export const documents = pgTable(
     ),
     // What posting needs to know, kept with the posted document. Compared as text: the
     // migration that adds `posted` can't use it as an enum value in the same transaction.
+    // A supplier's document names its supplier; a stock document has none (#149).
     check(
       "documents_posted_complete",
-      sql`${table.status}::text <> 'posted' or (${table.type} is not null and ${table.supplierId} is not null and ${table.date} is not null)`,
+      sql`${table.status}::text <> 'posted' or (${table.type} is not null and ${table.date} is not null and (${table.supplierId} is not null or ${table.type}::text in ${sql.raw(STOCK_TYPES)}))`,
+    ),
+    // What each stock document needs, and only it (#149). Compared as text, as above.
+    check(
+      "documents_stock_storeroom",
+      sql`coalesce(${table.type}::text in ${sql.raw(STOCK_TYPES)}, false) = (${table.storeroomId} is not null)`,
+    ),
+    check(
+      "documents_waste_reason",
+      sql`coalesce(${table.type}::text = 'waste', false) = (${table.wasteReason} is not null)`,
+    ),
+    check(
+      "documents_waste_note",
+      sql`${table.note} is null or ${table.type}::text = 'waste'`,
+    ),
+    check(
+      "documents_transfer_destination",
+      sql`coalesce(${table.type}::text = 'transfer', false) = (${table.toStoreroomId} is not null)`,
+    ),
+    check(
+      "documents_transfer_elsewhere",
+      sql`${table.toStoreroomId} is null or ${table.toStoreroomId} <> ${table.storeroomId}`,
+    ),
+    check(
+      "documents_count_counted_at",
+      sql`coalesce(${table.type}::text = 'count', false) = (${table.countedAt} is not null)`,
+    ),
+    check(
+      "documents_request_sha256",
+      sql`${table.requestSha256} is null or ${table.type}::text in ${sql.raw(STOCK_TYPES)}`,
     ),
     check(
       "documents_reversal_posted",
@@ -299,8 +356,11 @@ export const documentLines = pgTable(
     /** As printed, in `unit`: "1.5" boxes. A decimal read and written as text. */
     quantity: numeric("quantity", { precision: 18, scale: 6 }).notNull(),
     unit: text("unit").notNull(),
-    /** Per purchase unit, before discount, excluding VAT (decision 0015). */
-    unitPrice: numeric("unit_price", { precision: 18, scale: 6 }).notNull(),
+    /**
+     * Per purchase unit, before discount, excluding VAT (decision 0015). None for a stock
+     * document's line (#149): its movements carry the average cost.
+     */
+    unitPrice: numeric("unit_price", { precision: 18, scale: 6 }),
     discountPercent: numeric("discount_percent", { precision: 5, scale: 2 }),
     vatRate: numeric("vat_rate", { precision: 5, scale: 2 }),
     /** Where the line was received, if not the document's storeroom (decision 0033). */

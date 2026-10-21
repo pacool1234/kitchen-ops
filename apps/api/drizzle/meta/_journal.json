@@ -120,6 +120,13 @@
       "when": 1792584863519,
       "tag": "0016_invoice_line_bills",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792614082563,
+      "tag": "0017_stock_documents",
+      "breakpoints": true
     }
   ]
 }

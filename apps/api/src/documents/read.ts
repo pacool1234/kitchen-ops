@@ -1,10 +1,11 @@
 import {
+  EXTRACTED_DOCUMENT_TYPES,
   seesReadingCost,
   type Document,
   type DocumentSummary,
   type Role,
 } from "@kitchen-ops/shared";
-import { and, asc, count, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Db } from "../db/client";
 import {
@@ -26,6 +27,15 @@ import type { Storage } from "../storage/storage";
 export const LINK_SECONDS = 5 * 60;
 
 const reversal = alias(documents, "reversal");
+
+/**
+ * A supplier's document, read or still to be: not a stock document (#149), which has no files,
+ * no draft and no page in Documentos.
+ */
+export const supplierDocument = or(
+  isNull(documents.type),
+  inArray(documents.type, [...EXTRACTED_DOCUMENT_TYPES]),
+);
 
 const summary = {
   id: documents.id,
@@ -55,6 +65,14 @@ export const withNames = (db: Db) =>
     .leftJoin(reversal, eq(reversal.reverses, documents.id));
 
 type SummaryRow = Awaited<ReturnType<typeof withNames>>[number];
+
+/** A supplier document's type, once read. A stock document (#149) has no summary here. */
+function supplierType(type: SummaryRow["type"]): DocumentSummary["type"] {
+  if (type === null || type === "delivery-note" || type === "invoice") {
+    return type;
+  }
+  throw new Error(`a ${type} is not a supplier's document`);
+}
 
 /**
  * The document whose files each of these has: itself, or, for a corrected copy, the one first
@@ -100,7 +118,7 @@ export async function toSummaries(
     id: row.id,
     status: row.status,
     failureReason: row.failureReason,
-    type: row.type,
+    type: supplierType(row.type),
     supplier:
       row.supplierId && row.supplierName
         ? { id: row.supplierId, name: row.supplierName }
@@ -132,7 +150,7 @@ export async function readDocument(
 ): Promise<Document | undefined> {
   // A reversal has no files: it's shown with the document it reverses (#119), not on its own.
   const [row] = await withNames(db).where(
-    and(eq(documents.id, id), isNull(documents.reverses)),
+    and(eq(documents.id, id), isNull(documents.reverses), supplierDocument),
   );
   if (!row) return undefined;
   const filesOf = (await fileOwners(db, [row])).get(id)!;

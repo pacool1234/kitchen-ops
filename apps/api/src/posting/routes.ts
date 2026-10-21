@@ -12,7 +12,7 @@ import { audited, auditContext, type Tx } from "../audit/audited";
 import { routeFor } from "../contract";
 import type { Db } from "../db/client";
 import { documents, products, storerooms } from "../db/schema";
-import { readDocument } from "../documents/read";
+import { readDocument, supplierDocument } from "../documents/read";
 import { currentDraft, documentInReview } from "../documents/review";
 import { HttpError, notFound } from "../errors";
 import { checksOf } from "../extraction/checks";
@@ -303,7 +303,13 @@ export const postingRoutes: FastifyPluginAsyncZod<{
         const [original] = await tx
           .select()
           .from(documents)
-          .where(and(eq(documents.id, id), isNull(documents.reverses)))
+          .where(
+            and(
+              eq(documents.id, id),
+              isNull(documents.reverses),
+              supplierDocument,
+            ),
+          )
           .for("update");
         if (!original) throw notFound();
         const [reversal] = await tx
