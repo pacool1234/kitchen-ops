@@ -12,9 +12,9 @@ import { today } from "./read";
 // calling OpenRouter, for tests, local development and the browser tests. Hand-written, not a
 // model's answer, and dated the day it's asked, so the date check passes. Asked to suggest
 // products (#117), it names the one whose name is in the line's description. Markers in a
-// document make it fail, or misread a quantity (#118): in a PDF's text, or in a photo's own
-// bytes, as a test photo carries one in a PNG text chunk (#119). src/config.ts refuses it in
-// production.
+// document make it fail, misread a quantity (#118), or read the invoice for its delivery note
+// (#120): in a PDF's text, or in a photo's own bytes, as a test photo carries one in a PNG text
+// chunk (#119). src/config.ts refuses it in production.
 
 export const FAKE_MODEL: ModelConfig = {
   id: "fake",
@@ -80,6 +80,30 @@ export function fakeMisread(issueDate: string): ExtractedDocument {
   return { ...document, lines: [{ ...first!, quantity: "50" }, ...rest] };
 }
 
+/**
+ * Text in a document that makes the fake model read the invoice for its delivery note (#120):
+ * the oil 1,50 € a garrafa dearer than the delivery note said, so posting it corrects a price.
+ */
+export const FAKE_INVOICE_MARKER = "fake-model:invoice";
+
+/** The invoice for the delivery note: FAC-0001, listing ALB-0001, the oil at €26.00. */
+export function fakeInvoice(issueDate: string): ExtractedDocument {
+  const note = fakeDocument(issueDate);
+  const [tomatoes, oil] = note.lines;
+  return {
+    ...note,
+    documentType: "invoice",
+    number: "FAC-0001",
+    deliveryNotes: [note.number!],
+    totals: {
+      net: "61.00",
+      vat: [{ rate: "10", base: "61.00", amount: "6.10" }],
+      total: "67.10",
+    },
+    lines: [tomatoes!, { ...oil!, unitPrice: "26.00", lineTotal: "52.00" }],
+  };
+}
+
 /** The rows of one numbered list in a suggestion question: "1 | Tomate pera | g | produce". */
 function rowsAfter(question: string, heading: string): string[][] {
   const [, after = ""] = question.split(`${heading}\n`);
@@ -143,7 +167,9 @@ export function createFakeClient(now: () => Date): OpenRouterClient {
       }
       const read = asked.includes(FAKE_MISREAD_MARKER)
         ? fakeMisread
-        : fakeDocument;
+        : asked.includes(FAKE_INVOICE_MARKER)
+          ? fakeInvoice
+          : fakeDocument;
       return {
         content: JSON.stringify(read(today(now()))),
         promptTokens: 0,

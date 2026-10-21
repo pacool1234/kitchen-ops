@@ -249,6 +249,9 @@ describe("POST /api/documents/:id/post", () => {
             corrects: null,
           },
         ],
+        // A delivery note's line bills nothing, and no invoice bills it yet (#120).
+        bills: null,
+        billedBy: [],
       },
       {
         position: 2,
@@ -272,6 +275,8 @@ describe("POST /api/documents/:id/post", () => {
             unitCost: "0.004900",
           }),
         ],
+        bills: null,
+        billedBy: [],
       },
     ]);
     expect(await stock(tomate.id, coldRoom.id)).toBe(5000);

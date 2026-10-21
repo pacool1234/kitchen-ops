@@ -93,6 +93,8 @@ describe("DocumentPosting: a posted document's lines and movements", () => {
         corrects: null,
       },
     ],
+    bills: null,
+    billedBy: [],
   };
 
   it("parses a posted delivery note, and one reversed", () => {
@@ -108,5 +110,35 @@ describe("DocumentPosting: a posted document's lines and movements", () => {
       },
     };
     expect(DocumentPosting.parse(reversed)).toEqual(reversed);
+  });
+
+  it("an invoice's line says the delivery-note line it billed, and a delivery note's the invoices that bill it (#120)", () => {
+    const note = { id: "0199a000-0000-7000-8000-000000000008", number: "A-1" };
+    const invoice = {
+      id: "0199a000-0000-7000-8000-000000000009",
+      number: null,
+    };
+    const invoiced = {
+      lines: [
+        {
+          ...line,
+          storeroom: null,
+          bills: { deliveryNote: note, position: 2 },
+        },
+      ],
+      reversal: null,
+    };
+    expect(DocumentPosting.parse(invoiced)).toEqual(invoiced);
+    const billed = {
+      lines: [{ ...line, billedBy: [invoice] }],
+      reversal: null,
+    };
+    expect(DocumentPosting.parse(billed)).toEqual(billed);
+    expect(
+      DocumentPosting.safeParse({
+        lines: [{ ...line, bills: { deliveryNote: note, position: 0 } }],
+        reversal: null,
+      }).success,
+    ).toBe(false);
   });
 });

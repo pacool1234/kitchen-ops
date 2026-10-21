@@ -21,6 +21,7 @@ import { documentRoutes } from "./documents/routes";
 import { registerErrors } from "./errors";
 import { matchingRoutes } from "./matching/routes";
 import { postingRoutes } from "./posting/routes";
+import { stockRoutes } from "./stock/routes";
 import { createJobs, type JobSettings } from "./extraction/jobs";
 import { failedRead, tryReading } from "./extraction/read";
 import { jobSettingsFor, readerFor, type Reader } from "./extraction/reader";
@@ -139,6 +140,7 @@ export function buildApp(config: Config, options: BuildAppOptions = {}) {
   app.register(matchingRoutes, { db });
   app.register(billingRoutes, { db });
   app.register(postingRoutes, { db, storage });
+  app.register(stockRoutes, { db });
 
   return app;
 }
