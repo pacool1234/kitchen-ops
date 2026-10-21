@@ -326,6 +326,86 @@ describe("postDocument: a count posts the difference between counted and on-hand
     ]);
   });
 
+  // A count made offline at 10:00 and synced at 14:00 (#148, decision 0043): `stock` is what was
+  // posted before 10:00, and whatever comes after it was posted in between.
+  const deliveredAtNoon = receipt("n1", "tomatoes", "cold-room", 5000, "0.003");
+
+  it("counted at 10:00, synced at 14:00 after a 12:00 delivery of 5 kg: 14.75 kg against the 15 kg on hand then, −250 g at that time's €0.0024/g; stock is 14.75 + 5 = 19.75 kg", () => {
+    const count: Document = {
+      ...header,
+      type: "count",
+      movementsBeforeCount: stock.length,
+      lines: [line("l1", "tomatoes", "14.75", "kg")],
+    };
+    const movements = movementsOf(post(count, [...stock, deliveredAtNoon]));
+    expect(movements).toEqual([
+      expect.objectContaining({
+        quantity: -250,
+        unitCost: parseUnitCost("0.0024"),
+        kind: "count",
+      }),
+    ]);
+    expect(movements[0]).not.toHaveProperty("adjustment");
+    const after = [...stock, deliveredAtNoon, ...movements];
+    expect(stockOnHand(after, "tomatoes", "cold-room")).toBe(19_750);
+  });
+
+  it("counted at 0 at 10:00, after 2 kg of waste posted at 11:00: −15 kg would leave −2 kg, so it's a flagged adjustment", () => {
+    const wasted: Movement = {
+      ...receipt("w1", "tomatoes", "cold-room", -2000, "0.0024"),
+      kind: "waste",
+    };
+    const count: Document = {
+      ...header,
+      type: "count",
+      movementsBeforeCount: stock.length,
+      lines: [line("l1", "tomatoes", "0", "kg")],
+    };
+    const movements = movementsOf(post(count, [...stock, wasted]));
+    expect(movements).toEqual([
+      expect.objectContaining({
+        quantity: -15_000,
+        kind: "count",
+        adjustment: true,
+      }),
+    ]);
+    const after = [...stock, wasted, ...movements];
+    expect(stockOnHand(after, "tomatoes", "cold-room")).toBe(-2000);
+  });
+
+  it("counted with every movement before it: the same movements as a count that doesn't say", () => {
+    const lines = [
+      line("l1", "tomatoes", "14.75", "kg"),
+      line("l2", "eggs", "32", "unit"),
+    ];
+    const now = movementsOf(post({ ...header, type: "count", lines }));
+    const said = movementsOf(
+      post({
+        ...header,
+        type: "count",
+        movementsBeforeCount: stock.length,
+        lines,
+      }),
+    );
+    expect(said).toEqual(now);
+  });
+
+  it("rejects a count said to be made before the first movement, after the last, or between two", () => {
+    for (const movementsBeforeCount of [-1, stock.length + 1, 1.5]) {
+      const count: Document = {
+        ...header,
+        type: "count",
+        movementsBeforeCount,
+        lines: [line("l1", "tomatoes", "14", "kg")],
+      };
+      expect(errorsOf(post(count))).toEqual([
+        {
+          message: `count d1 says it was made after ${movementsBeforeCount} movements, but there are ${stock.length}`,
+        },
+      ]);
+    }
+  });
+
   it("rejects a negative count", () => {
     const count: Document = {
       ...header,
@@ -1014,6 +1094,128 @@ describe("posting properties", () => {
         for (const [p, s] of everyLocation) {
           expect(stockOnHand(after, p, s)).toBe(stockOnHand(existing, p, s));
         }
+      }),
+    );
+  });
+});
+
+// Late counts (#148, decision 0043): made after some of the movements, posted after all of them.
+// Counted products are distinct and counted in their own units, so every count posts.
+const lateCountArb = fc
+  .record({
+    storeroomId: fc.constantFrom(...STOREROOMS),
+    counted: fc.uniqueArray(
+      fc.record({
+        productId: fc.constantFrom(...PRODUCTS),
+        quantity: fc.integer({ min: 0, max: 400 }),
+      }),
+      {
+        minLength: 1,
+        maxLength: PRODUCTS.length,
+        selector: (c) => c.productId,
+      },
+    ),
+    // Posted since the count: in and out, in any place.
+    since: fc.array(
+      fc.record({
+        productId: fc.constantFrom(...PRODUCTS),
+        storeroomId: fc.constantFrom(...STOREROOMS),
+        quantity: fc.integer({ min: -300_000, max: 300_000 }),
+        cost: fc.bigInt({ min: 0n, max: 10n ** 7n }),
+      }),
+      { maxLength: 8 },
+    ),
+  })
+  .map(({ storeroomId, counted, since }) => ({
+    count: {
+      id: "c1",
+      date: "2026-10-16",
+      status: "review",
+      storeroomId,
+      type: "count",
+      lines: counted.map((c, i) => ({
+        id: `l${i}`,
+        productId: c.productId,
+        quantity: String(c.quantity),
+        unit: unitsOf(c.productId)[0]!,
+      })),
+    } satisfies Document,
+    since: since.map((f, i): Movement => ({
+      id: `n${i}`,
+      productId: f.productId,
+      storeroomId: f.storeroomId,
+      quantity: f.quantity,
+      unitCost: unitCostFromMillionths(f.cost),
+      documentLineId: `since/n${i}`,
+      kind: f.quantity >= 0 ? "receipt" : "waste",
+    })),
+  }));
+
+describe("late count properties", () => {
+  it("after a late count, each counted product's stock is what was counted plus what was posted since", () => {
+    fc.assert(
+      fc.property(lateCountArb, stockArb, ({ count, since }, before) => {
+        const movements = [...before, ...since];
+        const late = { ...count, movementsBeforeCount: before.length };
+        const result = postDocument(late, context(movements));
+        if (!result.ok) throw new Error(JSON.stringify(result.errors));
+        const after = [...movements, ...result.movements];
+        for (const l of count.lines) {
+          const sinceHere = stockOnHand(since, l.productId, count.storeroomId);
+          expect(stockOnHand(after, l.productId, count.storeroomId)).toBe(
+            toBaseUnits(l, conversions) + sinceHere,
+          );
+        }
+      }),
+    );
+  });
+
+  it("invariant 6: a late count takes stock below zero only as a flagged adjustment, and is flagged only when it does", () => {
+    fc.assert(
+      fc.property(lateCountArb, stockArb, ({ count, since }, before) => {
+        const movements = [...before, ...since];
+        const late = { ...count, movementsBeforeCount: before.length };
+        const result = postDocument(late, context(movements));
+        if (!result.ok) throw new Error(JSON.stringify(result.errors));
+        for (const m of result.movements) {
+          const left =
+            stockOnHand(movements, m.productId, m.storeroomId) + m.quantity;
+          expect(m.adjustment === true).toBe(m.quantity < 0 && left < 0);
+        }
+      }),
+    );
+  });
+
+  it("a late count moves only the products it counts, only in its storeroom, one movement each", () => {
+    fc.assert(
+      fc.property(lateCountArb, stockArb, ({ count, since }, before) => {
+        const movements = [...before, ...since];
+        const late = { ...count, movementsBeforeCount: before.length };
+        const result = postDocument(late, context(movements));
+        if (!result.ok) throw new Error(JSON.stringify(result.errors));
+        const counted = new Set(count.lines.map((l) => l.productId));
+        for (const m of result.movements) {
+          expect(m.storeroomId).toBe(count.storeroomId);
+          expect(counted.has(m.productId)).toBe(true);
+        }
+        expect(result.movements).toHaveLength(count.lines.length);
+      }),
+    );
+  });
+
+  it("invariant 5: posting the same late count against the same movements gives the same movements, stock and costs, also from a fresh copy", () => {
+    fc.assert(
+      fc.property(lateCountArb, stockArb, ({ count, since }, before) => {
+        const movements = [...before, ...since];
+        const late = { ...count, movementsBeforeCount: before.length };
+        const first = postDocument(late, context(movements));
+        const again = postDocument(late, context(movements));
+        const fresh = postDocument(
+          structuredClone(late),
+          context(structuredClone(movements)),
+        );
+        expect(again).toEqual(first);
+        expect(fresh).toEqual(first);
       }),
     );
   });

@@ -16,7 +16,7 @@ Spec: `docs/spec.md` section 4. These rules restate it for this package.
 
 - Quantities: integers in the product's base unit (g, ml, or thousandths of a unit). Use `bigint` or validated safe integers; never fractional numbers.
 - Money totals: `Money`, `bigint` cents. Unit costs: `UnitCost`, `bigint` millionths (6 places). See decision 0015.
-- Rounding only at the points listed in decision 0015, using the shared rounding function (`roundDiv`, half away from zero) with its own tests.
+- Rounding only at the points listed in decision 0015, and a stock's value (decision 0043), using the shared rounding function (`roundDiv`, half away from zero) with its own tests.
 
 ## Invariants to keep true and tested
 

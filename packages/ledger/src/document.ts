@@ -99,6 +99,12 @@ export interface WasteDocument extends DocumentHeader {
 /** A physical count: each line is the quantity counted in the storeroom. */
 export interface CountDocument extends DocumentHeader {
   readonly type: "count";
+  /**
+   * How many of the movements posted so far were there when it was counted (decision 0043): a
+   * count made offline is posted later, after movements it never saw. All of them if absent.
+   * The ledger has no clock, so "when" is a position in the list.
+   */
+  readonly movementsBeforeCount?: number;
   readonly lines: readonly DocumentLine[];
 }
 
@@ -186,7 +192,9 @@ function postLines<L extends DocumentLine>(
  *   invoice's cost correcting the delivery note's, and that one's reversal; nothing at the same
  *   cost. A line billing nothing is received like a delivery-note line (decision 0032).
  * - Waste: the quantity out, at the average cost.
- * - Count: counted − on hand, at the average cost. A line that matches the stock posts 0.
+ * - Count: counted − on hand, at the average cost, both as they were when it was counted. A
+ *   line that matches the stock posts 0. A late count that leaves stock below zero, because of
+ *   what was posted since, is a flagged adjustment (decision 0043).
  * - Transfer: out of the storeroom and into the other one, both at the source's average cost.
  *
  * Costs and on-hand stock come from the movements posted before this document. A line that takes
@@ -202,6 +210,21 @@ export function postDocument(
   }
   if (document.lines.length === 0) {
     return failed({ message: `document ${document.id} has no lines` });
+  }
+  if (document.type === "count") {
+    const before = document.movementsBeforeCount;
+    if (
+      before !== undefined &&
+      !(
+        Number.isSafeInteger(before) &&
+        before >= 0 &&
+        before <= movements.length
+      )
+    ) {
+      return failed({
+        message: `count ${document.id} says it was made after ${before} movements, but there are ${movements.length}`,
+      });
+    }
   }
 
   const { storeroomId } = document;
@@ -291,6 +314,11 @@ export function postDocument(
           ),
         ]);
       case "count": {
+        // The stock as it was when counted: the movements posted before then.
+        const then = movements.slice(
+          0,
+          document.movementsBeforeCount ?? movements.length,
+        );
         const counted = new Set<string>();
         return postLines(document.lines, movements, (line) => {
           if (counted.has(line.productId)) {
@@ -305,10 +333,21 @@ export function postDocument(
               `a counted quantity can't be negative, got ${line.quantity} ${line.unit}`,
             );
           }
-          const onHand = stockOnHand(movements, line.productId, storeroomId);
+          const { productId } = line;
+          const onHand = stockOnHand(then, productId, storeroomId);
           const difference = addQuantities(quantity, 0 - onHand);
+          const cost = averageCost(then, productId, storeroomId);
+          const posted = movement(line, storeroomId, difference, cost, "count");
+          // What was posted since may already have taken stock lower. The count was true at
+          // its time: kept as a flagged adjustment, not refused, so it isn't lost (invariant 6).
+          const left = addQuantities(
+            stockOnHand(movements, productId, storeroomId),
+            difference,
+          );
           return [
-            movement(line, storeroomId, difference, average(line), "count"),
+            difference < 0 && left < 0
+              ? { ...posted, adjustment: true as const }
+              : posted,
           ];
         });
       }
