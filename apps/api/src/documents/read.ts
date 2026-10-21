@@ -1,10 +1,11 @@
 import {
+  EXTRACTED_DOCUMENT_TYPES,
   seesReadingCost,
   type Document,
   type DocumentSummary,
   type Role,
 } from "@kitchen-ops/shared";
-import { and, asc, count, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Db } from "../db/client";
 import {
@@ -26,6 +27,15 @@ import type { Storage } from "../storage/storage";
 export const LINK_SECONDS = 5 * 60;
 
 const reversal = alias(documents, "reversal");
+
+/**
+ * A supplier's document, read or still to be: not a stock document (#149), which has no files,
+ * no draft and no page in Documentos.
+ */
+export const supplierDocument = or(
+  isNull(documents.type),
+  inArray(documents.type, [...EXTRACTED_DOCUMENT_TYPES]),
+);
 
 const summary = {
   id: documents.id,
@@ -140,7 +150,7 @@ export async function readDocument(
 ): Promise<Document | undefined> {
   // A reversal has no files: it's shown with the document it reverses (#119), not on its own.
   const [row] = await withNames(db).where(
-    and(eq(documents.id, id), isNull(documents.reverses)),
+    and(eq(documents.id, id), isNull(documents.reverses), supplierDocument),
   );
   if (!row) return undefined;
   const filesOf = (await fileOwners(db, [row])).get(id)!;

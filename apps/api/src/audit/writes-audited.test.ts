@@ -829,9 +829,10 @@ const WRITE_CASES: Record<string, () => Promise<void>> = {
     ]);
 
     expect((await record(body)).statusCode).toBe(200);
+    // Another body under the same ID is refused (409), and records nothing.
     expect(
       (await record({ ...body, toStoreroomId: storeroomId })).statusCode,
-    ).toBe(400);
+    ).toBe(409);
     expect(await entriesFor("document", id)).toHaveLength(1);
   },
 

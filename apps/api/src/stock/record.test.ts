@@ -13,6 +13,7 @@ import { buildApp } from "../app";
 import { createAuth } from "../auth/auth";
 import { createDb } from "../db/client";
 import {
+  documentFiles,
   documents,
   movements,
   products,
@@ -108,6 +109,16 @@ beforeEach(async () => {
     .values({ status: "ready_for_review", uploadedBy: officeId })
     .returning({ id: documents.id });
   delivery = row!.id;
+  // A supplier's document comes with its file, a photo here.
+  await db.insert(documentFiles).values({
+    documentId: delivery,
+    position: 1,
+    kind: "image",
+    contentType: "image/jpeg",
+    sizeBytes: 1,
+    sha256: delivery,
+    storageKey: `documents/${delivery}/1.jpg`,
+  });
   const posted = await postDocument(
     db,
     { userId: officeId, requestId: "test" },
