@@ -17,7 +17,7 @@ export const FIELD_ERROR_CODES = [
   /** A field the endpoint doesn't take. */
   "unknown_field",
   "invalid_tax_id",
-  /** A value that must be unique, already used (409). */
+  /** A value that must be unique, already used: by a row (409), or earlier in the request. */
   "taken",
   /** A name kept for something else: a product's base unit, which every product has. */
   "reserved",
