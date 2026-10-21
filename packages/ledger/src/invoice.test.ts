@@ -12,7 +12,7 @@ import {
   type InvoiceLine,
   type PostingResult,
 } from "./document";
-import { suggestBilledLines } from "./invoice";
+import { standingReceipt, suggestBilledLines } from "./invoice";
 import { parseUnitCost, unitCostFromMillionths, type UnitCost } from "./money";
 import { stockOnHand, type Movement } from "./movement";
 
@@ -603,6 +603,68 @@ describe("reverseDocument: an invoice", () => {
   });
 });
 
+describe("standingReceipt: the receipt that stands for a delivery-note line's goods now (#120)", () => {
+  it("its own receipt, while no invoice corrected it", () => {
+    expect(standingReceipt(before, "n1")).toEqual(before[0]);
+  });
+
+  it("an invoice's correction once one corrected it; a rectifying invoice's after that", () => {
+    const first = movementsOf(
+      post(
+        invoice("i1", [
+          invoiceLine("v1", "n1", "tomatoes", "10", "kg", "2.00"),
+        ]),
+        before,
+      ),
+    );
+    const afterFirst = [...before, ...first];
+    expect(standingReceipt(afterFirst, "n1")).toMatchObject({
+      id: "i1.1",
+      unitCost: cost("0.002"),
+      quantity: 10_000,
+    });
+    const second = movementsOf(
+      post(
+        invoice("i2", [
+          invoiceLine("v2", "n1", "tomatoes", "10", "kg", "1.90"),
+        ]),
+        afterFirst,
+      ),
+    );
+    expect(standingReceipt([...afterFirst, ...second], "n1")).toMatchObject({
+      id: "i2.1",
+      corrects: "i1.1",
+      unitCost: cost("0.0019"),
+    });
+  });
+
+  it("after the invoice is reversed, the receipt that put the delivery note's price back", () => {
+    const result = post(
+      invoice("i1", [invoiceLine("v1", "n1", "tomatoes", "10", "kg", "2.00")]),
+      before,
+    );
+    if (!result.ok) throw new Error(JSON.stringify(result.errors));
+    const all = [...before, ...result.movements];
+    const undone = [...all, ...movementsOf(reverse(result.document, all))];
+    expect(standingReceipt(undone, "n1")).toMatchObject({
+      corrects: "i1.1",
+      unitCost: cost("0.0018"),
+    });
+  });
+
+  it("none for a line with no receipt, and none once its delivery note was reversed", () => {
+    expect(standingReceipt(before, "nowhere")).toBeUndefined();
+    const { posted, movements } = postAll(
+      deliveryNote("dn9", [noteLine("n9", "eggs", "2", "dozen", "2.40")]),
+    );
+    const reversed = [
+      ...movements,
+      ...movementsOf(reverse(posted[0]!, movements)),
+    ];
+    expect(standingReceipt(reversed, "n9")).toBeUndefined();
+  });
+});
+
 describe("suggestBilledLines: which delivery-note line each invoice line bills", () => {
   const notes = [
     { ...deliveryNote("dn1", [n1]), status: "posted" as const },
@@ -894,6 +956,42 @@ describe("invoice properties", () => {
         if (scenario.billing.length + scenario.ownLines.length === 0) return;
         const added = movementsOf(post(invoiceOf(scenario), before));
         expect(costs([...before, ...added])).toEqual(costs(asIf));
+      }),
+    );
+  });
+
+  it("after an invoice, the receipt that stands for each line it billed is its correction when the price changed, the delivery note's own when it didn't; either way the same goods, not reversed", () => {
+    fc.assert(
+      fc.property(scenarioArb, (scenario) => {
+        const { before, billing, notes } = scenario;
+        if (billing.length === 0) return;
+        const added = movementsOf(
+          post(invoiceOf(scenario, { own: false }), before),
+        );
+        const after = [...before, ...added];
+        for (const line of billing) {
+          const was = standingReceipt(before, line.deliveryNoteLineId!)!;
+          const now = standingReceipt(after, line.deliveryNoteLineId!);
+          const corrected = added.find(
+            (m) => m.documentLineId === line.id && m.corrects !== undefined,
+          );
+          expect(now).toEqual(corrected ?? was);
+          expect(now).toMatchObject({
+            productId: was.productId,
+            storeroomId: was.storeroomId,
+            quantity: was.quantity,
+          });
+          expect(after.some((m) => m.reverses === now!.id)).toBe(false);
+        }
+        // Lines it didn't bill keep theirs.
+        for (const noteLine of notes.flatMap((n) => n.lines)) {
+          if (billing.some((l) => l.deliveryNoteLineId === noteLine.id)) {
+            continue;
+          }
+          expect(standingReceipt(after, noteLine.id)).toEqual(
+            standingReceipt(before, noteLine.id),
+          );
+        }
       }),
     );
   });
