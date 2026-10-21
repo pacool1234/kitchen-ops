@@ -223,8 +223,12 @@ export const es = {
         waste: "De {from}:",
         transfer: "De {from} a {to}:",
       },
-      confirmText:
-        "Sale del stock al confirmarlo. Si hay un error, el dueño puede anularlo.",
+      confirmText: {
+        waste:
+          "Sale del stock al confirmarla. Si hay un error, el dueño puede anularla.",
+        transfer:
+          "Pasa de un almacén al otro al confirmarlo. Si hay un error, el dueño puede anularlo.",
+      },
       recorded: {
         waste: "Merma registrada",
         transfer: "Traspaso registrado",

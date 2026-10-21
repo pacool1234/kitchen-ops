@@ -221,8 +221,12 @@ export const en: Messages = {
         waste: "From {from}:",
         transfer: "From {from} to {to}:",
       },
-      confirmText:
-        "It leaves the stock once confirmed. If it's wrong, the owner can reverse it.",
+      confirmText: {
+        waste:
+          "It leaves the stock once confirmed. If it's wrong, the owner can reverse it.",
+        transfer:
+          "It moves from one storeroom to the other once confirmed. If it's wrong, the owner can reverse it.",
+      },
       recorded: {
         waste: "Waste recorded",
         transfer: "Transfer recorded",

@@ -302,7 +302,7 @@ async function post() {
     <UiDialog
       v-model:open="confirming"
       :title="t(`stock.record.confirmTitle.${type}`)"
-      :description="t('stock.record.confirmText')"
+      :description="t(`stock.record.confirmText.${type}`)"
     >
       <p class="font-medium">
         {{
