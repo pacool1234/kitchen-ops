@@ -9,6 +9,7 @@ import {
 } from "@kitchen-ops/ledger";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import fc from "fast-check";
+import { randomUUIDv7 } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth";
 import { createDb } from "../db/client";
@@ -22,13 +23,15 @@ import {
   type PostingCatalogue,
 } from "../test/posting";
 import { postDocument, reverseDocument, type ReviewedLine } from "./posting";
+import { recordStockDocument } from "../stock/record";
 import { productStock } from "../stock/stock";
 import { movementsOf } from "./stored";
 
 // Spec 11.2 (M7): database-level property tests showing that stored movements and
 // packages/ledger agree on stock and cost. Each run posts a random sequence of delivery notes,
-// invoices (correcting delivery-note prices, and with lines of their own), reversals and
-// documents that can't be posted, through the posting service into the test database.
+// invoices (correcting delivery-note prices, and with lines of their own), waste and transfers
+// (#149), reversals and documents that can't be posted, through the posting and recording
+// services into the test database.
 
 const config = testConfig();
 const { db, close } = createDb(config.DATABASE_URL);
@@ -83,6 +86,20 @@ const step = fc.oneof(
         }),
         { maxLength: 1 },
       ),
+    }),
+  },
+  {
+    weight: 2,
+    arbitrary: fc.record({
+      kind: fc.constantFrom("waste" as const, "transfer" as const),
+      storeroom,
+      // Some fit the stock there, and some don't.
+      lines: fc.array(
+        fc.record({ product, quantity: fc.integer({ min: 1, max: 6 }) }),
+        { minLength: 1, maxLength: 2 },
+      ),
+      // Sometimes the same request sent twice: it posts once.
+      twice: fc.boolean(),
     }),
   },
   {
@@ -217,9 +234,52 @@ async function run(sequence: readonly Step[]) {
         break;
       }
       case "reverse":
+      case "waste":
+      case "transfer":
         break;
     }
 
+    if (s.kind === "waste" || s.kind === "transfer") {
+      const storeroomId = storeroomOf(s.storeroom);
+      const lines = s.lines.map((l) => ({
+        productId: productOf(l.product),
+        quantity: String(l.quantity),
+        unit: UNIT[l.product],
+      }));
+      const id = randomUUIDv7();
+      const record = () =>
+        recordStockDocument(
+          db,
+          context(),
+          id,
+          s.kind === "waste"
+            ? {
+                type: "waste",
+                storeroomId,
+                reason: "spoiled",
+                note: null,
+                lines,
+              }
+            : {
+                type: "transfer",
+                storeroomId,
+                toStoreroomId: storeroomOf(1 - s.storeroom),
+                lines,
+              },
+          { date: "2026-10-21" },
+        );
+      const before = await snapshot();
+      const result = await record();
+      if (result.ok) returned.push(...result.movements);
+      else failures.push({ step: s, before, after: await snapshot() });
+      if (s.twice) {
+        // Posted once: sent again, it posts nothing more. Refused, it's refused again.
+        const again = await record();
+        expect(again).toEqual(result.ok ? { ok: true, movements: [] } : result);
+        if (again.ok) returned.push(...again.movements);
+      }
+      continue;
+    }
     if (s.kind === "reverse") {
       const posted = await postedDocuments();
       const target = posted[s.pick % Math.max(posted.length, 1)];
