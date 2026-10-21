@@ -1,6 +1,8 @@
-# Checking the stock
+# Checking the stock, recording waste and moving stock
 
-For every role. Counter staff see how much there is; office and the owner also see what it cost and what it's worth. The words on screen are given in Spanish, with English in brackets.
+For every role. Counter staff see how much there is; office and the owner also see what it cost and what it's worth. Everyone records waste and moves stock between storerooms, on a phone or a computer. The words on screen are given in Spanish, with English in brackets.
+
+**To try it on staging:** post one of the demo delivery notes first (see [Reviewing a document and posting it into stock](reviewing-and-posting.md)), so there's stock to see. Then, in **Stock**, record some of it as waste, move some to another storeroom, and follow each from the product's movements to its page.
 
 ## The stock list
 
@@ -33,4 +35,26 @@ What happened:
 
 A movement marked **Ajuste** (Adjustment) was allowed to take the stock below zero: a count made before something was used, but sent after.
 
-The last column names the document. A delivery note or an invoice links to its page, where its lines and movements are; a reversal links to the document it reversed, which shows both. Waste, counts and transfers don't have pages yet.
+The last column names the document. A delivery note or an invoice links to its page, where its lines and movements are. Waste and transfers link to theirs (below). A reversal links to the document it reversed, which shows both. Counts don't have pages yet.
+
+## Recording waste
+
+When something is thrown away, tap **Registrar merma** (Record waste) at the top of **Stock**:
+
+1. Choose the **Almacén** (Storeroom) it was in, and the **Motivo** (Reason): **Caducado** (Expired), **Estropeado** (Spoiled), **Roto** (Broken), **Error de preparación** (Prep error) or **Otro** (Other). A **Nota** (Note) is optional, for when the reason needs explaining.
+2. For each product, type part of its name in **Producto** and choose it. Type the **Cantidad** (Quantity), with a comma or a point: "1,5". The **Unidad** (Unit) starts in kilos, litres or units, whichever the product is counted in; it can also be one of the product's purchase units, such as a "caja". **Añadir otro producto** (Add another product) adds a line.
+3. Tap **Registrar** (Record). A box lists what will be taken out, and from where; tap **Registrar** again to confirm.
+
+If there isn't that much in stock, the line says **No hay tanto en stock** (There isn't that much in stock), and nothing is recorded. Correct it and record again.
+
+Once recorded, its page opens: what was taken out of where, why and by whom.
+
+## Moving stock between storerooms
+
+Tap **Registrar traspaso** (Record a transfer) at the top of **Stock**. Choose where it comes from (**Origen**, From) and where it goes (**Destino**, To), then the products and quantities, as for waste. Confirm, and its page shows what left one storeroom and arrived in the other. A transfer moves stock at what it cost: what the stock is worth stays the same.
+
+## A waste or transfer's page
+
+It shows where, why and by whom, and each product's movements, with what they cost for office and the owner. It can't be changed. If it's wrong, the owner taps **Anular** (Reverse): the stock goes back where it was, and the page then shows the reversal, when and by whom. Record it again correctly.
+
+If the connection drops while recording and you tap **Registrar** again, it's recorded only once. If you changed something in between, the page says it was already recorded as first sent, with a link to it.
