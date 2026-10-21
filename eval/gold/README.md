@@ -4,7 +4,7 @@ Committed eval documents: own, public or synthetic, never client documents. Each
 
 Written from each folder's `meta.json` by `pnpm --filter @kitchen-ops/extract gold:readme`. Don't edit it by hand: edit the `meta.json` and run that instead.
 
-20 documents: 10 text-pdf, 2 scan, 5 photo, 3 facturae-xml.
+21 documents: 11 text-pdf, 2 scan, 5 photo, 3 facturae-xml.
 
 | Folder | Origin | Kind | Made | What makes it hard |
 | --- | --- | --- | --- | --- |
@@ -28,3 +28,4 @@ Written from each folder's `meta.json` by `pnpm --filter @kitchen-ops/extract go
 | syn-018-picture-from-005 | synthetic | photo | | Photo of syn-005 printed |
 | syn-019-picture-from-007 | synthetic | photo | | Photo of syn-007 printed |
 | syn-020-picture-from-008 | synthetic | scan | | Scan of syn-008 printed: first page is blank |
+| syn-021-invoice-for-004 | synthetic | text-pdf | rendered | The invoice for syn-004's priced delivery note, which it lists under its date: the same five lines, two at new prices (one up, one down) and three as delivered. Weights with three decimals. The staging demo's invoice (#120). |

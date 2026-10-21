@@ -18,8 +18,9 @@ import {
 } from "./schema";
 import type { SeedProduct, SeedSupplierProduct } from "./seed-catalogue";
 
-// The demo's documents (#119, decision 0039): three synthetic documents from the gold set, ready
-// for review as if they had just been read, to try reviewing and posting with. Their drafts are
+// The demo's documents (#119, decision 0039): four synthetic documents from the gold set, ready
+// for review as if they had just been read, to try reviewing and posting with: three delivery
+// notes, and the invoice for the first (#120). Their drafts are
 // the gold set's hand-checked expected.json, so no model is called; they're checked as a read
 // document is. Staging's tables have rows already, so each row is added only if it isn't there:
 // a supplier by its tax ID, a product by its name, a supplier product by its supplier and code,
@@ -50,6 +51,12 @@ export const DEMO_DOCUMENTS: DemoDocument[] = [
   {
     id: "01a15b87-1c43-7f1e-9407-c8454029e3a9",
     gold: "syn-012-delivery-note-no-prices",
+  },
+  // The invoice for the first, which it lists: two prices changed. Until that delivery note is
+  // posted, its supplier has none, so the invoice's lines start as received with it.
+  {
+    id: "01a15b87-1c44-7638-8ae7-d5651c1017e4",
+    gold: "syn-021-invoice-for-004",
   },
 ];
 

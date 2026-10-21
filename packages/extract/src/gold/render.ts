@@ -199,6 +199,15 @@ function draw(pdf: PDFKit.PDFDocument, document: ExtractedDocument): void {
       align: "right",
     });
   }
+  // The delivery notes an invoice bills (#120). Nothing when it lists none, so the documents
+  // rendered before this are unchanged, byte for byte.
+  if (document.deliveryNotes.length > 0) {
+    const label = document.deliveryNotes.length === 1 ? "Albarán" : "Albaranes";
+    text(`${label}: ${document.deliveryNotes.join(", ")}`, 300, 86, {
+      width: RIGHT - 300,
+      align: "right",
+    });
+  }
   text(
     "Cliente: Restaurante Ejemplo · C/ Imaginaria 1 · 00000 Ciudad Ejemplo",
     LEFT,

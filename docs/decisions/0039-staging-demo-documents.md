@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-21
+- Updated: 2026-10-21, by #120: a fourth document, the invoice for the first (below). Seeded the same way.
 
 ## Context
 
@@ -20,6 +21,14 @@ Uploading the documents on staging by hand would read them for real, at about a 
 | `syn-012-delivery-note-no-prices` | A PDF without prices, 16 lines, one with nothing delivered | Seeded, with 2 lines mapped |
 
 The PDFs of the two photos (syn-004, syn-001) are left out: the duplicate check would flag them.
+
+**And, since #120, the invoice for the first** (decision 0041):
+
+| Folder | What it is | Its supplier |
+| --- | --- | --- |
+| `syn-021-invoice-for-004` | A PDF invoice listing syn-004's delivery note: its 5 lines, 2 at new prices | Seeded: the first's |
+
+Until that delivery note is posted, its supplier has posted none, so the invoice's lines start as received with it, as an invoice-only supplier's are. Once it's posted, each line is suggested its delivery-note line, and posting the invoice corrects two prices.
 
 **Each is what reading it would give,** with no model called:
 - its draft is the folder's `expected.json`, validated with the shared schema;

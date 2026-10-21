@@ -98,26 +98,37 @@ describe("sha256Hex: the original's hash, to catch duplicates (stage 1)", () => 
 });
 
 describe("routeFile: each kind of input takes its own route", () => {
-  it("every gold document takes the route its kind calls for", async () => {
-    for (const { id, kind, bytes } of gold) {
-      const routed = await routeFile(bytes);
-      expect(ROUTE_FOR[kind], id).toContain(routed.route);
-    }
-  });
+  /** Routing every gold document, photos and PDFs read through: over 5 seconds on CI's runners. */
+  const EVERY_GOLD_DOCUMENT_MS = 30_000;
 
-  it("every result carries the SHA-256 of the bytes given, rejected files included", async () => {
-    const inputs = [
-      ...gold.map(({ bytes }) => bytes),
-      ascii("not a document"),
-      await plainImage("png"),
-      ascii("%PDF-1.7\nbroken"),
-    ];
-    for (const bytes of inputs) {
-      expect((await routeFile(bytes)).sha256).toBe(
-        createHash("sha256").update(bytes).digest("hex"),
-      );
-    }
-  });
+  it(
+    "every gold document takes the route its kind calls for",
+    async () => {
+      for (const { id, kind, bytes } of gold) {
+        const routed = await routeFile(bytes);
+        expect(ROUTE_FOR[kind], id).toContain(routed.route);
+      }
+    },
+    EVERY_GOLD_DOCUMENT_MS,
+  );
+
+  it(
+    "every result carries the SHA-256 of the bytes given, rejected files included",
+    async () => {
+      const inputs = [
+        ...gold.map(({ bytes }) => bytes),
+        ascii("not a document"),
+        await plainImage("png"),
+        ascii("%PDF-1.7\nbroken"),
+      ];
+      for (const bytes of inputs) {
+        expect((await routeFile(bytes)).sha256).toBe(
+          createHash("sha256").update(bytes).digest("hex"),
+        );
+      }
+    },
+    EVERY_GOLD_DOCUMENT_MS,
+  );
 
   it("a text PDF goes as one text part, each page after a marker", async () => {
     const routed = await routeFile(goldBytes("syn-003-invoice-multi-page"));

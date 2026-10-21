@@ -1,0 +1,74 @@
+{
+  "documentType": "invoice",
+  "currency": "EUR",
+  "supplier": {
+    "name": "Carnes Ficticias de Ejemplo S.L.",
+    "taxId": "B00777029"
+  },
+  "number": "FV-2026-0412",
+  "issueDate": "2026-10-20",
+  "deliveryNotes": ["AV-2026-2210"],
+  "totals": {
+    "net": "205.97",
+    "vat": [
+      {
+        "rate": "10",
+        "base": "205.97",
+        "amount": "20.60"
+      }
+    ],
+    "total": "226.57"
+  },
+  "lines": [
+    {
+      "supplierCode": "CF-101",
+      "description": "Solomillo de ternera",
+      "quantity": "2.350",
+      "unit": "kg",
+      "unitPrice": "33.40",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "78.49"
+    },
+    {
+      "supplierCode": "CF-205",
+      "description": "Pollo entero",
+      "quantity": "4.125",
+      "unit": "kg",
+      "unitPrice": "4.85",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "20.01"
+    },
+    {
+      "supplierCode": "CF-310",
+      "description": "Hamburguesa 180 g (caja 20 ud)",
+      "quantity": "3",
+      "unit": "caja",
+      "unitPrice": "27.60",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "82.80"
+    },
+    {
+      "supplierCode": "CF-412",
+      "description": "Chorizo para cocinar",
+      "quantity": "6",
+      "unit": "ud",
+      "unitPrice": "2.15",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "12.90"
+    },
+    {
+      "supplierCode": "CF-520",
+      "description": "Panceta curada",
+      "quantity": "1.080",
+      "unit": "kg",
+      "unitPrice": "10.90",
+      "discountPercent": null,
+      "vatRate": "10",
+      "lineTotal": "11.77"
+    }
+  ]
+}

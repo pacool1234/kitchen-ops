@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExtractedDocument, ExtractedLine } from "@kitchen-ops/shared";
+import { pdfPageTexts } from "../route/pdf";
 import {
   formatDate,
   formatDecimal,
@@ -83,6 +84,20 @@ describe("renderGoldPdf: a synthetic document from its expected.json", () => {
     const original = await renderGoldPdf(invoiceWith(3));
     const changed = await renderGoldPdf({ ...invoiceWith(3), number: "F-2" });
     expect(original.equals(changed)).toBe(false);
+  });
+
+  it("an invoice prints the delivery notes it lists, under its date; one that lists none, nothing (#120)", async () => {
+    const text = async (deliveryNotes: string[]) =>
+      (
+        await pdfPageTexts(
+          new Uint8Array(
+            await renderGoldPdf({ ...invoiceWith(3), deliveryNotes }),
+          ),
+        )
+      ).join("\n");
+    expect(await text(["A-1"])).toContain("Albarán: A-1");
+    expect(await text(["A-1", "A-2"])).toContain("Albaranes: A-1, A-2");
+    expect(await text([])).not.toContain("Albar");
   });
 
   it("3 lines fit on one page; 40 lines take more than one", async () => {
