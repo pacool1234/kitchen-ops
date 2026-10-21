@@ -15,12 +15,13 @@ The stock ledger: pure TypeScript domain logic for movements, unit conversions, 
 | `conversion.ts` | Purchase units to base units, per product: 1.5 boxes of 6000 g is 9000 g |
 | `movement.ts` | Movements, stock on hand, cached balances, reversals, and `appendMovements`, which allows negative stock only through a flagged adjustment |
 | `cost.ts` | Received unit cost, weighted-average cost by replaying movements, and the latest purchase price for recipe costing. A correcting receipt counts in the place of the receipt it corrects |
-| `document.ts` | Posting delivery notes, invoices, waste, counts and transfers into movements, all or nothing; reversing posted documents. An invoice corrects its delivery notes' prices (decision 0032) |
+| `valuation.ts` | A stock's value (on hand × average cost, in cents), and every product's stock, cost and value in each storeroom, with each storeroom's total and the grand total (decision 0043) |
+| `document.ts` | Posting delivery notes, invoices, waste, counts and transfers into movements, all or nothing; reversing posted documents. An invoice corrects its delivery notes' prices (decision 0032). A count is measured against the stock when it was counted, so one synced late doesn't swallow what was posted since (decision 0043) |
 | `invoice.ts` | Suggesting which delivery-note line each invoice line bills (decision 0032) |
 | `recipe.ts` | Recipes, yields (net ÷ yield) and theoretical use from dishes sold |
 | `variance.ts` | Actual use, unexplained variance and its value, and the report sorted by largest loss |
 
-Every rounding point is listed in decision 0015 (`docs/decisions/0015-money-as-bigint.md`), with the function that does it.
+Every rounding point is listed in decision 0015 (`docs/decisions/0015-money-as-bigint.md`), with the function that does it, plus a stock's value (`stockValue`), added by decision 0043.
 
 ## Invariants and the property tests that cover them
 
