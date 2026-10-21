@@ -299,6 +299,10 @@ export const es = {
       no_supplier: "Falta el proveedor.",
       failed_checks: "No pasa alguna comprobación.",
       unmapped_lines: "Hay líneas sin producto confirmado.",
+      unbilled_lines:
+        "Hay líneas sin albarán confirmado que no se reciben con la factura.",
+      quantity_differs:
+        "Una línea factura una cantidad distinta de la que recibió su albarán.",
       new_supplier:
         "Proveedor nuevo: sus primeros documentos se revisan siempre.",
     },

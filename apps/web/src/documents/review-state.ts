@@ -9,6 +9,8 @@ export const REASON_ORDER = [
   "no_supplier",
   "failed_checks",
   "unmapped_lines",
+  "unbilled_lines",
+  "quantity_differs",
   "new_supplier",
 ] as const satisfies readonly ReviewReason[];
 

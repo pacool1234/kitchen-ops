@@ -146,9 +146,11 @@ export const postingRoutes: FastifyPluginAsyncZod<{
           if (left.some((reason) => reason !== "new_supplier")) {
             throw new HttpError(409, "review_pending");
           }
-          if (!mayPost(role, left)) throw new HttpError(403, "forbidden");
           // Nothing left: it has a draft, and a supplier.
           draft = currentDraft(document)!;
+          if (!mayPost(role, left, draft.documentType)) {
+            throw new HttpError(403, "forbidden");
+          }
           if (draft.documentType !== "delivery-note") {
             throw new HttpError(409, "not_a_delivery_note");
           }

@@ -25,7 +25,9 @@ describe("posting: whether the screen offers to post the document", () => {
     fc.assert(
       fc.property(state, (s) => {
         const offered =
-          mayPost(s.role, s.reasons) && !s.dirty && s.type === "delivery-note";
+          s.type === "delivery-note" &&
+          mayPost(s.role, s.reasons, s.type) &&
+          !s.dirty;
         const shown = posting(s);
         expect(shown.offered).toBe(offered);
         if (offered) expect(shown.blocked).toBeUndefined();

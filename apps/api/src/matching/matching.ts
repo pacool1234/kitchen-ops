@@ -164,12 +164,14 @@ export async function readMatching(
               by: found.by,
               supplierProduct: (await readSupplierProduct(db, found.offerId))!,
             },
+            billing: null,
           };
         }
         const product = suggested.get(lineKey(line));
         return {
           line: i + 1,
           match: product ? { by: "suggestion", product } : null,
+          billing: null,
         };
       },
     ),
@@ -188,6 +190,7 @@ export async function readMatching(
   ];
   return {
     supplier: supplier ?? null,
+    difference: null,
     newSupplier,
     lines,
     reviewReasons: reasons.filter(([, applies]) => applies).map(([r]) => r),

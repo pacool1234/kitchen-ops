@@ -37,7 +37,7 @@ export function posting(state: {
     return { offered: false, blocked: "pending" };
   }
   if (type !== "delivery-note") return { offered: false, blocked: "invoice" };
-  if (!mayPost(role, reasons)) {
+  if (!mayPost(role, reasons, type)) {
     return { offered: false, blocked: "new_supplier" };
   }
   if (dirty) return { offered: false, blocked: "unsaved" };
