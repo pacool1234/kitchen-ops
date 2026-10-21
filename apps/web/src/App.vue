@@ -3,6 +3,8 @@ import { watchEffect } from "vue";
 import { RouterView, useRoute } from "vue-router";
 import UiToaster from "./components/ui/UiToaster.vue";
 import { useT } from "./i18n";
+import { applyUpdate, noticeClosed, updateWaiting } from "./shell/app-update";
+import AppUpdateNotice from "./shell/AppUpdateNotice.vue";
 import { ownTitle } from "./shell/title";
 
 const t = useT();
@@ -18,6 +20,11 @@ watchEffect(() => {
 </script>
 
 <template>
+  <AppUpdateNotice
+    v-if="updateWaiting && !noticeClosed"
+    @reload="applyUpdate()"
+    @close="noticeClosed = true"
+  />
   <RouterView />
   <UiToaster />
 </template>

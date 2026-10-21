@@ -1,3 +1,5 @@
+/// <reference types="vite-plugin-pwa/client" />
+
 // Set at build time; see vite.config.ts and render.yaml.
 interface ImportMetaEnv {
   /** The web Sentry project's DSN. Unset locally, which keeps Sentry off. */

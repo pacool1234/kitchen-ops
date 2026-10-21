@@ -29,7 +29,9 @@ export default defineConfig(({ command, mode }) => ({
     vue(),
     tailwindcss(),
     VitePWA({
-      registerType: "autoUpdate",
+      // A new version waits until the tab takes it: src/shell/app-update.ts (decision 0042).
+      registerType: "prompt",
+      injectRegister: false,
       includeAssets: [
         "favicon.ico",
         "apple-touch-icon-180x180.png",
