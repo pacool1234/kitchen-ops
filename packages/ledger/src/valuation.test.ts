@@ -175,10 +175,14 @@ const movementList = fc
     { maxLength: 40 },
   )
   .map((fields) => {
-    const ms: Movement[] = fields.map(({ reversedLater: _, ...f }, i) => ({
-      ...f,
+    const ms: Movement[] = fields.map((f, i) => ({
       id: `m${i}`,
+      productId: f.productId,
+      storeroomId: f.storeroomId,
+      quantity: f.quantity,
+      unitCost: f.unitCost,
       documentLineId: `line${i}`,
+      kind: f.kind,
     }));
     const reversals = fields.flatMap((f, i): Movement[] =>
       f.reversedLater
