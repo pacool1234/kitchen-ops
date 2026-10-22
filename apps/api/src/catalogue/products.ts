@@ -30,7 +30,7 @@ const product = {
 };
 
 /** Each product's conversions, smallest factor first. */
-async function conversionsOf(
+export async function conversionsOf(
   db: Db | Tx,
   productIds: readonly string[],
 ): Promise<Map<string, UnitConversion[]>> {

@@ -4,6 +4,7 @@
 - Date: 2026-10-21
 - Updated: 2026-10-21, by #149's second PR: counts, recorded as point 3 says. A count's lines may be 0, and name each product once. Its `counted_at` is measured against the movements stamped by then, which are stamped once the posting lock is taken; it may be up to 5 minutes ahead of the database's clock, a phone's running fast, and any time before.
 - Updated: 2026-10-22, by #151's first PR: point 7. Each is read on its own, as recording one answers, and with unit costs for office and the owner only.
+- Updated: 2026-10-22, by #152's first PR: point 8. A count starts from a blind count sheet, and each movement on a stock document's page is valued for office and the owner.
 
 ## Context
 
@@ -33,6 +34,11 @@ M8 records these on phones (spec 11.1), sometimes offline (#153). A phone that s
    - Recording one answers the same, so a phone shows what it posted without asking again.
    - Unit costs are for office and the owner only (spec section 6), as on the stock list (#150). A counter user's answer has no `unitCost`.
    - `GET /api/documents/:id/posting` reads supplier documents only, since it would give anyone the costs. The owner's `POST /api/documents/:id/reverse` still answers a reversed stock document's posting, costs included.
+8. **A count starts from its storeroom's count sheet** (#152): `GET /api/storerooms/:id/count-sheet`.
+   - It lists the products with stock there, more or less than none, as `ledger` works it out, and the active products whose default storeroom it is. Others are added by typing.
+   - Its order is the same every time: by category, in the catalogue's order, then by name.
+   - **It's blind, for every role:** it never says how much there is. Seeing the expected stock biases a count, and that holds for office and the owner as much as for counter staff. The differences show on the count's page once it's posted.
+   - On a stock document's page, office and the owner also see what each movement is worth: its quantity at its cost, rounded once to cents (decision 0043). A count's difference, or waste, in euros.
 
 ## Alternatives considered
 

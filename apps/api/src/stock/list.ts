@@ -19,7 +19,7 @@ let cached: { movements: string; valuation: ledger.Valuation } | undefined;
  * append-only and numbered under the posting lock, so as many of them, up to the same last
  * `sequence`, are the same movements: they're read and valued again only once more are posted.
  */
-async function currentValuation(db: Db): Promise<ledger.Valuation> {
+export async function currentValuation(db: Db): Promise<ledger.Valuation> {
   const [stored] = await db
     .select({ count: count(), last: max(movements.sequence) })
     .from(movements);

@@ -39,7 +39,7 @@ describe("endpoints: the API's contract (decision 0022)", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it("the routes that exist today: health, openapi, me, the audit log, the catalogue, a product's stock and movements, the stock list, documents, their matching and posting, waste, transfers and counts, and a stock document", () => {
+  it("the routes that exist today: health, openapi, me, the audit log, the catalogue, a product's stock and movements, the stock list, documents, their matching and posting, waste, transfers and counts, a stock document, and a storeroom's count sheet", () => {
     const writers = { roles: ["office", "owner"] };
     expect(
       Object.values(endpoints).map((e) => [e.method, e.path, e.access]),
@@ -86,6 +86,7 @@ describe("endpoints: the API's contract (decision 0022)", () => {
       ["PUT", "/api/transfers/:id", "signed-in"],
       ["PUT", "/api/counts/:id", "signed-in"],
       ["GET", "/api/stock-documents/:id", "signed-in"],
+      ["GET", "/api/storerooms/:id/count-sheet", "signed-in"],
       ["POST", "/api/documents/:id/copy", { roles: ["owner"] }],
     ]);
   });

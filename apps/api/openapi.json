@@ -21164,6 +21164,9 @@
                                 "unitCost": {
                                   "type": "string"
                                 },
+                                "value": {
+                                  "type": "string"
+                                },
                                 "kind": {
                                   "type": "string",
                                   "enum": [
@@ -21307,6 +21310,9 @@
                                         "unitCost": {
                                           "type": "string"
                                         },
+                                        "value": {
+                                          "type": "string"
+                                        },
                                         "kind": {
                                           "type": "string",
                                           "enum": [
@@ -21365,6 +21371,358 @@
                     "recordedBy",
                     "lines",
                     "reversal"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "below_zero",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "below_zero",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "below_zero",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string",
+                        "enum": [
+                          "required",
+                          "invalid",
+                          "too_short",
+                          "too_long",
+                          "too_small",
+                          "too_big",
+                          "unknown_field",
+                          "invalid_tax_id",
+                          "taken",
+                          "reserved",
+                          "not_found",
+                          "in_use",
+                          "unknown_unit",
+                          "not_whole_base_units",
+                          "below_zero",
+                          "too_many",
+                          "unsupported_type",
+                          "mixed_kinds"
+                        ]
+                      }
+                    },
+                    "duplicateOf": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-roles": "any signed-in user"
+      }
+    },
+    "/api/storerooms/{id}/count-sheet": {
+      "get": {
+        "summary": "The products a count of a storeroom lists: those with stock there and those it's the default storeroom of, with their units, never how much there is",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "storeroom": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "baseUnit": {
+                            "type": "string",
+                            "enum": [
+                              "g",
+                              "ml",
+                              "unit"
+                            ]
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "produce",
+                              "meat",
+                              "fish",
+                              "dairy",
+                              "bakery",
+                              "dry_goods",
+                              "frozen",
+                              "drinks",
+                              "cleaning",
+                              "other"
+                            ]
+                          },
+                          "defaultStoreroomId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "conversions": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "unit": {
+                                  "type": "string"
+                                },
+                                "factor": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "unit",
+                                "factor"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "baseUnit",
+                          "category",
+                          "defaultStoreroomId",
+                          "active",
+                          "conversions"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "storeroom",
+                    "products"
                   ],
                   "additionalProperties": false
                 }
@@ -21877,6 +22235,9 @@
                                 "unitCost": {
                                   "type": "string"
                                 },
+                                "value": {
+                                  "type": "string"
+                                },
                                 "kind": {
                                   "type": "string",
                                   "enum": [
@@ -22018,6 +22379,9 @@
                                           "maximum": 9007199254740991
                                         },
                                         "unitCost": {
+                                          "type": "string"
+                                        },
+                                        "value": {
                                           "type": "string"
                                         },
                                         "kind": {
@@ -22627,6 +22991,9 @@
                                 "unitCost": {
                                   "type": "string"
                                 },
+                                "value": {
+                                  "type": "string"
+                                },
                                 "kind": {
                                   "type": "string",
                                   "enum": [
@@ -22768,6 +23135,9 @@
                                           "maximum": 9007199254740991
                                         },
                                         "unitCost": {
+                                          "type": "string"
+                                        },
+                                        "value": {
                                           "type": "string"
                                         },
                                         "kind": {
@@ -23377,6 +23747,9 @@
                                 "unitCost": {
                                   "type": "string"
                                 },
+                                "value": {
+                                  "type": "string"
+                                },
                                 "kind": {
                                   "type": "string",
                                   "enum": [
@@ -23518,6 +23891,9 @@
                                           "maximum": 9007199254740991
                                         },
                                         "unitCost": {
+                                          "type": "string"
+                                        },
+                                        "value": {
                                           "type": "string"
                                         },
                                         "kind": {

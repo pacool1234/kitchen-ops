@@ -58,6 +58,7 @@ const REQUESTS: Record<
 > = {
   listStorerooms: () => ({}),
   getStoreroom: (ids) => ({ params: { id: ids.storeroom } }),
+  getCountSheet: (ids) => ({ params: { id: ids.storeroom } }),
   createStoreroom: () => ({ body: { name: `Sala ${next()}`, type: "bar" } }),
   updateStoreroom: (ids) => ({
     params: { id: ids.storeroom },

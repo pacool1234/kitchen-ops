@@ -1,3 +1,4 @@
+import * as ledger from "@kitchen-ops/ledger";
 import {
   STOCK_DOCUMENT_TYPES,
   type PostedLine,
@@ -12,8 +13,9 @@ import { documents, storerooms, users } from "../db/schema";
 import { readPosting } from "../posting/read";
 
 // Waste, a transfer or a count as its page shows it (#151): what was recorded, where, why and by
-// whom, each line with the movements it made, and its reversal's. Unit costs are for office and
-// the owner only (spec section 6), as on the stock list (#150).
+// whom, each line with the movements it made, and its reversal's. Unit costs, and what each
+// movement is worth (#152), are for office and the owner only (spec section 6), as on the stock
+// list (#150).
 
 const toStoreroom = alias(storerooms, "to_storeroom");
 
@@ -28,7 +30,15 @@ function stockLine(line: PostedLine, costs: boolean): StockDocumentLine {
       id: m.id,
       storeroom: m.storeroom,
       quantity: m.quantity,
-      ...(costs ? { unitCost: m.unitCost } : {}),
+      ...(costs
+        ? {
+            unitCost: m.unitCost,
+            // Rounded once to cents, as a stock's value is (decision 0043).
+            value: ledger.formatMoney(
+              ledger.stockValue(m.quantity, ledger.parseUnitCost(m.unitCost)),
+            ),
+          }
+        : {}),
       kind: m.kind,
     })),
   };
